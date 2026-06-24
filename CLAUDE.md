@@ -17,7 +17,7 @@
 
 - **Tier 1（每次加载）**：本 `CLAUDE.md` —— 项目是什么、红线、角色、验收口径。
 - **Tier 2（按需读取）**：
-  - **V1 冻结设计**（架构/领域模型/研究流/取舍）：`/Users/junjieli/obsidian/Brain/docs/superpowers/specs/2026-06-24-noesis-v1-design.md`（详细设计文档统一放 Obsidian vault，不入代码仓）。
+  - **V1 冻结设计**（架构/领域模型/研究流/取舍）：`/Users/junjieli/obsidian/Brain/Projects/active/Noesis/docs/2026-06-24-noesis-v1-design.md`（详细设计文档统一放 Obsidian vault，不入代码仓）。
   - `AGENTS.md` —— 编码契约（Codex 落地依据）。
 - **Tier 3（参考/默认不碰）**：vault `Projects/active/Noesis/README.md` + `EVALUATION.md` —— 早期另一套构思，**不代表当前定位**，除非明确要求不引用。
 
