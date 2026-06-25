@@ -75,7 +75,7 @@ class NodeTraceRow(BaseModel):
     model_id: str | None
     evidence_ids_json: str | None
     started_at: str
-    ended_at: str
+    ended_at: str | None
     created_at: str
 
     def evidence_ids(self) -> list[str]:
@@ -85,7 +85,7 @@ class NodeTraceRow(BaseModel):
 class EvidenceRow(BaseModel):
     id: str
     run_id: str
-    entity_id: str
+    entity_id: str | None
     source: str
     source_tier: int
     url: str | None

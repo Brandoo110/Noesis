@@ -41,3 +41,32 @@ def test_evidences_repo_empty_results(db: Connection) -> None:
 
     assert repo.get("missing", conn=db) is None
     assert repo.list_by_run("missing-run", conn=db) == []
+
+
+def test_evidences_repo_reads_evidence_without_entity_id(db: Connection) -> None:
+    db.execute(
+        """
+        INSERT INTO evidences(
+          id, run_id, entity_id, source, source_tier, url, title, snippet,
+          captured_at, published_at, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            "evidence-null-entity",
+            "run-1",
+            None,
+            "web",
+            2,
+            "https://example.com",
+            "Evidence",
+            "Snippet without entity",
+            NOW,
+            None,
+            NOW,
+        ),
+    )
+
+    evidence = EvidencesRepo().get("evidence-null-entity", conn=db)
+
+    assert evidence is not None
+    assert evidence.entity_id is None

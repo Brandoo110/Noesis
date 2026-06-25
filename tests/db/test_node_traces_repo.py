@@ -39,3 +39,38 @@ def test_node_traces_repo_insert_and_list_by_run(db: Connection) -> None:
 
 def test_node_traces_repo_empty_result(db: Connection) -> None:
     assert NodeTracesRepo().list_by_run("missing", conn=db) == []
+
+
+def test_node_traces_repo_reads_started_trace_without_ended_at(
+    db: Connection,
+) -> None:
+    db.execute(
+        """
+        INSERT INTO node_traces(
+          id, run_id, node_name, entity_id, inputs_ref, outputs_ref, status,
+          reason, fallback_used, model_id, evidence_ids_json, started_at,
+          ended_at, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            "trace-started",
+            "run-1",
+            "ingest",
+            "entity-1",
+            None,
+            None,
+            "started",
+            None,
+            None,
+            None,
+            None,
+            NOW,
+            None,
+            NOW,
+        ),
+    )
+
+    trace = NodeTracesRepo().list_by_run("run-1", conn=db)[0]
+
+    assert trace.status == "started"
+    assert trace.ended_at is None
