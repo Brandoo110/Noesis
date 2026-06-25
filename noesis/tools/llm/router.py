@@ -53,9 +53,9 @@ class LLMRouter:
     def complete_json(
         self, role: LLMRole, prompt: str, schema: type[ModelT]
     ) -> ModelT:
-        text = self.complete_text(role, prompt)
+        text = self.complete_text(role, _json_prompt(prompt, schema))
         try:
-            payload: object = json.loads(text)
+            payload: object = json.loads(_strip_json_fence(text))
         except json.JSONDecodeError as exc:
             raise ResearchNodeError("LLM returned invalid JSON", reason="invalid_json") from exc
         try:
@@ -77,3 +77,23 @@ class LLMRouter:
     def available(self, role: LLMRole) -> bool:
         provider = self.providers.get(role)
         return provider is not None and provider.available()
+
+
+def _json_prompt(prompt: str, schema: type[BaseModel]) -> str:
+    schema_json = json.dumps(schema.model_json_schema(), ensure_ascii=False, sort_keys=True)
+    return (
+        f"{prompt}\n\n"
+        "Return only valid JSON that conforms to this JSON Schema. "
+        "Do not include markdown fences or explanatory text.\n"
+        f"JSON Schema:\n{schema_json}"
+    )
+
+
+def _strip_json_fence(text: str) -> str:
+    stripped = text.strip()
+    if not stripped.startswith("```"):
+        return stripped
+    lines = stripped.splitlines()
+    if len(lines) >= 3 and lines[0].startswith("```") and lines[-1].strip() == "```":
+        return "\n".join(lines[1:-1]).strip()
+    return stripped

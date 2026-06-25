@@ -16,6 +16,21 @@ class CountPayload(BaseModel):
     count: int
 
 
+class CaptureProvider:
+    model_id = "capture"
+
+    def __init__(self, text: str) -> None:
+        self.text = text
+        self.prompts: list[str] = []
+
+    def available(self) -> bool:
+        return True
+
+    def complete_text(self, prompt: str) -> str:
+        self.prompts.append(prompt)
+        return self.text
+
+
 def test_fake_llm_router_returns_preconfigured_role_outputs() -> None:
     router = FakeLLMRouter(
         json_by_role={LLMRole.LIGHT: {"label": "ok"}},
@@ -34,7 +49,7 @@ def test_fake_llm_router_returns_preconfigured_role_outputs() -> None:
 def test_llm_router_reports_synth_unavailable_without_deepseek_key(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "")
 
     router = LLMRouter.from_env()
 
@@ -73,6 +88,27 @@ def test_llm_router_from_env_maps_configured_provider_layers(
 def test_llm_router_complete_json_validates_schema() -> None:
     router = LLMRouter(
         providers={LLMRole.LIGHT: StaticLLMProvider('{"label": "ok"}')}
+    )
+
+    payload = router.complete_json(LLMRole.LIGHT, "extract", LabelPayload)
+
+    assert payload == LabelPayload(label="ok")
+
+
+def test_llm_router_complete_json_adds_schema_instruction_to_prompt() -> None:
+    provider = CaptureProvider('{"label": "ok"}')
+    router = LLMRouter(providers={LLMRole.LIGHT: provider})
+
+    router.complete_json(LLMRole.LIGHT, "extract", LabelPayload)
+
+    assert provider.prompts
+    assert "Return only valid JSON" in provider.prompts[0]
+    assert "label" in provider.prompts[0]
+
+
+def test_llm_router_complete_json_accepts_fenced_json() -> None:
+    router = LLMRouter(
+        providers={LLMRole.LIGHT: StaticLLMProvider('```json\n{"label": "ok"}\n```')}
     )
 
     payload = router.complete_json(LLMRole.LIGHT, "extract", LabelPayload)

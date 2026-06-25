@@ -2,7 +2,7 @@ from noesis.config.settings import Settings, get_settings
 
 
 def test_settings_default_db_path_and_disabled_deepseek(monkeypatch) -> None:
-    monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "")
     monkeypatch.delenv("NOESIS_DB_PATH", raising=False)
 
     settings = Settings()

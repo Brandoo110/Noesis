@@ -9,12 +9,17 @@ from __future__ import annotations
 
 import argparse
 import sqlite3
+import sys
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from uuid import uuid4
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from noesis.config.settings import Settings
 from noesis.db.connection import connect, with_tx
