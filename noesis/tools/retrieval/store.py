@@ -44,12 +44,12 @@ class EvidenceRetriever:
         matches: list[EvidenceRecord] = []
         seen: set[str] = set()
         for item in self._retrieve_fts(query, top_k=top_k):
-            if item.id not in seen:
+            if item.run_id == run_id and item.id not in seen:
                 matches.append(item)
                 seen.add(item.id)
         if self.collection is not None and len(matches) < top_k:
             for item in self._retrieve_chroma(query, top_k=top_k):
-                if item.id not in seen:
+                if item.run_id == run_id and item.id not in seen:
                     matches.append(item)
                     seen.add(item.id)
                 if len(matches) >= top_k:
@@ -77,6 +77,7 @@ class EvidenceRetriever:
                 metadatas=[
                     {
                         "source": item.source,
+                        "run_id": item.run_id,
                         "source_tier": item.source_tier,
                         "url": item.url or "",
                         "title": item.title or "",
@@ -129,6 +130,7 @@ class EvidenceRetriever:
             matches.append(
                 EvidenceRecord(
                     id=evidence_id,
+                    run_id=str(data.get("run_id") or ""),
                     source=str(data.get("source", "chroma")),
                     source_tier=int(data.get("source_tier", 3)),
                     url=str(data.get("url") or "") or None,

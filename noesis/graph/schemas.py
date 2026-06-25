@@ -32,6 +32,7 @@ class IngestedDoc(BaseModel):
 
 class EvidenceRecord(BaseModel):
     id: str
+    run_id: str
     source: str
     source_tier: int
     url: str | None

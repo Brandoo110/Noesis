@@ -34,6 +34,7 @@ def test_graph_schemas_can_be_instantiated() -> None:
     )
     evidence = EvidenceRecord(
         id="evidence-1",
+        run_id="run-1",
         source="web",
         source_tier=2,
         url="https://example.com/apple",
@@ -74,6 +75,7 @@ def test_graph_schemas_can_be_instantiated() -> None:
     assert position.kind == "owned"
     assert entity.identifiers["symbol"] == "AAPL"
     assert doc.published_at is None
+    assert evidence.run_id == "run-1"
     assert evidence.published_at is None
     assert intel.sentiment == sentiment
     assert thesis.assumptions == [assumption]
