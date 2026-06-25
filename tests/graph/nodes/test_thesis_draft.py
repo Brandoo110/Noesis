@@ -199,3 +199,36 @@ def test_thesis_draft_degrades_when_synth_unavailable() -> None:
     assert update["thesis_draft"] is None
     assert update["degraded"][0].node_name == "thesis_draft"
     assert update["degraded"][0].fallback_used == "no_thesis_draft"
+
+
+def test_thesis_draft_degrades_when_no_intel_items() -> None:
+    state: ResearchState = {
+        "position_id": "position-1",
+        "resolved_entity": make_entity(),
+        "intel_items": [],
+        "evidences": [make_mixed_company_evidence()],
+        "degraded": [],
+    }
+    deps = make_deps(
+        FakeLLMRouter(
+            json_by_role={
+                LLMRole.SYNTH: {
+                    "summary": "AAPL faces possible margin pressure from memory costs.",
+                    "assumptions": [
+                        {
+                            "text": "Apple input costs remain exposed to memory pricing shifts.",
+                            "kind": "assumption",
+                            "evidence_ids": ["evidence-2"],
+                        }
+                    ],
+                }
+            }
+        )
+    )
+
+    update = thesis_draft(state, deps)
+
+    assert update["thesis_draft"] is None
+    assert update["degraded"][0].node_name == "thesis_draft"
+    assert update["degraded"][0].reason == "no_intel_for_thesis"
+    assert update["degraded"][0].fallback_used == "no_thesis_draft"

@@ -26,6 +26,10 @@ PROHIBITED_TERMS = (
 
 def thesis_draft(state: ResearchState, deps: GraphDeps) -> ResearchStateUpdate:
     degraded = list(state.get("degraded", []))
+    intel_items = state.get("intel_items", [])
+    if not intel_items:
+        degraded.append(_degrade("no_intel_for_thesis", "no_thesis_draft"))
+        return {"thesis_draft": None, "degraded": degraded}
     if not deps.llm.available(LLMRole.SYNTH):
         degraded.append(_degrade("synth_llm_unavailable", "no_thesis_draft"))
         return {"thesis_draft": None, "degraded": degraded}
@@ -34,7 +38,7 @@ def thesis_draft(state: ResearchState, deps: GraphDeps) -> ResearchStateUpdate:
             LLMRole.SYNTH,
             _prompt(
                 state.get("resolved_entity"),
-                state.get("intel_items", []),
+                intel_items,
                 state.get("evidences", []),
             ),
             ThesisDraft,

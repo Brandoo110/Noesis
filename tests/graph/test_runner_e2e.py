@@ -47,10 +47,10 @@ class DynamicFakeLLM:
             )
         return schema.model_validate(
             {
-                "summary": "Evidence suggests supplier pressure is easing.",
+                "summary": "AAPL may benefit as supplier pressure eases.",
                 "assumptions": [
                     {
-                        "text": "Supplier pressure remains observable in future filings.",
+                        "text": "Apple supplier pressure remains observable in future filings.",
                         "kind": "assumption",
                         "evidence_ids": [evidence_id],
                     }
@@ -65,6 +65,13 @@ class DynamicFakeLLM:
 class IntakeFailingLLM(DynamicFakeLLM):
     def complete_json(self, role: LLMRole, prompt: str, schema: type) -> object:
         if getattr(schema, "__name__", "") == "ResolvedEntity":
+            raise ResearchNodeError("light request timed out", reason="request_failed")
+        return super().complete_json(role, prompt, schema)
+
+
+class IntelFailingLLM(DynamicFakeLLM):
+    def complete_json(self, role: LLMRole, prompt: str, schema: type) -> object:
+        if getattr(schema, "__name__", "") == "IntelSynthPayload":
             raise ResearchNodeError("light request timed out", reason="request_failed")
         return super().complete_json(role, prompt, schema)
 
@@ -237,5 +244,31 @@ def test_runner_completes_when_intake_light_request_fails(
         trace.node_name == "intake_resolve"
         and trace.status == "degraded"
         and trace.reason == "light_llm_request_failed"
+        for trace in traces
+    )
+
+
+def test_runner_completes_without_thesis_when_intel_empty(
+    tmp_path: Path,
+) -> None:
+    conn = make_conn(tmp_path)
+    try:
+        seed_position_and_entity(conn)
+        deps = make_deps(tmp_path, conn, llm=IntelFailingLLM())
+
+        completed = start_run("position-1", deps)
+
+        traces = deps.repos.traces.list_by_run(completed.run_id, conn=conn)
+        thesis = deps.repos.theses.get(f"thesis-{completed.run_id}", conn=conn)
+    finally:
+        conn.close()
+
+    assert completed.status == "completed"
+    assert completed.thesis_id is None
+    assert thesis is None
+    assert any(
+        trace.node_name == "thesis_draft"
+        and trace.status == "degraded"
+        and trace.reason == "no_intel_for_thesis"
         for trace in traces
     )

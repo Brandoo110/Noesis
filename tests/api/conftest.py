@@ -67,10 +67,10 @@ class ApiFakeLLM:
             )
         return schema.model_validate(
             {
-                "summary": "Evidence suggests supplier pressure is easing.",
+                "summary": "AAPL may benefit as supplier pressure eases.",
                 "assumptions": [
                     {
-                        "text": "Supplier pressure remains observable in future filings.",
+                        "text": "Apple supplier pressure remains observable in future filings.",
                         "kind": "assumption",
                         "evidence_ids": [evidence_id],
                     }
