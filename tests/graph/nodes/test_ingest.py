@@ -21,6 +21,15 @@ class FailingSearchAdapter:
         raise IngestError("search unavailable", reason="search_failed")
 
 
+class CapturingSearchAdapter:
+    def __init__(self) -> None:
+        self.queries: list[str] = []
+
+    def search(self, query: str, *, limit: int = 8) -> list[IngestedDoc]:
+        self.queries.append(query)
+        return []
+
+
 def make_entity() -> ResolvedEntity:
     return ResolvedEntity(
         entity_id="entity-aapl",
@@ -65,6 +74,21 @@ def test_ingest_returns_search_documents() -> None:
 
     assert update["ingested_docs"] == docs
     assert update["degraded"] == []
+
+
+def test_ingest_uses_finance_oriented_recent_query() -> None:
+    search = CapturingSearchAdapter()
+    state: ResearchState = {"resolved_entity": make_entity(), "degraded": []}
+
+    ingest(state, make_deps(search))
+
+    assert search.queries
+    query = search.queries[0].lower()
+    assert "aapl" in query
+    assert "stock" in query
+    assert "latest news" in query
+    assert "earnings" in query
+    assert "results" in query
 
 
 def test_ingest_degrades_to_empty_docs_when_search_fails() -> None:

@@ -1,4 +1,5 @@
 import pytest
+import httpx
 
 from noesis.graph.errors import IngestError
 from noesis.graph.schemas import IngestedDoc
@@ -36,3 +37,27 @@ def test_tavily_adapter_without_key_raises_ingest_error() -> None:
 
     with pytest.raises(IngestError):
         adapter.search("Apple", limit=2)
+
+
+def test_tavily_adapter_requests_news_and_advanced_search(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, object] = {}
+
+    def fake_post(
+        url: str,
+        *,
+        json: dict[str, object],
+        timeout: float,
+    ) -> httpx.Response:
+        captured.update(json)
+        request = httpx.Request("POST", url)
+        return httpx.Response(200, json={"results": []}, request=request)
+
+    monkeypatch.setattr(httpx, "post", fake_post)
+    adapter = TavilySearchAdapter(api_key="test-key")
+
+    adapter.search("Apple stock latest news earnings results", limit=3)
+
+    assert captured["topic"] == "news"
+    assert captured["search_depth"] == "advanced"

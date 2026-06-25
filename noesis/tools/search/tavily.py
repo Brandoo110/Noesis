@@ -22,6 +22,8 @@ class TavilySearchAdapter:
                     "api_key": self.api_key,
                     "query": query,
                     "max_results": limit,
+                    "topic": "news",
+                    "search_depth": "advanced",
                 },
                 timeout=20.0,
             )
