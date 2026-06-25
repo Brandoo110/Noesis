@@ -2,9 +2,23 @@ import sqlite3
 from collections.abc import Callable
 
 from langgraph.checkpoint.sqlite import SqliteSaver
+from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
 from langgraph.graph import END, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
+from noesis.graph.schemas import (
+    ConfirmationResult,
+    DegradeNote,
+    EvidenceRecord,
+    IngestedDoc,
+    IntelItemDraft,
+    PositionInput,
+    ResolvedEntity,
+    RiskFinding,
+    SentimentTag,
+    ThesisAssumptionDraft,
+    ThesisDraft,
+)
 from noesis.graph.nodes.evidence_build import evidence_build
 from noesis.graph.nodes.filter import filter as filter_node
 from noesis.graph.nodes.finalize import finalize
@@ -45,8 +59,26 @@ NODE_FUNCTIONS: dict[str, NodeFn] = {
 }
 
 
+CHECKPOINT_ALLOWED_TYPES = (
+    ConfirmationResult,
+    DegradeNote,
+    EvidenceRecord,
+    IngestedDoc,
+    IntelItemDraft,
+    PositionInput,
+    ResolvedEntity,
+    RiskFinding,
+    SentimentTag,
+    ThesisAssumptionDraft,
+    ThesisDraft,
+)
+
+
 def make_sqlite_checkpointer(conn: sqlite3.Connection) -> SqliteSaver:
-    checkpointer = SqliteSaver(conn)
+    checkpointer = SqliteSaver(
+        conn,
+        serde=JsonPlusSerializer(allowed_msgpack_modules=CHECKPOINT_ALLOWED_TYPES),
+    )
     checkpointer.setup()
     return checkpointer
 
