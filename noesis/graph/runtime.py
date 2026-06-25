@@ -28,6 +28,9 @@ class PositionsRuntime:
     conn: Connection
     repo: PositionsRepo = field(default_factory=PositionsRepo)
 
+    def insert(self, row: PositionRow, *, conn: Connection | None = None) -> None:
+        self.repo.insert(row, conn=conn or self.conn)
+
     def get(self, id: str, *, conn: Connection | None = None) -> PositionRow | None:
         return self.repo.get(id, conn=conn or self.conn)
 
