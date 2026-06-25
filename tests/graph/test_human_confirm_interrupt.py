@@ -1,11 +1,14 @@
 from dataclasses import dataclass, field
 
 import pytest
+from langgraph.checkpoint.memory import MemorySaver
+from langgraph.graph import END, StateGraph
+from langgraph.types import Command
 
 from noesis.db.models import ApprovalRow
 from noesis.graph.nodes.human_confirm import human_confirm
 from noesis.graph.schemas import ThesisAssumptionDraft, ThesisDraft
-from noesis.graph.state import GraphDeps, ResearchState
+from noesis.graph.state import GraphDeps, ResearchState, ResearchStateUpdate
 from noesis.tools.llm.fake import FakeLLMRouter
 
 
@@ -97,3 +100,37 @@ def test_human_confirm_skips_when_thesis_is_missing() -> None:
     assert repos.approvals.inserted == []
     assert update["confirmation"].status == "confirmed"
     assert update["degraded"][0].fallback_used == "skip_confirmation"
+
+
+def test_human_confirm_interrupts_and_resumes_in_minimal_graph() -> None:
+    repos = FakeRepos(approvals=FakeApprovalsRepo(), runs=FakeRunsRepo())
+    deps = make_deps(repos)
+    reached_finalize: list[str] = []
+
+    def confirm_node(state: ResearchState) -> ResearchStateUpdate:
+        return human_confirm(state, deps)
+
+    def finalize_node(state: ResearchState) -> ResearchStateUpdate:
+        reached_finalize.append("finalize")
+        return {}
+
+    graph_builder = StateGraph(ResearchState)
+    graph_builder.add_node("human_confirm", confirm_node)
+    graph_builder.add_node("finalize", finalize_node)
+    graph_builder.set_entry_point("human_confirm")
+    graph_builder.add_edge("human_confirm", "finalize")
+    graph_builder.add_edge("finalize", END)
+    graph = graph_builder.compile(checkpointer=MemorySaver())
+    config = {"configurable": {"thread_id": "thread-run-1"}}
+    state: ResearchState = {
+        "run_id": "run-1",
+        "thesis_draft": make_thesis(),
+        "degraded": [],
+    }
+
+    interrupted = graph.invoke(state, config)
+    resumed = graph.invoke(Command(resume={"status": "confirmed"}), config)
+
+    assert "__interrupt__" in interrupted
+    assert reached_finalize == ["finalize"]
+    assert resumed["confirmation"].status == "confirmed"
