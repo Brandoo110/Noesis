@@ -8,6 +8,7 @@ from noesis.db.migrate import migrate
 from noesis.db.models import EntityRow, PositionRow
 from noesis.db.repos.entities_repo import EntitiesRepo
 from noesis.db.repos.positions_repo import PositionsRepo
+from noesis.graph.errors import ResearchNodeError
 from noesis.graph.runner import build_graph_deps, resume_run, start_run
 from noesis.graph.schemas import ConfirmationResult, IngestedDoc
 from noesis.tools.llm.router import LLMRole
@@ -61,6 +62,13 @@ class DynamicFakeLLM:
         return "{}"
 
 
+class IntakeFailingLLM(DynamicFakeLLM):
+    def complete_json(self, role: LLMRole, prompt: str, schema: type) -> object:
+        if getattr(schema, "__name__", "") == "ResolvedEntity":
+            raise ResearchNodeError("light request timed out", reason="request_failed")
+        return super().complete_json(role, prompt, schema)
+
+
 def _first_evidence_id(prompt: str) -> str:
     match = re.search(r"(evidence-[a-f0-9]+)", prompt)
     if match is None:
@@ -76,21 +84,7 @@ def make_conn(tmp_path: Path) -> Connection:
 
 def seed_position_and_entity(conn: Connection) -> None:
     with with_tx(conn):
-        PositionsRepo().insert(
-            PositionRow(
-                id="position-1",
-                user_id="user-1",
-                symbol="AAPL",
-                market="US",
-                name="Apple",
-                kind="owned",
-                qty=None,
-                cost_basis=None,
-                created_at=NOW,
-                updated_at=NOW,
-            ),
-            conn=conn,
-        )
+        _insert_position(conn)
         EntitiesRepo().upsert(
             EntityRow(
                 id="entity-aapl",
@@ -104,6 +98,29 @@ def seed_position_and_entity(conn: Connection) -> None:
             ),
             conn=conn,
         )
+
+
+def seed_position_only(conn: Connection) -> None:
+    with with_tx(conn):
+        _insert_position(conn)
+
+
+def _insert_position(conn: Connection) -> None:
+    PositionsRepo().insert(
+        PositionRow(
+            id="position-1",
+            user_id="user-1",
+            symbol="AAPL",
+            market="US",
+            name="Apple",
+            kind="owned",
+            qty=None,
+            cost_basis=None,
+            created_at=NOW,
+            updated_at=NOW,
+        ),
+        conn=conn,
+    )
 
 
 def make_deps(
@@ -193,3 +210,32 @@ def test_runner_completes_when_synth_unavailable_with_degraded_trace(
     assert completed.thesis_id is None
     assert thesis is None
     assert any(trace.status == "degraded" for trace in traces)
+
+
+def test_runner_completes_when_intake_light_request_fails(
+    tmp_path: Path,
+) -> None:
+    conn = make_conn(tmp_path)
+    try:
+        seed_position_only(conn)
+        deps = make_deps(tmp_path, conn, llm=IntakeFailingLLM())
+
+        interrupted = start_run("position-1", deps)
+        completed = resume_run(
+            interrupted.run_id,
+            ConfirmationResult(status="confirmed"),
+            deps,
+        )
+
+        traces = deps.repos.traces.list_by_run(completed.run_id, conn=conn)
+    finally:
+        conn.close()
+
+    assert interrupted.status == "awaiting_confirmation"
+    assert completed.status == "completed"
+    assert any(
+        trace.node_name == "intake_resolve"
+        and trace.status == "degraded"
+        and trace.reason == "light_llm_request_failed"
+        for trace in traces
+    )

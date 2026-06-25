@@ -2,7 +2,7 @@ import json
 import re
 
 from noesis.db.models import EntityRow
-from noesis.graph.errors import EntityResolveError
+from noesis.graph.errors import EntityResolveError, LLMUnavailableError, ResearchNodeError
 from noesis.graph.schemas import DegradeNote, PositionInput, ResolvedEntity
 from noesis.graph.state import GraphDeps, ResearchState, ResearchStateUpdate
 from noesis.tools.llm.router import LLMRole
@@ -22,17 +22,15 @@ def intake_resolve(state: ResearchState, deps: GraphDeps) -> ResearchStateUpdate
         return {"resolved_entity": resolved, "entity_id": resolved.entity_id, "degraded": state.get("degraded", [])}
     degraded = list(state.get("degraded", []))
     if deps.llm.available(LLMRole.LIGHT):
-        resolved = deps.llm.complete_json(LLMRole.LIGHT, _prompt(raw_input), ResolvedEntity)
-        resolved = _normalize_entity_identifiers(resolved)
+        try:
+            resolved = deps.llm.complete_json(LLMRole.LIGHT, _prompt(raw_input), ResolvedEntity)
+            resolved = _normalize_entity_identifiers(resolved)
+        except (LLMUnavailableError, ResearchNodeError):
+            resolved = _fallback_entity(raw_input)
+            degraded.append(_degrade("light_llm_request_failed"))
     else:
         resolved = _fallback_entity(raw_input)
-        degraded.append(
-            DegradeNote(
-                node_name="intake_resolve",
-                reason="light_llm_unavailable",
-                fallback_used="raw_symbol_entity",
-            )
-        )
+        degraded.append(_degrade("light_llm_unavailable"))
     row = _resolved_to_row(resolved, deps.now())
     saved = deps.repos.entities.upsert(row)
     resolved = _row_to_resolved(saved)
@@ -74,6 +72,14 @@ def _fallback_entity(raw_input: PositionInput) -> ResolvedEntity:
         aliases=[symbol],
         identifiers={"symbol": symbol},
         market=raw_input.market,
+    )
+
+
+def _degrade(reason: str) -> DegradeNote:
+    return DegradeNote(
+        node_name="intake_resolve",
+        reason=reason,
+        fallback_used="raw_symbol_entity",
     )
 
 

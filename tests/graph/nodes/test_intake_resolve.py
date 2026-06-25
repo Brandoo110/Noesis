@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 from noesis.db.models import EntityRow
+from noesis.graph.errors import ResearchNodeError
 from noesis.graph.nodes.intake_resolve import intake_resolve
 from noesis.graph.schemas import PositionInput, ResolvedEntity
 from noesis.graph.state import GraphDeps, ResearchState
@@ -158,4 +159,32 @@ def test_intake_resolve_degrades_when_light_llm_unavailable() -> None:
     assert update["entity_id"] == "entity-us-tsla"
     assert update["resolved_entity"].name == "TSLA"
     assert update["degraded"][0].node_name == "intake_resolve"
+    assert update["degraded"][0].fallback_used == "raw_symbol_entity"
+
+
+class FailingLightLLM(FakeLLMRouter):
+    def available(self, role: LLMRole) -> bool:
+        return role == LLMRole.LIGHT
+
+    def complete_json(
+        self, role: LLMRole, prompt: str, schema: type[ResolvedEntity]
+    ) -> ResolvedEntity:
+        raise ResearchNodeError("light request timed out", reason="request_failed")
+
+
+def test_intake_resolve_degrades_when_light_llm_request_fails() -> None:
+    state: ResearchState = {
+        "raw_input": PositionInput(symbol="AAPL", market="US", name="Apple"),
+        "degraded": [],
+    }
+    entities = FakeEntitiesRepo()
+    deps = make_deps(entities, FailingLightLLM())
+
+    update = intake_resolve(state, deps)
+
+    assert update["entity_id"] == "entity-us-aapl"
+    assert update["resolved_entity"].identifiers == {"symbol": "AAPL"}
+    assert len(entities.upserted) == 1
+    assert update["degraded"][0].node_name == "intake_resolve"
+    assert update["degraded"][0].reason == "light_llm_request_failed"
     assert update["degraded"][0].fallback_used == "raw_symbol_entity"
