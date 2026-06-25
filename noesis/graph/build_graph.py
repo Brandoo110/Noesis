@@ -1,0 +1,69 @@
+import sqlite3
+from collections.abc import Callable
+
+from langgraph.checkpoint.sqlite import SqliteSaver
+from langgraph.graph import END, StateGraph
+from langgraph.graph.state import CompiledStateGraph
+
+from noesis.graph.nodes.evidence_build import evidence_build
+from noesis.graph.nodes.filter import filter as filter_node
+from noesis.graph.nodes.finalize import finalize
+from noesis.graph.nodes.human_confirm import human_confirm
+from noesis.graph.nodes.ingest import ingest
+from noesis.graph.nodes.intake_resolve import intake_resolve
+from noesis.graph.nodes.intel_synth import intel_synth
+from noesis.graph.nodes.risk_review import risk_review
+from noesis.graph.nodes.thesis_draft import thesis_draft
+from noesis.graph.state import GraphDeps, ResearchState, ResearchStateUpdate
+
+SEED_NODE_ORDER = (
+    "intake_resolve",
+    "ingest",
+    "filter",
+    "evidence_build",
+    "intel_synth",
+    "thesis_draft",
+    "risk_review",
+    "human_confirm",
+    "finalize",
+)
+
+NodeFn = Callable[[ResearchState, GraphDeps], ResearchStateUpdate]
+
+NODE_FUNCTIONS: dict[str, NodeFn] = {
+    "intake_resolve": intake_resolve,
+    "ingest": ingest,
+    "filter": filter_node,
+    "evidence_build": evidence_build,
+    "intel_synth": intel_synth,
+    "thesis_draft": thesis_draft,
+    "risk_review": risk_review,
+    "human_confirm": human_confirm,
+    "finalize": finalize,
+}
+
+
+def make_sqlite_checkpointer(conn: sqlite3.Connection) -> SqliteSaver:
+    checkpointer = SqliteSaver(conn)
+    checkpointer.setup()
+    return checkpointer
+
+
+def build_seed_graph(
+    deps: GraphDeps, *, checkpointer: SqliteSaver
+) -> CompiledStateGraph:
+    graph = StateGraph(ResearchState)
+    for node_name in SEED_NODE_ORDER:
+        graph.add_node(node_name, _bind_deps(NODE_FUNCTIONS[node_name], deps))
+    graph.set_entry_point(SEED_NODE_ORDER[0])
+    for from_node, to_node in zip(SEED_NODE_ORDER, SEED_NODE_ORDER[1:]):
+        graph.add_edge(from_node, to_node)
+    graph.add_edge(SEED_NODE_ORDER[-1], END)
+    return graph.compile(checkpointer=checkpointer)
+
+
+def _bind_deps(node_fn: NodeFn, deps: GraphDeps) -> Callable[[ResearchState], ResearchStateUpdate]:
+    def run_node(state: ResearchState) -> ResearchStateUpdate:
+        return node_fn(state, deps)
+
+    return run_node
