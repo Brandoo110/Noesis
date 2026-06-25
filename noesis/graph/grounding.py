@@ -1,0 +1,97 @@
+from noesis.graph.schemas import EvidenceRecord, IntelItemDraft, RiskFinding, ThesisDraft
+
+INVESTMENT_REDLINE_TERMS = (
+    "buy",
+    "sell",
+    "price target",
+    "target price",
+    "predict stock price",
+    "买入",
+    "卖出",
+    "目标价",
+    "预测股价",
+)
+
+
+def check_intel(
+    items: list[IntelItemDraft], evidences: list[EvidenceRecord]
+) -> list[RiskFinding]:
+    valid_ids = {item.id for item in evidences}
+    findings: list[RiskFinding] = []
+    for item in items:
+        if not item.evidence_ids or not set(item.evidence_ids).issubset(valid_ids):
+            findings.append(
+                RiskFinding(
+                    code="no_evidence_claim",
+                    target_ref=f"intel:{item.title}",
+                    detail="Intel item has no valid evidence ids.",
+                )
+            )
+    return findings
+
+
+def filter_grounded_intel(
+    items: list[IntelItemDraft], evidences: list[EvidenceRecord]
+) -> list[IntelItemDraft]:
+    valid_ids = {item.id for item in evidences}
+    return [
+        item
+        for item in items
+        if item.evidence_ids and set(item.evidence_ids).issubset(valid_ids)
+    ]
+
+
+def check_thesis(
+    draft: ThesisDraft | None, evidences: list[EvidenceRecord]
+) -> list[RiskFinding]:
+    if draft is None:
+        return []
+    valid_ids = {item.id for item in evidences}
+    findings: list[RiskFinding] = []
+    grounded_assumptions = 0
+    for index, assumption in enumerate(draft.assumptions):
+        if assumption.evidence_ids and set(assumption.evidence_ids).issubset(valid_ids):
+            grounded_assumptions += 1
+            continue
+        findings.append(
+            RiskFinding(
+                code="no_evidence_claim",
+                target_ref=f"thesis_assumption:{index}",
+                detail="Thesis assumption has no valid evidence ids.",
+            )
+        )
+    if grounded_assumptions == 0:
+        findings.append(
+            RiskFinding(
+                code="thesis_no_assumption_evidence",
+                target_ref="thesis",
+                detail="Thesis has no evidence-backed assumptions.",
+            )
+        )
+    return findings
+
+
+def check_investment_redlines(draft: ThesisDraft | None) -> list[RiskFinding]:
+    if draft is None:
+        return []
+    texts = [draft.summary, *[assumption.text for assumption in draft.assumptions]]
+    if any(_contains_redline(text) for text in texts):
+        return [
+            RiskFinding(
+                code="bad_basis",
+                target_ref="thesis:redline",
+                detail="Thesis contains buy/sell, target-price, or prediction language.",
+            )
+        ]
+    return []
+
+
+def thesis_is_grounded(
+    draft: ThesisDraft | None, evidences: list[EvidenceRecord]
+) -> bool:
+    return not check_thesis(draft, evidences)
+
+
+def _contains_redline(text: str) -> bool:
+    lowered = text.lower()
+    return any(term in lowered for term in INVESTMENT_REDLINE_TERMS)
