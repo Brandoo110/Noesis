@@ -17,9 +17,19 @@ class FakeEntitiesRepo:
         self.upserted: list[EntityRow] = []
 
     def find_by_symbol(self, market: str, symbol: str) -> EntityRow | None:
-        return self.existing
+        if self.existing is not None:
+            return self.existing
+        for row in self.upserted:
+            if row.market == market and row.identifiers().get("symbol") == symbol:
+                return row
+        return None
 
     def upsert(self, row: EntityRow) -> EntityRow:
+        symbol = row.identifiers().get("symbol")
+        if symbol is not None:
+            existing = self.find_by_symbol(row.market, symbol)
+            if existing is not None:
+                return existing
         self.upserted.append(row)
         return row
 
@@ -103,6 +113,36 @@ def test_intake_resolve_upserts_llm_resolved_entity() -> None:
     assert update["entity_id"] == "entity-msft"
     assert entities.upserted[0].id == "entity-msft"
     assert update["resolved_entity"].name == "Microsoft Corp."
+
+
+def test_intake_resolve_normalizes_ticker_identifier_for_symbol_dedupe() -> None:
+    state: ResearchState = {
+        "raw_input": PositionInput(symbol="AAPL", market="US", name="Apple"),
+        "degraded": [],
+    }
+    entities = FakeEntitiesRepo()
+    deps = make_deps(
+        entities,
+        FakeLLMRouter(
+            json_by_role={
+                LLMRole.LIGHT: {
+                    "entity_id": "entity-aapl",
+                    "node_type": "company",
+                    "name": "Apple Inc.",
+                    "aliases": ["AAPL"],
+                    "identifiers": {"ticker": "AAPL"},
+                    "market": "US",
+                }
+            }
+        ),
+    )
+
+    first = intake_resolve(state, deps)
+    second = intake_resolve(state, deps)
+
+    assert first["resolved_entity"].identifiers == {"symbol": "AAPL"}
+    assert second["entity_id"] == "entity-aapl"
+    assert len(entities.upserted) == 1
 
 
 def test_intake_resolve_degrades_when_light_llm_unavailable() -> None:

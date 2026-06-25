@@ -9,6 +9,7 @@ from noesis.tools.llm.router import LLMRole
 
 REQUIRED_STATE_KEYS = ("raw_input",)
 OUTPUT_STATE_KEYS = ("resolved_entity", "entity_id", "degraded")
+SYMBOL_ALIASES = ("ticker", "code")
 
 
 def intake_resolve(state: ResearchState, deps: GraphDeps) -> ResearchStateUpdate:
@@ -22,6 +23,7 @@ def intake_resolve(state: ResearchState, deps: GraphDeps) -> ResearchStateUpdate
     degraded = list(state.get("degraded", []))
     if deps.llm.available(LLMRole.LIGHT):
         resolved = deps.llm.complete_json(LLMRole.LIGHT, _prompt(raw_input), ResolvedEntity)
+        resolved = _normalize_entity_identifiers(resolved)
     else:
         resolved = _fallback_entity(raw_input)
         degraded.append(
@@ -75,9 +77,25 @@ def _fallback_entity(raw_input: PositionInput) -> ResolvedEntity:
     )
 
 
+def _normalize_entity_identifiers(entity: ResolvedEntity) -> ResolvedEntity:
+    identifiers = dict(entity.identifiers)
+    if "symbol" not in identifiers:
+        for alias in SYMBOL_ALIASES:
+            value = identifiers.pop(alias, None)
+            if isinstance(value, str) and value.strip():
+                identifiers["symbol"] = value.strip().upper()
+                break
+    else:
+        identifiers["symbol"] = identifiers["symbol"].strip().upper()
+    return entity.model_copy(update={"identifiers": identifiers})
+
+
 def _prompt(raw_input: PositionInput) -> str:
     return (
         "Resolve this investment holding into a company entity. "
+        "In identifiers, use the key 'symbol' for listed tickers; do not use "
+        "'ticker' or 'code'. Examples: {'symbol':'AAPL'}, {'cik':'0000320193'}, "
+        "{'isin':'US0378331005'}. "
         f"symbol={raw_input.symbol}; market={raw_input.market}; name={raw_input.name or ''}"
     )
 
