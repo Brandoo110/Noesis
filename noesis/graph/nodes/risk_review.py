@@ -15,13 +15,13 @@ def risk_review(state: ResearchState, deps: GraphDeps) -> ResearchStateUpdate:
     evidences = state.get("evidences", [])
     intel_items = state.get("intel_items", [])
     thesis_draft = state.get("thesis_draft")
+    redline_findings = check_investment_redlines(thesis_draft)
     findings = [
         *check_intel(intel_items, evidences),
         *check_thesis(thesis_draft, evidences),
-        *check_investment_redlines(thesis_draft),
+        *redline_findings,
     ]
     filtered_intel = filter_grounded_intel(intel_items, evidences)
-    redline_findings = check_investment_redlines(thesis_draft)
     filtered_thesis = (
         thesis_draft
         if thesis_is_grounded(thesis_draft, evidences) and not redline_findings
