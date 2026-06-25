@@ -2,6 +2,8 @@ from typing import Literal
 
 from pydantic import BaseModel
 
+from noesis.graph.schemas import ConfirmationResult, ThesisAssumptionDraft
+
 
 class CreatePositionRequest(BaseModel):
     symbol: str
@@ -80,3 +82,32 @@ class RunDetailResponse(BaseModel):
     evidences: list[EvidenceResponse]
     intel_items: list[IntelItemResponse]
     thesis: ThesisResponse | None
+
+
+class ConfirmAssumptionRequest(BaseModel):
+    text: str
+    kind: Literal["reason", "assumption", "risk"]
+    evidence_ids: list[str]
+
+
+class ConfirmThesisRequest(BaseModel):
+    status: Literal["confirmed", "edited", "rejected"]
+    edited_summary: str | None = None
+    edited_assumptions: list[ConfirmAssumptionRequest] | None = None
+
+    def to_confirmation(self) -> ConfirmationResult:
+        assumptions = None
+        if self.edited_assumptions is not None:
+            assumptions = [
+                ThesisAssumptionDraft(
+                    text=item.text,
+                    kind=item.kind,
+                    evidence_ids=item.evidence_ids,
+                )
+                for item in self.edited_assumptions
+            ]
+        return ConfirmationResult(
+            status=self.status,
+            edited_summary=self.edited_summary,
+            edited_assumptions=assumptions,
+        )
