@@ -104,6 +104,7 @@
 - `scope` 使用目录或能力名：`graph`、`db`、`api`、`web`、`grounding`、`eval`、`docs`。
 - summary 用英文小写祈使句，不超过 `72` 字符。
 - 同一 commit 不混无关主题；schema 变更必须和对应 repo/test 同 commit。
+- 每个 Phase 完成并提交后，由 Codex 负责 push 到当前跟踪的远端分支。
 
 ## 11. 开放项（实现时定）
 
