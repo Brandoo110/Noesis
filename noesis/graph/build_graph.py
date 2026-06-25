@@ -29,6 +29,8 @@ SEED_NODE_ORDER = (
 )
 
 NodeFn = Callable[[ResearchState, GraphDeps], ResearchStateUpdate]
+BoundNodeFn = Callable[[ResearchState], ResearchStateUpdate]
+NodeWrapper = Callable[[str, NodeFn, GraphDeps], BoundNodeFn]
 
 NODE_FUNCTIONS: dict[str, NodeFn] = {
     "intake_resolve": intake_resolve,
@@ -50,11 +52,16 @@ def make_sqlite_checkpointer(conn: sqlite3.Connection) -> SqliteSaver:
 
 
 def build_seed_graph(
-    deps: GraphDeps, *, checkpointer: SqliteSaver
+    deps: GraphDeps,
+    *,
+    checkpointer: SqliteSaver,
+    node_wrapper: NodeWrapper | None = None,
 ) -> CompiledStateGraph:
     graph = StateGraph(ResearchState)
     for node_name in SEED_NODE_ORDER:
-        graph.add_node(node_name, _bind_deps(NODE_FUNCTIONS[node_name], deps))
+        node_fn = NODE_FUNCTIONS[node_name]
+        bound = node_wrapper(node_name, node_fn, deps) if node_wrapper else _bind_deps(node_fn, deps)
+        graph.add_node(node_name, bound)
     graph.set_entry_point(SEED_NODE_ORDER[0])
     for from_node, to_node in zip(SEED_NODE_ORDER, SEED_NODE_ORDER[1:]):
         graph.add_edge(from_node, to_node)
@@ -62,7 +69,7 @@ def build_seed_graph(
     return graph.compile(checkpointer=checkpointer)
 
 
-def _bind_deps(node_fn: NodeFn, deps: GraphDeps) -> Callable[[ResearchState], ResearchStateUpdate]:
+def _bind_deps(node_fn: NodeFn, deps: GraphDeps) -> BoundNodeFn:
     def run_node(state: ResearchState) -> ResearchStateUpdate:
         return node_fn(state, deps)
 

@@ -16,6 +16,7 @@ from noesis.graph.schemas import (
 )
 
 if TYPE_CHECKING:
+    from langgraph.checkpoint.sqlite import SqliteSaver
     from noesis.db.repos.approvals_repo import ApprovalsRepo
     from noesis.db.repos.entities_repo import EntitiesRepo
     from noesis.db.repos.evidences_repo import EvidencesRepo
@@ -70,3 +71,4 @@ class GraphDeps:
     retriever: EvidenceRetriever
     llm: LLMRouter
     now: Callable[[], str]
+    checkpointer: SqliteSaver | None = None

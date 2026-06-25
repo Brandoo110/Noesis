@@ -26,8 +26,7 @@ def human_confirm(state: ResearchState, deps: GraphDeps) -> ResearchStateUpdate:
             )
         )
         return {"confirmation": ConfirmationResult(status="confirmed"), "degraded": degraded}
-    approval = _make_approval(run_id, thesis_draft.model_dump_json(), deps.now())
-    deps.repos.approvals.insert(approval)
+    approval = _get_or_create_approval(run_id, thesis_draft.model_dump_json(), deps)
     deps.repos.runs.set_status(run_id, "awaiting_confirmation", None)
     resume_value: object = interrupt(
         {
@@ -38,6 +37,16 @@ def human_confirm(state: ResearchState, deps: GraphDeps) -> ResearchStateUpdate:
         }
     )
     return {"confirmation": _confirmation_from_resume(resume_value), "degraded": degraded}
+
+
+def _get_or_create_approval(run_id: str, payload_json: str, deps: GraphDeps) -> ApprovalRow:
+    object_id = f"thesis-{run_id}"
+    existing = deps.repos.approvals.get_by_object("thesis", object_id)
+    if existing is not None:
+        return existing
+    approval = _make_approval(run_id, payload_json, deps.now())
+    deps.repos.approvals.insert(approval)
+    return approval
 
 
 def _make_approval(run_id: str, payload_json: str, now: str) -> ApprovalRow:
