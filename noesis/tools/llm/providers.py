@@ -5,8 +5,6 @@ import httpx
 
 from noesis.graph.errors import LLMUnavailableError, ResearchNodeError
 
-DEEPSEEK_V4_PRO_MODEL = "deepseek-v4-pro"
-
 
 class ChatMessage(TypedDict):
     role: str
@@ -77,32 +75,38 @@ class HttpLLMProvider:
         return _extract_chat_content(response.json())
 
 
-def make_deepseek_provider(api_key: str | None) -> HttpLLMProvider:
+def make_deepseek_provider(
+    api_key: str | None, model: str, endpoint: str
+) -> HttpLLMProvider:
     return HttpLLMProvider(
         ChatProviderConfig(
             api_key=api_key,
-            model_id=DEEPSEEK_V4_PRO_MODEL,
-            endpoint="https://api.deepseek.com/chat/completions",
+            model_id=model,
+            endpoint=endpoint,
         )
     )
 
 
-def make_light_provider(api_key: str | None) -> HttpLLMProvider:
+def make_light_provider(
+    api_key: str | None, model: str, endpoint: str
+) -> HttpLLMProvider:
     return HttpLLMProvider(
         ChatProviderConfig(
             api_key=api_key,
-            model_id="light-structured",
-            endpoint="https://api.openai.com/v1/chat/completions",
+            model_id=model,
+            endpoint=endpoint,
         )
     )
 
 
-def make_risk_provider(api_key: str | None) -> HttpLLMProvider:
+def make_risk_provider(
+    api_key: str | None, model: str, endpoint: str
+) -> HttpLLMProvider:
     return HttpLLMProvider(
         ChatProviderConfig(
             api_key=api_key,
-            model_id="risk-review",
-            endpoint="https://api.openai.com/v1/chat/completions",
+            model_id=model,
+            endpoint=endpoint,
         )
     )
 

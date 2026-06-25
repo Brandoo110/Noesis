@@ -1,11 +1,11 @@
 import json
-import os
 from collections.abc import Mapping
 from enum import Enum
 from typing import TypeVar
 
 from pydantic import BaseModel, ValidationError
 
+from noesis.config.settings import Settings
 from noesis.graph.errors import LLMUnavailableError, ResearchNodeError
 from noesis.tools.llm.providers import (
     LLMProvider,
@@ -28,12 +28,25 @@ class LLMRouter:
         self.providers = dict(providers or {})
 
     @classmethod
-    def from_env(cls) -> "LLMRouter":
+    def from_env(cls, settings: Settings | None = None) -> "LLMRouter":
+        resolved = settings or Settings()
         return cls(
             providers={
-                LLMRole.LIGHT: make_light_provider(os.getenv("LIGHT_LLM_API_KEY")),
-                LLMRole.SYNTH: make_deepseek_provider(os.getenv("DEEPSEEK_API_KEY")),
-                LLMRole.RISK: make_risk_provider(os.getenv("RISK_LLM_API_KEY")),
+                LLMRole.LIGHT: make_light_provider(
+                    resolved.light_llm_api_key,
+                    resolved.light_model,
+                    resolved.light_endpoint,
+                ),
+                LLMRole.SYNTH: make_deepseek_provider(
+                    resolved.deepseek_api_key,
+                    resolved.deepseek_model,
+                    resolved.deepseek_endpoint,
+                ),
+                LLMRole.RISK: make_risk_provider(
+                    resolved.risk_llm_api_key,
+                    resolved.risk_model,
+                    resolved.risk_endpoint,
+                ),
             }
         )
 

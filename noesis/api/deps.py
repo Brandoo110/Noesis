@@ -29,7 +29,7 @@ def get_graph_deps(settings: Settings = Depends(get_settings)) -> Iterator[Graph
             checkpoint_conn=checkpoint_conn,
             chroma_dir=settings.chroma_dir,
             search=TavilySearchAdapter(settings.tavily_api_key),
-            llm=LLMRouter.from_env(),
+            llm=LLMRouter.from_env(settings),
             now=_utc_now,
         )
     finally:

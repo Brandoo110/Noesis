@@ -6,8 +6,32 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     deepseek_api_key: str = Field(default="", validation_alias="DEEPSEEK_API_KEY")
+    deepseek_endpoint: str = Field(
+        default="https://api.deepseek.com/chat/completions",
+        validation_alias="DEEPSEEK_ENDPOINT",
+    )
+    deepseek_model: str = Field(
+        default="deepseek-v4-pro",
+        validation_alias="DEEPSEEK_MODEL",
+    )
     light_llm_api_key: str = Field(default="", validation_alias="LIGHT_LLM_API_KEY")
+    light_endpoint: str = Field(
+        default="https://open.bigmodel.cn/api/paas/v4/chat/completions",
+        validation_alias="LIGHT_ENDPOINT",
+    )
+    light_model: str = Field(
+        default="glm-4.7-flash",
+        validation_alias="LIGHT_MODEL",
+    )
     risk_llm_api_key: str = Field(default="", validation_alias="RISK_LLM_API_KEY")
+    risk_endpoint: str = Field(
+        default="https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+        validation_alias="RISK_ENDPOINT",
+    )
+    risk_model: str = Field(
+        default="gemini-3.1-flash-lite",
+        validation_alias="RISK_MODEL",
+    )
     tavily_api_key: str = Field(default="", validation_alias="TAVILY_API_KEY")
     db_path: str = Field(default="./noesis.db", validation_alias="NOESIS_DB_PATH")
     chroma_dir: str = Field(default="./.chroma", validation_alias="CHROMA_DIR")
