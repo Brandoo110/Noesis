@@ -16,6 +16,7 @@ from noesis.graph.schemas import (
     EvidenceRecord,
     IntelItemDraft,
     PositionInput,
+    ResolvedEntity,
     ThesisAssumptionDraft,
     ThesisDraft,
 )
@@ -39,6 +40,7 @@ class RunSnapshot:
     status: str
     thesis_id: str | None
     thesis_status: str | None
+    resolved_entity: ResolvedEntity | None
     evidences: list[EvidenceRecord]
     intel_items: list[IntelItemDraft]
     thesis_draft: ThesisDraft | None
@@ -108,6 +110,9 @@ def get_run_snapshot(run_id: str, deps: GraphDeps) -> RunSnapshot:
     if row is None:
         raise ResearchNodeError("run not found", reason="run_not_found")
     values = _checkpoint_values(run_id, deps)
+    resolved_entity = values.get("resolved_entity")
+    if not isinstance(resolved_entity, ResolvedEntity):
+        resolved_entity = None
     evidences = _typed_list(values.get("evidences"), EvidenceRecord)
     intel_items = _typed_list(values.get("intel_items"), IntelItemDraft)
     thesis_draft = values.get("thesis_draft")
@@ -129,6 +134,7 @@ def get_run_snapshot(run_id: str, deps: GraphDeps) -> RunSnapshot:
         status=row.status,
         thesis_id=thesis_id if thesis_draft is not None else None,
         thesis_status=thesis_status,
+        resolved_entity=resolved_entity,
         evidences=evidences,
         intel_items=intel_items,
         thesis_draft=thesis_draft,
