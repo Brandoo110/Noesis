@@ -10,6 +10,7 @@ from noesis.graph.schemas import (
     ConfirmationResult,
     DegradeNote,
     EvidenceRecord,
+    GraphEdgeDraft,
     IngestedDoc,
     IntelItemDraft,
     PositionInput,
@@ -20,6 +21,7 @@ from noesis.graph.schemas import (
     ThesisDraft,
 )
 from noesis.graph.nodes.evidence_build import evidence_build
+from noesis.graph.nodes.expand import expand
 from noesis.graph.nodes.filter import filter as filter_node
 from noesis.graph.nodes.finalize import finalize
 from noesis.graph.nodes.human_confirm import human_confirm
@@ -35,10 +37,21 @@ SEED_NODE_ORDER = (
     "ingest",
     "filter",
     "evidence_build",
+    "expand",
     "intel_synth",
     "thesis_draft",
     "risk_review",
     "human_confirm",
+    "finalize",
+)
+
+EXPAND_NODE_ORDER = (
+    "intake_resolve",
+    "ingest",
+    "filter",
+    "evidence_build",
+    "expand",
+    "intel_synth",
     "finalize",
 )
 
@@ -51,6 +64,7 @@ NODE_FUNCTIONS: dict[str, NodeFn] = {
     "ingest": ingest,
     "filter": filter_node,
     "evidence_build": evidence_build,
+    "expand": expand,
     "intel_synth": intel_synth,
     "thesis_draft": thesis_draft,
     "risk_review": risk_review,
@@ -63,6 +77,7 @@ CHECKPOINT_ALLOWED_TYPES = (
     ConfirmationResult,
     DegradeNote,
     EvidenceRecord,
+    GraphEdgeDraft,
     IngestedDoc,
     IntelItemDraft,
     PositionInput,
@@ -98,6 +113,24 @@ def build_seed_graph(
     for from_node, to_node in zip(SEED_NODE_ORDER, SEED_NODE_ORDER[1:]):
         graph.add_edge(from_node, to_node)
     graph.add_edge(SEED_NODE_ORDER[-1], END)
+    return graph.compile(checkpointer=checkpointer)
+
+
+def build_expand_graph(
+    deps: GraphDeps,
+    *,
+    checkpointer: SqliteSaver,
+    node_wrapper: NodeWrapper | None = None,
+) -> CompiledStateGraph:
+    graph = StateGraph(ResearchState)
+    for node_name in EXPAND_NODE_ORDER:
+        node_fn = NODE_FUNCTIONS[node_name]
+        bound = node_wrapper(node_name, node_fn, deps) if node_wrapper else _bind_deps(node_fn, deps)
+        graph.add_node(node_name, bound)
+    graph.set_entry_point(EXPAND_NODE_ORDER[0])
+    for from_node, to_node in zip(EXPAND_NODE_ORDER, EXPAND_NODE_ORDER[1:]):
+        graph.add_edge(from_node, to_node)
+    graph.add_edge(EXPAND_NODE_ORDER[-1], END)
     return graph.compile(checkpointer=checkpointer)
 
 
