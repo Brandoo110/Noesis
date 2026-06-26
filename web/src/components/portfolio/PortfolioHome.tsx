@@ -1,6 +1,7 @@
 import { type FormEvent, useCallback, useEffect, useState } from "react";
 
 import { createPosition, listPositions } from "../../api/client";
+import { useRun } from "../../hooks/use-run";
 import type { CreatePositionInput, Position, PositionKind } from "../../types/api";
 
 interface PositionFormState {
@@ -22,7 +23,9 @@ export function PortfolioHome(): JSX.Element {
   const [form, setForm] = useState<PositionFormState>(EMPTY_FORM);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [activePositionId, setActivePositionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const run = useRun();
 
   const refreshPositions = useCallback(async (): Promise<void> => {
     setIsLoading(true);
@@ -52,6 +55,16 @@ export function PortfolioHome(): JSX.Element {
       setError(toErrorMessage(caught));
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  async function handleStartRun(positionId: string): Promise<void> {
+    setError(null);
+    setActivePositionId(positionId);
+    try {
+      await run.start(positionId);
+    } catch (caught) {
+      setError(toErrorMessage(caught));
     }
   }
 
@@ -107,12 +120,36 @@ export function PortfolioHome(): JSX.Element {
       </form>
 
       {error ? <p role="alert">{error}</p> : null}
-      {isLoading ? <p>加载中...</p> : <PositionList positions={positions} />}
+      {isLoading ? (
+        <p>加载中...</p>
+      ) : (
+        <PositionList
+          activePositionId={activePositionId}
+          onStartRun={handleStartRun}
+          positions={positions}
+          runId={run.runId}
+          runStatus={run.status}
+        />
+      )}
     </section>
   );
 }
 
-function PositionList({ positions }: { positions: Position[] }): JSX.Element {
+interface PositionListProps {
+  activePositionId: string | null;
+  onStartRun: (positionId: string) => Promise<void>;
+  positions: Position[];
+  runId: string | null;
+  runStatus: string;
+}
+
+function PositionList({
+  activePositionId,
+  onStartRun,
+  positions,
+  runId,
+  runStatus
+}: PositionListProps): JSX.Element {
   if (positions.length === 0) {
     return <p>暂无持仓</p>;
   }
@@ -125,6 +162,19 @@ function PositionList({ positions }: { positions: Position[] }): JSX.Element {
           <span>{position.name ?? "未命名"}</span>
           <span>{position.market}</span>
           <span>{position.kind}</span>
+          <button
+            aria-label={`开始研究 ${position.symbol}`}
+            onClick={() => void onStartRun(position.id)}
+            type="button"
+          >
+            开始研究
+          </button>
+          {activePositionId === position.id ? (
+            <span aria-label={`研究状态 ${position.symbol}`}>
+              <span>{runStatus}</span>
+              {runId ? <span>{runId}</span> : null}
+            </span>
+          ) : null}
         </li>
       ))}
     </ul>

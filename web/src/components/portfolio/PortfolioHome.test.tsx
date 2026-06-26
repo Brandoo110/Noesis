@@ -14,6 +14,7 @@ vi.mock("../../api/client", () => ({
 
 const listPositionsMock = vi.mocked(client.listPositions);
 const createPositionMock = vi.mocked(client.createPosition);
+const startRunMock = vi.mocked(client.startRun);
 
 describe("PortfolioHome", () => {
   beforeEach(() => {
@@ -89,6 +90,26 @@ describe("PortfolioHome", () => {
     );
     expect(await screen.findByText("MSFT")).toBeInTheDocument();
     expect(listPositionsMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("starts research for a position and shows run status", async () => {
+    listPositionsMock.mockResolvedValue([
+      makePosition({ id: "position-1", symbol: "AAPL", name: "Apple" })
+    ]);
+    startRunMock.mockResolvedValue({
+      run_id: "run-1",
+      status: "awaiting_confirmation",
+      thesis_id: "thesis-1"
+    });
+
+    render(<PortfolioHome />);
+
+    await screen.findByText("AAPL");
+    fireEvent.click(screen.getByRole("button", { name: "开始研究 AAPL" }));
+
+    await waitFor(() => expect(startRunMock).toHaveBeenCalledWith("position-1"));
+    expect(screen.getByText("awaiting_confirmation")).toBeInTheDocument();
+    expect(screen.getByText("run-1")).toBeInTheDocument();
   });
 });
 
