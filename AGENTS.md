@@ -1,6 +1,6 @@
 # Noesis — Codex 编码契约
 
-本文件只定义代码落地规则。产品红线、Do-NOT、协作角色、上下文入口以 `CLAUDE.md` 为准；V1 业务设计以 `/Users/junjieli/obsidian/Brain/Projects/active/Noesis/docs/2026-06-24-noesis-v1-design.md` 为准。冲突时：用户指令 > `CLAUDE.md` > V1 spec > 本文件。
+本文件只定义代码落地规则。产品红线、Do-NOT、协作角色、上下文入口以 `CLAUDE.md` 为准；V1 业务设计以 `/Users/junjieli/obsidian/Brain/Projects/active/Noesis/docs/Noesis-v1-design.md` 为准。冲突时：用户指令 > `CLAUDE.md` > V1 spec > 本文件。
 
 ## 1. 技术栈与版本
 
