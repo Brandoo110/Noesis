@@ -76,6 +76,7 @@ export interface RunDetail {
   run_id: string;
   status: string;
   thesis_id: string | null;
+  entity: EntityNode | null;
   evidences: Evidence[];
   intel_items: IntelItem[];
   thesis: Thesis | null;

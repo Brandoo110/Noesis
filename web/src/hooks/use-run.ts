@@ -14,6 +14,7 @@ export interface UseRunResult {
   status: RunViewStatus;
   runId: string | null;
   thesisId: string | null;
+  entityId: string | null;
 }
 
 const DEFAULT_POLL_MS = 1000;
@@ -23,12 +24,14 @@ export function useRun(options: UseRunOptions = {}): UseRunResult {
   const [status, setStatus] = useState<RunViewStatus>("idle");
   const [runId, setRunId] = useState<string | null>(null);
   const [thesisId, setThesisId] = useState<string | null>(null);
+  const [entityId, setEntityId] = useState<string | null>(null);
   const [pollingRunId, setPollingRunId] = useState<string | null>(null);
 
   const pollRun = useCallback(async (nextRunId: string): Promise<void> => {
     const detail = await getRun(nextRunId);
     setStatus(detail.status as RunStatus);
     setThesisId(detail.thesis_id);
+    setEntityId(detail.entity?.id ?? null);
     if (detail.status !== "running") {
       setPollingRunId(null);
     }
@@ -51,6 +54,7 @@ export function useRun(options: UseRunOptions = {}): UseRunResult {
     setRunId(summary.run_id);
     setStatus(summary.status);
     setThesisId(summary.thesis_id);
+    setEntityId(null);
     setPollingRunId(summary.status === "running" ? summary.run_id : null);
   }, []);
 
@@ -58,6 +62,7 @@ export function useRun(options: UseRunOptions = {}): UseRunResult {
     start,
     status,
     runId,
-    thesisId
+    thesisId,
+    entityId
   };
 }

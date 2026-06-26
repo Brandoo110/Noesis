@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends
 from noesis.api.deps import get_graph_deps
 from noesis.api.dto import (
     CreateRunRequest,
+    EntityNodeResponse,
     EvidenceResponse,
     IntelItemResponse,
     RunDetailResponse,
@@ -11,6 +12,7 @@ from noesis.api.dto import (
     ThesisAssumptionResponse,
     ThesisResponse,
 )
+from noesis.api.routes.entities import _entity_response
 from noesis.graph.runner import RunHandle, RunSnapshot, get_run_snapshot, start_run
 from noesis.graph.schemas import EvidenceRecord, IntelItemDraft, ThesisDraft
 from noesis.graph.state import GraphDeps
@@ -31,7 +33,7 @@ def get_run(
     run_id: str,
     deps: GraphDeps = Depends(get_graph_deps),
 ) -> RunDetailResponse:
-    return _detail_response(get_run_snapshot(run_id, deps))
+    return _detail_response(get_run_snapshot(run_id, deps), deps)
 
 
 def _run_response(handle: RunHandle) -> RunResponse:
@@ -42,15 +44,25 @@ def _run_response(handle: RunHandle) -> RunResponse:
     )
 
 
-def _detail_response(snapshot: RunSnapshot) -> RunDetailResponse:
+def _detail_response(snapshot: RunSnapshot, deps: GraphDeps) -> RunDetailResponse:
     return RunDetailResponse(
         run_id=snapshot.run_id,
         status=snapshot.status,
         thesis_id=snapshot.thesis_id,
+        entity=_resolved_entity_response(snapshot, deps),
         evidences=[_evidence_response(item) for item in snapshot.evidences],
         intel_items=[_intel_response(item) for item in snapshot.intel_items],
         thesis=_thesis_response(snapshot),
     )
+
+
+def _resolved_entity_response(
+    snapshot: RunSnapshot, deps: GraphDeps
+) -> EntityNodeResponse | None:
+    if snapshot.resolved_entity is None:
+        return None
+    row = deps.repos.entities.get(snapshot.resolved_entity.entity_id)
+    return _entity_response(row) if row is not None else None
 
 
 def _evidence_response(item: EvidenceRecord) -> EvidenceResponse:

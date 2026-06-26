@@ -134,6 +134,7 @@ class RunDetailResponse(BaseModel):
     run_id: str
     status: str
     thesis_id: str | None
+    entity: EntityNodeResponse | None
     evidences: list[EvidenceResponse]
     intel_items: list[IntelItemResponse]
     thesis: ThesisResponse | None

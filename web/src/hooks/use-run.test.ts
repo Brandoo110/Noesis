@@ -29,7 +29,17 @@ describe("useRun", () => {
     );
     getRunMock.mockResolvedValueOnce(makeRunDetail({ status: "running" }));
     getRunMock.mockResolvedValueOnce(
-      makeRunDetail({ status: "awaiting_confirmation", thesis_id: "thesis-1" })
+      makeRunDetail({
+        status: "awaiting_confirmation",
+        thesis_id: "thesis-1",
+        entity: {
+          id: "entity-aapl",
+          name: "Apple Inc.",
+          node_type: "company",
+          symbol: "AAPL",
+          market: "US"
+        }
+      })
     );
 
     const { result } = renderHook(() => useRun({ pollMs: 100 }));
@@ -55,6 +65,7 @@ describe("useRun", () => {
 
     expect(result.current.status).toBe("awaiting_confirmation");
     expect(result.current.thesisId).toBe("thesis-1");
+    expect(result.current.entityId).toBe("entity-aapl");
   });
 });
 
@@ -68,12 +79,13 @@ function makeRunSummary(overrides: Partial<RunSummary> = {}): RunSummary {
 }
 
 function makeRunDetail(
-  overrides: Partial<Pick<RunDetail, "status" | "thesis_id">> = {}
+  overrides: Partial<Pick<RunDetail, "status" | "thesis_id" | "entity">> = {}
 ): RunDetail {
   return {
     run_id: "run-1",
     status: "running" satisfies RunStatus,
     thesis_id: null,
+    entity: null,
     evidences: [],
     intel_items: [],
     thesis: null,
