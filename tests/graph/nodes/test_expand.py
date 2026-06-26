@@ -1,6 +1,7 @@
 from dataclasses import dataclass
+from pathlib import Path
 
-from noesis.graph.nodes.expand import expand
+from noesis.graph.nodes.expand import _prompt, expand
 from noesis.graph.schemas import EvidenceRecord, GraphEdgeDraft, ResolvedEntity
 from noesis.graph.state import GraphDeps, ResearchState
 from noesis.tools.llm.fake import FakeLLMRouter
@@ -110,6 +111,23 @@ def test_expand_returns_valid_top_five_edges() -> None:
         rationale="TSMC is linked to Apple supply chain evidence.",
     )
     assert update["degraded"] == []
+
+
+def test_expand_prompt_defines_target_centric_relation_direction() -> None:
+    runtime_prompt = _prompt(make_entity(), [make_evidence("evidence-1")])
+    prompt_file = Path("prompts/expand.md").read_text(encoding="utf-8")
+
+    for text in (runtime_prompt, prompt_file):
+        assert "relation describes the role of to_entity relative to target" in text
+        assert "supplier = to_entity supplies goods or services to target" in text
+        assert "customer = to_entity buys goods or services from target" in text
+        assert "Do not label a supplier as customer just because target is its customer" in text
+        assert "target=Apple" in text
+        assert "Micron" in text
+        assert "TSMC" in text
+        assert "Gemini" in text
+        assert "Samsung" in text
+        assert "Consumer Electronics" in text
 
 
 def test_expand_degrades_when_synth_unavailable() -> None:

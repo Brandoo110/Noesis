@@ -2,6 +2,16 @@ Extract one-hop supply-chain graph edges for the target entity.
 
 Rules:
 - Allowed relations: supplier, customer, competitor, belongs_to.
+- Direction is target-centric: relation describes the role of to_entity relative to target.
+- supplier = to_entity supplies goods or services to target (upstream).
+- customer = to_entity buys goods or services from target (downstream).
+- competitor = to_entity competes with target in the same market.
+- belongs_to = target belongs to the to_entity segment or theme.
+- Do not label a supplier as customer just because target is its customer.
+- Example: target=Apple, Micron/TSMC/Gemini or Alphabet AI services are supplier.
+- Example: target=Apple, a brand buying Apple-made products would be customer.
+- Example: target=Apple, Samsung phones are competitor.
+- Example: target=Apple, Consumer Electronics is belongs_to.
 - Allowed node types: company, segment, theme.
 - Do not recommend buying, selling, trading, position sizing, or target prices.
 - Do not predict stock prices.
