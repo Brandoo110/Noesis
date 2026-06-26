@@ -1,11 +1,25 @@
 from collections import deque
+from dataclasses import dataclass
 from typing import Protocol
 
-from noesis.db.models import GraphEdgeRow
+from noesis.db.models import EntityRow, GraphEdgeRow
 
 
 class EdgesReader(Protocol):
     def list_from(self, entity_id: str) -> list[GraphEdgeRow]: ...
+
+    def list_to(self, entity_id: str) -> list[GraphEdgeRow]: ...
+
+
+class EntitiesReader(Protocol):
+    def get(self, id: str) -> EntityRow | None: ...
+
+
+@dataclass(frozen=True)
+class EntityRef:
+    id: str
+    name: str
+    symbol: str | None
 
 
 def relevance_path(
@@ -33,3 +47,35 @@ def relevance_path(
             visited.add(next_id)
             queue.append((next_id, next_path))
     return None
+
+
+def representative_stocks(
+    segment_entity_id: str,
+    edges_repo: EdgesReader,
+    entities_repo: EntitiesReader,
+    *,
+    top_n: int = 5,
+) -> list[EntityRef]:
+    belongs_to_edges = [
+        edge
+        for edge in edges_repo.list_to(segment_entity_id)
+        if edge.relation == "belongs_to"
+    ]
+    sorted_edges = sorted(
+        belongs_to_edges,
+        key=lambda edge: edge.confidence,
+        reverse=True,
+    )
+    refs: list[EntityRef] = []
+    for edge in sorted_edges[:top_n]:
+        row = entities_repo.get(edge.from_entity_id)
+        if row is None or row.node_type != "company":
+            continue
+        refs.append(
+            EntityRef(
+                id=row.id,
+                name=row.name,
+                symbol=row.identifiers().get("symbol"),
+            )
+        )
+    return refs
