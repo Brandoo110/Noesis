@@ -1,7 +1,9 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import * as client from "../../api/client";
+import { EvidenceDrawer } from "../evidence/EvidenceDrawer";
+import { EvidenceDrawerProvider } from "../../context/evidence-drawer";
 import type { UseStockDetailResult } from "../../hooks/use-stock-detail";
 import { useStockDetail } from "../../hooks/use-stock-detail";
 import type { StockDetailData } from "../../hooks/use-stock-detail";
@@ -12,24 +14,27 @@ vi.mock("../../hooks/use-stock-detail", () => ({
 }));
 
 vi.mock("../../api/client", () => ({
-  confirmThesis: vi.fn()
+  confirmThesis: vi.fn(),
+  getEvidence: vi.fn()
 }));
 
 const useStockDetailMock = vi.mocked(useStockDetail);
 const confirmThesisMock = vi.mocked(client.confirmThesis);
+const getEvidenceMock = vi.mocked(client.getEvidence);
 
 describe("StockDetail", () => {
-  it("renders stock detail sections with evidence entry points", () => {
-    const onEvidenceClick = vi.fn();
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("renders stock detail sections with global evidence entry points", async () => {
     useStockDetailMock.mockReturnValue(makeHookResult());
 
     render(
-      <StockDetail
-        entityId="entity-aapl"
-        onEvidenceClick={onEvidenceClick}
-        positionId="position-1"
-        runId="run-1"
-      />
+      <EvidenceDrawerProvider>
+        <StockDetail entityId="entity-aapl" positionId="position-1" runId="run-1" />
+        <EvidenceDrawer />
+      </EvidenceDrawerProvider>
     );
 
     expect(screen.getByRole("heading", { name: "现状一句话" })).toBeInTheDocument();
@@ -43,7 +48,10 @@ describe("StockDetail", () => {
     expect(within(intel).getByText("neutral")).toBeInTheDocument();
     expect(within(intel).getByText("tier 2")).toBeInTheDocument();
     fireEvent.click(within(intel).getByRole("button", { name: "查看证据" }));
-    expect(onEvidenceClick).toHaveBeenCalledWith(["evidence-1"]);
+    const drawer = await screen.findByRole("dialog", { name: "证据抽屉" });
+    expect(drawer).toBeInTheDocument();
+    expect(within(drawer).getByText("Supplier update")).toBeInTheDocument();
+    expect(getEvidenceMock).not.toHaveBeenCalled();
 
     expect(screen.getByText("供应商")).toBeInTheDocument();
     expect(screen.getByText("Apple Inc. / TSMC")).toBeInTheDocument();
@@ -51,6 +59,39 @@ describe("StockDetail", () => {
     expect(screen.getByText("关键假设")).toBeInTheDocument();
     expect(screen.getByText("风险")).toBeInTheDocument();
     expect(screen.getByText("仅供参考")).toBeInTheDocument();
+  });
+
+  it("opens evidence drawer from thesis and attention notes", async () => {
+    useStockDetailMock.mockReturnValue(makeHookResult());
+
+    render(
+      <EvidenceDrawerProvider>
+        <StockDetail entityId="entity-aapl" positionId="position-1" runId="run-1" />
+        <EvidenceDrawer />
+      </EvidenceDrawerProvider>
+    );
+
+    fireEvent.click(
+      within(screen.getByLabelText("关键假设")).getByRole("button", {
+        name: "查看证据"
+      })
+    );
+    expect(
+      await screen.findByRole("dialog", { name: "证据抽屉" })
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      within(screen.getByLabelText("关注点列表")).getByRole("button", {
+        name: "查看证据"
+      })
+    );
+    await waitFor(() =>
+      expect(
+        within(screen.getByRole("dialog", { name: "证据抽屉" })).getByText(
+          "Supplier update"
+        )
+      ).toBeInTheDocument()
+    );
   });
 
   it("confirms thesis assumptions and refreshes detail", async () => {
@@ -63,7 +104,9 @@ describe("StockDetail", () => {
     });
 
     render(
-      <StockDetail entityId="entity-aapl" positionId="position-1" runId="run-1" />
+      <EvidenceDrawerProvider>
+        <StockDetail entityId="entity-aapl" positionId="position-1" runId="run-1" />
+      </EvidenceDrawerProvider>
     );
 
     fireEvent.click(screen.getByRole("button", { name: "确认 thesis 假设" }));
@@ -78,7 +121,9 @@ describe("StockDetail", () => {
     useStockDetailMock.mockReturnValue(makeHookResult());
 
     render(
-      <StockDetail entityId="entity-aapl" positionId="position-1" runId="run-1" />
+      <EvidenceDrawerProvider>
+        <StockDetail entityId="entity-aapl" positionId="position-1" runId="run-1" />
+      </EvidenceDrawerProvider>
     );
 
     expect(

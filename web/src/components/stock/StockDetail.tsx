@@ -1,4 +1,7 @@
+import { useEffect } from "react";
+
 import { confirmThesis } from "../../api/client";
+import { useEvidenceDrawer } from "../../context/evidence-drawer";
 import { useStockDetail } from "../../hooks/use-stock-detail";
 import type { ConfirmationInput } from "../../types/api";
 import { AttentionNotes } from "./AttentionNotes";
@@ -12,16 +15,19 @@ export interface StockDetailProps {
   entityId: string;
   runId: string;
   positionId: string;
-  onEvidenceClick?: (evidenceIds: string[]) => void;
 }
 
 export function StockDetail({
   entityId,
   runId,
-  positionId,
-  onEvidenceClick
+  positionId
 }: StockDetailProps): JSX.Element {
   const stock = useStockDetail(entityId, runId, positionId);
+  const { open, remember } = useEvidenceDrawer();
+
+  useEffect(() => {
+    remember(stock.detail.evidences);
+  }, [remember, stock.detail.evidences]);
 
   async function handleConfirm(status: ConfirmationInput["status"]): Promise<void> {
     if (!stock.detail.thesis) {
@@ -40,17 +46,17 @@ export function StockDetail({
       <StatusSummary detail={stock.detail} errors={stock.errors} />
       <IntelStream
         items={stock.detail.intelItems}
-        onEvidenceClick={onEvidenceClick}
+        onEvidenceClick={open}
       />
       <ChainMini edges={stock.detail.neighbors} />
       <PositionRelation path={stock.detail.relevancePath} />
       <ThesisPanel
         onConfirm={(status) => void handleConfirm(status)}
-        onEvidenceClick={onEvidenceClick}
+        onEvidenceClick={open}
         thesis={stock.detail.thesis}
       />
       <AttentionNotes
-        onEvidenceClick={onEvidenceClick}
+        onEvidenceClick={open}
         thesis={stock.detail.thesis}
       />
     </section>
