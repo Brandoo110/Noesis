@@ -27,6 +27,7 @@ from noesis.graph.state import GraphDeps, ResearchState, ResearchStateUpdate
 
 REQUIRED_STATE_KEYS = ("run_id", "position_id", "entity_id")
 OUTPUT_STATE_KEYS = ("evidence_ids", "intel_item_ids", "thesis_id", "degraded")
+UNCACHEABLE_EXPAND_REASONS = {"synth_llm_unavailable", "llm_failed"}
 
 
 def finalize(state: ResearchState, deps: GraphDeps) -> ResearchStateUpdate:
@@ -222,7 +223,16 @@ def _persist_graph_data(
     if rows:
         deps.repos.graph_edges.insert_many(rows, conn=conn)
         _persist_relevances(from_entity_id, to_entity_ids, position_id, now, deps, conn)
+    if _has_uncacheable_expand_degrade(state):
+        return
     deps.repos.node_expansions.mark_researched(from_entity_id, run_id, now, conn=conn)
+
+
+def _has_uncacheable_expand_degrade(state: ResearchState) -> bool:
+    return any(
+        note.node_name == "expand" and note.reason in UNCACHEABLE_EXPAND_REASONS
+        for note in state.get("degraded", [])
+    )
 
 
 def _upsert_edge_entity(

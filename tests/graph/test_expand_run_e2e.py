@@ -99,12 +99,19 @@ def test_start_expand_run_completes_when_synth_unavailable(
         handle = start_expand_run("entity-aapl", "position-1", deps)
 
         edges = deps.repos.graph_edges.list_from("entity-aapl", conn=conn)
+        expansion = deps.repos.node_expansions.get("entity-aapl", conn=conn)
+        run_count = _expand_run_count(conn)
+        second = start_expand_run("entity-aapl", "position-1", deps)
+        retry_count = _expand_run_count(conn)
         traces = deps.repos.traces.list_by_run(handle.run_id, conn=conn)
     finally:
         conn.close()
 
     assert handle.status == "completed"
+    assert second.status == "completed"
     assert edges == []
+    assert expansion is None
+    assert retry_count == run_count + 1
     assert any(
         trace.node_name == "expand"
         and trace.status == "degraded"
