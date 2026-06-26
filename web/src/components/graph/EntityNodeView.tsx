@@ -8,6 +8,7 @@ export interface EntityNodeViewData {
   expanded: boolean;
   isSeed: boolean;
   onExpand?: (entityId: string) => void;
+  onViewDetail?: (entityId: string) => void;
 }
 
 export function EntityNodeView({
@@ -30,6 +31,15 @@ export function EntityNodeView({
           type="button"
         >
           {data.expanded ? "已展开" : "展开"}
+        </button>
+      ) : null}
+      {data.isSeed && data.onViewDetail ? (
+        <button
+          aria-label={`详情 ${entity.symbol ?? entity.name}`}
+          onClick={() => data.onViewDetail?.(entity.id)}
+          type="button"
+        >
+          详情
         </button>
       ) : null}
     </article>

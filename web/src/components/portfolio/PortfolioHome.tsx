@@ -145,6 +145,7 @@ export function PortfolioHome(): JSX.Element {
       {graphSeed ? (
         <GraphExplorer
           positionId={graphSeed.positionId}
+          runId={run.runId ?? undefined}
           seedEntity={graphSeed.seedEntity}
         />
       ) : null}

@@ -46,6 +46,18 @@ vi.mock("../../api/client", () => ({
   expandEntity: vi.fn()
 }));
 
+vi.mock("../stock/StockDetail", () => ({
+  StockDetail: ({
+    entityId,
+    positionId,
+    runId
+  }: {
+    entityId: string;
+    positionId: string;
+    runId: string;
+  }) => <div data-testid="stock-detail">{`${entityId}:${positionId}:${runId}`}</div>
+}));
+
 const expandEntityMock = vi.mocked(client.expandEntity);
 
 describe("GraphExplorer", () => {
@@ -67,6 +79,20 @@ describe("GraphExplorer", () => {
       expect(expandEntityMock).toHaveBeenCalledWith("entity-aapl", "position-1")
     );
     expect(await screen.findByText("TSM")).toBeInTheDocument();
+  });
+
+  it("opens stock detail from the seed node when run id is available", async () => {
+    const seed = makeEntity({ id: "entity-aapl", name: "Apple Inc.", symbol: "AAPL" });
+
+    render(
+      <GraphExplorer positionId="position-1" runId="run-1" seedEntity={seed} />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "详情 AAPL" }));
+
+    expect(screen.getByTestId("stock-detail")).toHaveTextContent(
+      "entity-aapl:position-1:run-1"
+    );
   });
 });
 

@@ -9,6 +9,7 @@ import type { EntityNodeViewData } from "../components/graph/EntityNodeView";
 export interface UseExpandOptions {
   positionId: string;
   seedEntity: EntityNode;
+  onViewDetail?: (entityId: string) => void;
 }
 
 export interface UseExpandResult {
@@ -18,6 +19,7 @@ export interface UseExpandResult {
 }
 
 export function useExpand({
+  onViewDetail,
   positionId,
   seedEntity
 }: UseExpandOptions): UseExpandResult {
@@ -76,10 +78,11 @@ export function useExpand({
         toFlowNode(entity, index, {
           expanded: expandedEntityIds.has(entity.id),
           isSeed: entity.id === seedEntity.id,
-          onExpand: expand
+          onExpand: expand,
+          onViewDetail: entity.id === seedEntity.id ? onViewDetail : undefined
         })
       ),
-    [entitiesById, expandedEntityIds, expand, seedEntity.id]
+    [entitiesById, expandedEntityIds, expand, onViewDetail, seedEntity.id]
   );
 
   return {

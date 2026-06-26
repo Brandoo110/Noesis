@@ -1,3 +1,4 @@
+import { useState } from "react";
 import ReactFlow, {
   Background,
   Controls,
@@ -11,10 +12,12 @@ import { useExpand } from "../../hooks/use-expand";
 import type { EntityNode } from "../../types/api";
 import { EdgeView } from "./EdgeView";
 import { EntityNodeView } from "./EntityNodeView";
+import { StockDetail } from "../stock/StockDetail";
 
 export interface GraphExplorerProps {
   positionId: string;
   seedEntity: EntityNode;
+  runId?: string;
 }
 
 const NODE_TYPES: NodeTypes = {
@@ -27,9 +30,15 @@ const EDGE_TYPES: EdgeTypes = {
 
 export function GraphExplorer({
   positionId,
+  runId,
   seedEntity
 }: GraphExplorerProps): JSX.Element {
-  const graph = useExpand({ positionId, seedEntity });
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const graph = useExpand({
+    onViewDetail: runId ? () => setIsDetailOpen(true) : undefined,
+    positionId,
+    seedEntity
+  });
 
   return (
     <section aria-label="图谱探索器">
@@ -47,6 +56,13 @@ export function GraphExplorer({
           </ReactFlow>
         </div>
       </ReactFlowProvider>
+      {isDetailOpen && runId ? (
+        <StockDetail
+          entityId={seedEntity.id}
+          positionId={positionId}
+          runId={runId}
+        />
+      ) : null}
     </section>
   );
 }
