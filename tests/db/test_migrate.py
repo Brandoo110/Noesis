@@ -17,6 +17,9 @@ DOMAIN_TABLES = {
     "theses",
     "thesis_assumptions",
     "approvals",
+    "graph_edges",
+    "node_expansions",
+    "holding_relevances",
 }
 
 
@@ -51,6 +54,10 @@ def test_migrate_creates_required_indexes(db: Connection) -> None:
         "idx_theses_position",
         "idx_assumptions_thesis",
         "idx_approvals_run",
+        "idx_edges_from",
+        "idx_edges_to",
+        "idx_node_expansions_researched",
+        "idx_relevance_entity",
     }.issubset(names)
 
 

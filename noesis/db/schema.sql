@@ -53,3 +53,22 @@ CREATE INDEX IF NOT EXISTS idx_approvals_run ON approvals(run_id);
 
 CREATE VIRTUAL TABLE IF NOT EXISTS evidences_fts USING fts5(
   evidence_id UNINDEXED, snippet, title, content='');
+
+CREATE TABLE IF NOT EXISTS graph_edges(
+  id TEXT PRIMARY KEY, from_entity_id TEXT NOT NULL, to_entity_id TEXT NOT NULL,
+  relation TEXT NOT NULL, basis TEXT NOT NULL, confidence REAL NOT NULL,
+  evidence_ids_json TEXT NOT NULL DEFAULT '[]', run_id TEXT NOT NULL,
+  rationale TEXT, created_at TEXT NOT NULL);
+CREATE INDEX IF NOT EXISTS idx_edges_from ON graph_edges(from_entity_id);
+CREATE INDEX IF NOT EXISTS idx_edges_to ON graph_edges(to_entity_id);
+
+CREATE TABLE IF NOT EXISTS node_expansions(
+  entity_id TEXT PRIMARY KEY, researched INTEGER NOT NULL DEFAULT 0,
+  researched_at TEXT, cached_run_id TEXT, created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL);
+CREATE INDEX IF NOT EXISTS idx_node_expansions_researched ON node_expansions(researched);
+
+CREATE TABLE IF NOT EXISTS holding_relevances(
+  id TEXT PRIMARY KEY, entity_id TEXT NOT NULL, position_id TEXT NOT NULL,
+  path_json TEXT NOT NULL, created_at TEXT NOT NULL);
+CREATE INDEX IF NOT EXISTS idx_relevance_entity ON holding_relevances(entity_id);

@@ -2,7 +2,10 @@ from noesis.db.models import (
     ApprovalRow,
     EntityRow,
     EvidenceRow,
+    GraphEdgeRow,
+    HoldingRelevanceRow,
     IntelItemRow,
+    NodeExpansionRow,
     NodeTraceRow,
     PositionRow,
     RunRow,
@@ -182,3 +185,53 @@ def test_approval_row_parses_payload() -> None:
     )
 
     assert row.payload() == {"summary": "Draft"}
+
+
+def test_graph_edge_row_parses_evidence_ids() -> None:
+    row = GraphEdgeRow.model_validate(
+        {
+            "id": "edge-1",
+            "from_entity_id": "entity-aapl",
+            "to_entity_id": "entity-tsmc",
+            "relation": "supplier",
+            "basis": "source_backed",
+            "confidence": 0.8,
+            "evidence_ids_json": '["evidence-1", "evidence-2"]',
+            "run_id": "run-1",
+            "rationale": "TSMC supplies chips to Apple.",
+            "created_at": NOW,
+        }
+    )
+
+    assert row.from_entity_id == "entity-aapl"
+    assert row.evidence_ids() == ["evidence-1", "evidence-2"]
+
+
+def test_node_expansion_row_validates_complete_dict() -> None:
+    row = NodeExpansionRow.model_validate(
+        {
+            "entity_id": "entity-aapl",
+            "researched": 1,
+            "researched_at": NOW,
+            "cached_run_id": "run-1",
+            "created_at": NOW,
+            "updated_at": NOW,
+        }
+    )
+
+    assert row.entity_id == "entity-aapl"
+    assert row.researched == 1
+
+
+def test_holding_relevance_row_parses_path() -> None:
+    row = HoldingRelevanceRow.model_validate(
+        {
+            "id": "relevance-1",
+            "entity_id": "entity-tsmc",
+            "position_id": "position-1",
+            "path_json": '["entity-tsmc", "entity-aapl"]',
+            "created_at": NOW,
+        }
+    )
+
+    assert row.path() == ["entity-tsmc", "entity-aapl"]

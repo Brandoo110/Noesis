@@ -153,3 +153,39 @@ class ApprovalRow(BaseModel):
 
     def payload(self) -> JsonObject:
         return _parse_json(self.payload_json, PAYLOAD_ADAPTER, {})
+
+
+class GraphEdgeRow(BaseModel):
+    id: str
+    from_entity_id: str
+    to_entity_id: str
+    relation: str
+    basis: str
+    confidence: float
+    evidence_ids_json: str
+    run_id: str
+    rationale: str | None
+    created_at: str
+
+    def evidence_ids(self) -> list[str]:
+        return _parse_json(self.evidence_ids_json, LIST_STR_ADAPTER, [])
+
+
+class NodeExpansionRow(BaseModel):
+    entity_id: str
+    researched: int
+    researched_at: str | None
+    cached_run_id: str | None
+    created_at: str
+    updated_at: str
+
+
+class HoldingRelevanceRow(BaseModel):
+    id: str
+    entity_id: str
+    position_id: str
+    path_json: str
+    created_at: str
+
+    def path(self) -> list[str]:
+        return _parse_json(self.path_json, LIST_STR_ADAPTER, [])
