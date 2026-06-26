@@ -15,6 +15,7 @@ venv/
 node_modules/
 dist/
 build/
+*.tsbuildinfo
 
 # Data / outputs
 *.db
