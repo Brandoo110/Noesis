@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class PositionInput(BaseModel):
@@ -68,6 +68,17 @@ class ThesisAssumptionDraft(BaseModel):
 class ThesisDraft(BaseModel):
     summary: str
     assumptions: list[ThesisAssumptionDraft]
+
+
+class GraphEdgeDraft(BaseModel):
+    to_name: str
+    to_symbol: str | None
+    to_node_type: Literal["company", "segment", "theme"]
+    relation: Literal["supplier", "customer", "competitor", "belongs_to"]
+    basis: Literal["inferred", "source_backed"]
+    confidence: float = Field(ge=0.0, le=1.0)
+    evidence_ids: list[str]
+    rationale: str
 
 
 class RiskFinding(BaseModel):

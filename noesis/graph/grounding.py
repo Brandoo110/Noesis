@@ -1,4 +1,10 @@
-from noesis.graph.schemas import EvidenceRecord, IntelItemDraft, RiskFinding, ThesisDraft
+from noesis.graph.schemas import (
+    EvidenceRecord,
+    GraphEdgeDraft,
+    IntelItemDraft,
+    RiskFinding,
+    ThesisDraft,
+)
 
 INVESTMENT_REDLINE_TERMS = (
     "buy",
@@ -38,6 +44,31 @@ def filter_grounded_intel(
         item
         for item in items
         if item.evidence_ids and set(item.evidence_ids).issubset(valid_ids)
+    ]
+
+
+def check_edge_basis(
+    edges: list[GraphEdgeDraft], evidences: list[EvidenceRecord]
+) -> list[RiskFinding]:
+    valid_ids = {item.id for item in evidences}
+    findings: list[RiskFinding] = []
+    for index, edge in enumerate(edges):
+        if edge.basis == "source_backed":
+            if not edge.evidence_ids or not set(edge.evidence_ids).issubset(valid_ids):
+                findings.append(_edge_finding(index, edge, "source_backed_empty"))
+        elif edge.confidence is None:
+            findings.append(_edge_finding(index, edge, "bad_basis"))
+    return findings
+
+
+def filter_valid_edges(
+    edges: list[GraphEdgeDraft], evidences: list[EvidenceRecord]
+) -> list[GraphEdgeDraft]:
+    invalid_refs = {finding.target_ref for finding in check_edge_basis(edges, evidences)}
+    return [
+        edge
+        for index, edge in enumerate(edges)
+        if _edge_ref(index, edge) not in invalid_refs
     ]
 
 
@@ -95,3 +126,15 @@ def thesis_is_grounded(
 def _contains_redline(text: str) -> bool:
     lowered = text.lower()
     return any(term in lowered for term in INVESTMENT_REDLINE_TERMS)
+
+
+def _edge_finding(index: int, edge: GraphEdgeDraft, code: str) -> RiskFinding:
+    return RiskFinding(
+        code=code,
+        target_ref=_edge_ref(index, edge),
+        detail="Graph edge basis is not backed by valid evidence.",
+    )
+
+
+def _edge_ref(index: int, edge: GraphEdgeDraft) -> str:
+    return f"graph_edge:{index}:{edge.to_name}"
