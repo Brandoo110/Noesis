@@ -35,6 +35,18 @@ def create_position(
     )
     with with_tx(deps.repos.conn):
         deps.repos.positions.insert(row)
+    return _position_response(row)
+
+
+@router.get("", response_model=list[PositionResponse])
+def list_positions(
+    deps: GraphDeps = Depends(get_graph_deps),
+) -> list[PositionResponse]:
+    rows = deps.repos.positions.list_by_user("local-user")
+    return [_position_response(row) for row in rows]
+
+
+def _position_response(row: PositionRow) -> PositionResponse:
     return PositionResponse(
         id=row.id,
         symbol=row.symbol,

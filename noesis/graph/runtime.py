@@ -40,6 +40,11 @@ class PositionsRuntime:
     def get(self, id: str, *, conn: Connection | None = None) -> PositionRow | None:
         return self.repo.get(id, conn=conn or self.conn)
 
+    def list_by_user(
+        self, user_id: str, *, conn: Connection | None = None
+    ) -> list[PositionRow]:
+        return self.repo.list_by_user(user_id, conn=conn or self.conn)
+
 
 @dataclass
 class EntitiesRuntime:
