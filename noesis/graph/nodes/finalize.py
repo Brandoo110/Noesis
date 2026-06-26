@@ -1,9 +1,13 @@
 import json
+import re
 from sqlite3 import Connection
 
 from noesis.db.connection import with_tx
 from noesis.db.models import (
+    EntityRow,
     EvidenceRow,
+    GraphEdgeRow,
+    HoldingRelevanceRow,
     IntelItemRow,
     ThesisAssumptionRow,
     ThesisRow,
@@ -13,7 +17,9 @@ from noesis.graph.schemas import (
     ConfirmationResult,
     DegradeNote,
     EvidenceRecord,
+    GraphEdgeDraft,
     IntelItemDraft,
+    ResolvedEntity,
     ThesisAssumptionDraft,
     ThesisDraft,
 )
@@ -55,6 +61,7 @@ def finalize(state: ResearchState, deps: GraphDeps) -> ResearchStateUpdate:
             conn,
         )
         _finalize_approval(thesis_id, confirmation.status, now, deps, conn)
+        _persist_graph_data(state, entity_id, position_id, run_id, now, deps, conn)
         deps.repos.runs.set_status(run_id, "completed", now, conn=conn)
     return {
         "evidence_ids": [item.id for item in state.get("evidences", [])],
@@ -191,3 +198,100 @@ def _finalize_approval(
     approval = deps.repos.approvals.get_by_object("thesis", thesis_id, conn=conn)
     if approval is not None:
         deps.repos.approvals.set_status(approval.id, status, now, conn=conn)
+
+
+def _persist_graph_data(
+    state: ResearchState,
+    from_entity_id: str,
+    position_id: str,
+    run_id: str,
+    now: str,
+    deps: GraphDeps,
+    conn: Connection,
+) -> None:
+    if "graph_edges" not in state:
+        return
+    edges = state.get("graph_edges", [])
+    to_entity_ids: list[str] = []
+    rows: list[GraphEdgeRow] = []
+    source_entity = state.get("resolved_entity")
+    for index, edge in enumerate(edges, start=1):
+        to_entity = _upsert_edge_entity(edge, source_entity, now, deps, conn)
+        to_entity_ids.append(to_entity.id)
+        rows.append(_edge_row(index, edge, from_entity_id, to_entity.id, run_id, now))
+    if rows:
+        deps.repos.graph_edges.insert_many(rows, conn=conn)
+        _persist_relevances(from_entity_id, to_entity_ids, position_id, now, deps, conn)
+    deps.repos.node_expansions.mark_researched(from_entity_id, run_id, now, conn=conn)
+
+
+def _upsert_edge_entity(
+    edge: GraphEdgeDraft,
+    source_entity: ResolvedEntity | None,
+    now: str,
+    deps: GraphDeps,
+    conn: Connection,
+) -> EntityRow:
+    identifiers = {"symbol": edge.to_symbol} if edge.to_symbol else {}
+    aliases = [edge.to_symbol] if edge.to_symbol else []
+    market = source_entity.market if source_entity is not None else None
+    row = EntityRow(
+        id=_edge_entity_id(edge, market),
+        node_type=edge.to_node_type,
+        name=edge.to_name,
+        aliases_json=json.dumps(aliases, sort_keys=True),
+        identifiers_json=json.dumps(identifiers, sort_keys=True),
+        market=market if edge.to_node_type == "company" else None,
+        created_at=now,
+        updated_at=now,
+    )
+    return deps.repos.entities.upsert(row, conn=conn)
+
+
+def _edge_row(
+    index: int,
+    edge: GraphEdgeDraft,
+    from_entity_id: str,
+    to_entity_id: str,
+    run_id: str,
+    now: str,
+) -> GraphEdgeRow:
+    return GraphEdgeRow(
+        id=f"edge-{run_id}-{index}",
+        from_entity_id=from_entity_id,
+        to_entity_id=to_entity_id,
+        relation=edge.relation,
+        basis=edge.basis,
+        confidence=edge.confidence,
+        evidence_ids_json=json.dumps(edge.evidence_ids, sort_keys=True),
+        run_id=run_id,
+        rationale=edge.rationale,
+        created_at=now,
+    )
+
+
+def _persist_relevances(
+    from_entity_id: str,
+    to_entity_ids: list[str],
+    position_id: str,
+    now: str,
+    deps: GraphDeps,
+    conn: Connection,
+) -> None:
+    for to_entity_id in to_entity_ids:
+        deps.repos.holding_relevances.upsert(
+            HoldingRelevanceRow(
+                id=f"relevance-{position_id}-{to_entity_id}",
+                entity_id=to_entity_id,
+                position_id=position_id,
+                path_json=json.dumps([from_entity_id, to_entity_id]),
+                created_at=now,
+            ),
+            conn=conn,
+        )
+
+
+def _edge_entity_id(edge: GraphEdgeDraft, market: str | None) -> str:
+    parts = [edge.to_node_type, market or "", edge.to_symbol or edge.to_name]
+    slug = re.sub(r"[^a-z0-9]+", "-", "-".join(parts).lower()).strip("-")
+    return f"entity-{slug[:80]}"

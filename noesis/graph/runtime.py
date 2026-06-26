@@ -5,7 +5,10 @@ from noesis.db.models import (
     ApprovalRow,
     EntityRow,
     EvidenceRow,
+    GraphEdgeRow,
+    HoldingRelevanceRow,
     IntelItemRow,
+    NodeExpansionRow,
     NodeTraceRow,
     PositionRow,
     RunRow,
@@ -15,7 +18,10 @@ from noesis.db.models import (
 from noesis.db.repos.approvals_repo import ApprovalsRepo
 from noesis.db.repos.entities_repo import EntitiesRepo
 from noesis.db.repos.evidences_repo import EvidencesRepo
+from noesis.db.repos.graph_edges_repo import GraphEdgesRepo
+from noesis.db.repos.holding_relevances_repo import HoldingRelevancesRepo
 from noesis.db.repos.intel_items_repo import IntelItemsRepo
+from noesis.db.repos.node_expansions_repo import NodeExpansionsRepo
 from noesis.db.repos.node_traces_repo import NodeTracesRepo
 from noesis.db.repos.positions_repo import PositionsRepo
 from noesis.db.repos.run_registry_repo import RunRegistryRepo
@@ -168,6 +174,70 @@ class ApprovalsRuntime:
 
 
 @dataclass
+class GraphEdgesRuntime:
+    conn: Connection
+    repo: GraphEdgesRepo = field(default_factory=GraphEdgesRepo)
+
+    def insert_many(
+        self, rows: list[GraphEdgeRow], *, conn: Connection | None = None
+    ) -> None:
+        self.repo.insert_many(rows, conn=conn or self.conn)
+
+    def list_from(
+        self, entity_id: str, *, conn: Connection | None = None
+    ) -> list[GraphEdgeRow]:
+        return self.repo.list_from(entity_id, conn=conn or self.conn)
+
+    def list_to(
+        self, entity_id: str, *, conn: Connection | None = None
+    ) -> list[GraphEdgeRow]:
+        return self.repo.list_to(entity_id, conn=conn or self.conn)
+
+    def delete(self, id: str, *, conn: Connection | None = None) -> None:
+        self.repo.delete(id, conn=conn or self.conn)
+
+
+@dataclass
+class NodeExpansionsRuntime:
+    conn: Connection
+    repo: NodeExpansionsRepo = field(default_factory=NodeExpansionsRepo)
+
+    def get(
+        self, entity_id: str, *, conn: Connection | None = None
+    ) -> NodeExpansionRow | None:
+        return self.repo.get(entity_id, conn=conn or self.conn)
+
+    def upsert(self, row: NodeExpansionRow, *, conn: Connection | None = None) -> None:
+        self.repo.upsert(row, conn=conn or self.conn)
+
+    def mark_researched(
+        self,
+        entity_id: str,
+        run_id: str,
+        at: str,
+        *,
+        conn: Connection | None = None,
+    ) -> None:
+        self.repo.mark_researched(entity_id, run_id, at, conn=conn or self.conn)
+
+
+@dataclass
+class HoldingRelevancesRuntime:
+    conn: Connection
+    repo: HoldingRelevancesRepo = field(default_factory=HoldingRelevancesRepo)
+
+    def upsert(
+        self, row: HoldingRelevanceRow, *, conn: Connection | None = None
+    ) -> None:
+        self.repo.upsert(row, conn=conn or self.conn)
+
+    def list_by_entity(
+        self, entity_id: str, *, conn: Connection | None = None
+    ) -> list[HoldingRelevanceRow]:
+        return self.repo.list_by_entity(entity_id, conn=conn or self.conn)
+
+
+@dataclass
 class RepoRuntime:
     conn: Connection
     positions: PositionsRuntime = field(init=False)
@@ -179,6 +249,9 @@ class RepoRuntime:
     theses: ThesesRuntime = field(init=False)
     assumptions: AssumptionsRuntime = field(init=False)
     approvals: ApprovalsRuntime = field(init=False)
+    graph_edges: GraphEdgesRuntime = field(init=False)
+    node_expansions: NodeExpansionsRuntime = field(init=False)
+    holding_relevances: HoldingRelevancesRuntime = field(init=False)
 
     def __post_init__(self) -> None:
         self.positions = PositionsRuntime(self.conn)
@@ -190,3 +263,6 @@ class RepoRuntime:
         self.theses = ThesesRuntime(self.conn)
         self.assumptions = AssumptionsRuntime(self.conn)
         self.approvals = ApprovalsRuntime(self.conn)
+        self.graph_edges = GraphEdgesRuntime(self.conn)
+        self.node_expansions = NodeExpansionsRuntime(self.conn)
+        self.holding_relevances = HoldingRelevancesRuntime(self.conn)

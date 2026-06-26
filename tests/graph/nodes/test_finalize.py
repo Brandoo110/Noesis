@@ -6,8 +6,12 @@ from noesis.db.connection import connect, with_tx
 from noesis.db.migrate import migrate
 from noesis.db.models import ApprovalRow, RunRow
 from noesis.db.repos.approvals_repo import ApprovalsRepo
+from noesis.db.repos.entities_repo import EntitiesRepo
 from noesis.db.repos.evidences_repo import EvidencesRepo
+from noesis.db.repos.graph_edges_repo import GraphEdgesRepo
+from noesis.db.repos.holding_relevances_repo import HoldingRelevancesRepo
 from noesis.db.repos.intel_items_repo import IntelItemsRepo
+from noesis.db.repos.node_expansions_repo import NodeExpansionsRepo
 from noesis.db.repos.run_registry_repo import RunRegistryRepo
 from noesis.db.repos.theses_repo import ThesesRepo
 from noesis.db.repos.thesis_assumptions_repo import ThesisAssumptionsRepo
@@ -15,7 +19,9 @@ from noesis.graph.nodes.finalize import finalize
 from noesis.graph.schemas import (
     ConfirmationResult,
     EvidenceRecord,
+    GraphEdgeDraft,
     IntelItemDraft,
+    ResolvedEntity,
     SentimentTag,
     ThesisAssumptionDraft,
     ThesisDraft,
@@ -30,23 +36,31 @@ NOW = "2026-06-26T00:00:00Z"
 @dataclass
 class RepoSession:
     conn: Connection
+    entities: EntitiesRepo
     evidences: EvidencesRepo
     intel: IntelItemsRepo
     theses: ThesesRepo
     assumptions: ThesisAssumptionsRepo
     approvals: ApprovalsRepo
     runs: RunRegistryRepo
+    graph_edges: GraphEdgesRepo
+    node_expansions: NodeExpansionsRepo
+    holding_relevances: HoldingRelevancesRepo
 
 
 def make_repo_session(conn: Connection) -> RepoSession:
     return RepoSession(
         conn=conn,
+        entities=EntitiesRepo(),
         evidences=EvidencesRepo(),
         intel=IntelItemsRepo(),
         theses=ThesesRepo(),
         assumptions=ThesisAssumptionsRepo(),
         approvals=ApprovalsRepo(),
         runs=RunRegistryRepo(),
+        graph_edges=GraphEdgesRepo(),
+        node_expansions=NodeExpansionsRepo(),
+        holding_relevances=HoldingRelevancesRepo(),
     )
 
 
@@ -133,11 +147,36 @@ def make_thesis(summary: str = "Evidence-backed thesis.") -> ThesisDraft:
     )
 
 
+def make_edge() -> GraphEdgeDraft:
+    return GraphEdgeDraft(
+        to_name="Taiwan Semiconductor Manufacturing",
+        to_symbol="TSM",
+        to_node_type="company",
+        relation="supplier",
+        basis="source_backed",
+        confidence=0.82,
+        evidence_ids=["evidence-1"],
+        rationale="TSMC is cited as a supplier.",
+    )
+
+
+def make_entity() -> ResolvedEntity:
+    return ResolvedEntity(
+        entity_id="entity-1",
+        node_type="company",
+        name="Apple Inc.",
+        aliases=["AAPL"],
+        identifiers={"symbol": "AAPL"},
+        market="US",
+    )
+
+
 def make_state(confirmation: ConfirmationResult, thesis: ThesisDraft | None) -> ResearchState:
     return {
         "run_id": "run-1",
         "position_id": "position-1",
         "entity_id": "entity-1",
+        "resolved_entity": make_entity(),
         "evidences": [make_evidence()],
         "intel_items": [make_intel()],
         "thesis_draft": thesis,
@@ -216,3 +255,29 @@ def test_finalize_completes_without_thesis_when_upstream_degraded(tmp_path: Path
     assert update["thesis_id"] is None
     assert run is not None and run.status == "completed"
     assert update["degraded"][0].fallback_used == "complete_without_thesis"
+
+
+def test_finalize_persists_graph_edges_and_expansion_state(tmp_path: Path) -> None:
+    conn = make_db(tmp_path)
+    try:
+        repos = make_repo_session(conn)
+        state = make_state(ConfirmationResult(status="confirmed"), make_thesis())
+        state["graph_edges"] = [make_edge()]
+
+        finalize(state, make_deps(repos))
+
+        to_entity = repos.entities.find_by_symbol("US", "TSM", conn=conn)
+        assert to_entity is not None
+        edges = repos.graph_edges.list_from("entity-1", conn=conn)
+        expansion = repos.node_expansions.get("entity-1", conn=conn)
+        relevances = repos.holding_relevances.list_by_entity(to_entity.id, conn=conn)
+    finally:
+        conn.close()
+
+    assert edges[0].to_entity_id == to_entity.id
+    assert edges[0].relation == "supplier"
+    assert edges[0].basis == "source_backed"
+    assert edges[0].evidence_ids() == ["evidence-1"]
+    assert expansion is not None and expansion.researched == 1
+    assert expansion.cached_run_id == "run-1"
+    assert relevances[0].path() == ["entity-1", to_entity.id]

@@ -21,7 +21,10 @@ if TYPE_CHECKING:
     from noesis.db.repos.approvals_repo import ApprovalsRepo
     from noesis.db.repos.entities_repo import EntitiesRepo
     from noesis.db.repos.evidences_repo import EvidencesRepo
+    from noesis.db.repos.graph_edges_repo import GraphEdgesRepo
+    from noesis.db.repos.holding_relevances_repo import HoldingRelevancesRepo
     from noesis.db.repos.intel_items_repo import IntelItemsRepo
+    from noesis.db.repos.node_expansions_repo import NodeExpansionsRepo
     from noesis.db.repos.node_traces_repo import NodeTracesRepo
     from noesis.db.repos.positions_repo import PositionsRepo
     from noesis.db.repos.run_registry_repo import RunRegistryRepo
@@ -64,6 +67,9 @@ class RepoBundle:
     theses: ThesesRepo
     assumptions: ThesisAssumptionsRepo
     approvals: ApprovalsRepo
+    graph_edges: GraphEdgesRepo
+    node_expansions: NodeExpansionsRepo
+    holding_relevances: HoldingRelevancesRepo
 
 
 @dataclass
