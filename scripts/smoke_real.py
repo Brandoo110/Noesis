@@ -2,7 +2,7 @@
 
 Requires .env keys for DEEPSEEK, LIGHT(GLM), RISK(Gemini), and TAVILY before
 running. Command:
-python scripts/smoke_real.py --symbol AAPL --market US
+python scripts/smoke_real.py --symbol AAPL --market US --expand
 """
 
 from __future__ import annotations
@@ -30,6 +30,7 @@ from noesis.graph.runner import (
     build_graph_deps,
     get_run_snapshot,
     resume_run,
+    start_expand_run,
     start_run,
 )
 from noesis.graph.schemas import ConfirmationResult, EvidenceRecord, IntelItemDraft
@@ -42,6 +43,7 @@ from noesis.tools.search.tavily import TavilySearchAdapter
 class SmokeArgs:
     symbol: str
     market: str
+    expand: bool
 
 
 @dataclass(frozen=True)
@@ -55,8 +57,9 @@ def parse_args(argv: Sequence[str] | None = None) -> SmokeArgs:
     parser = argparse.ArgumentParser(description="Run Noesis real E2E smoke.")
     parser.add_argument("--symbol", default="AAPL")
     parser.add_argument("--market", default="US")
+    parser.add_argument("--expand", action="store_true")
     parsed = parser.parse_args(argv)
-    return SmokeArgs(symbol=parsed.symbol, market=parsed.market)
+    return SmokeArgs(symbol=parsed.symbol, market=parsed.market, expand=parsed.expand)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -76,6 +79,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                     runtime.deps,
                 )
             _print_final(completed.run_id, completed.thesis_id, runtime)
+            if args.expand:
+                _print_expand(position_id, _seed_entity_id(snapshot, position_id, runtime), runtime)
     return 0
 
 
@@ -164,7 +169,10 @@ def _print_thesis(snapshot: RunSnapshot) -> None:
 
 
 def _print_final(run_id: str, thesis_id: str | None, runtime: SmokeRuntime) -> None:
-    traces = runtime.deps.repos.traces.list_by_run(run_id)
+    traces = sorted(
+        runtime.deps.repos.traces.list_by_run(run_id),
+        key=lambda trace: (trace.started_at, trace.node_name),
+    )
     print("traces:")
     for trace in traces:
         suffix = ""
@@ -179,6 +187,65 @@ def _print_final(run_id: str, thesis_id: str | None, runtime: SmokeRuntime) -> N
     print(f"final_thesis_status: {thesis_status}")
     print(f"thesis_id_is_none: {thesis_id is None}")
     print(f"final_run_status: {run.status if run is not None else 'missing'}")
+
+
+def _seed_entity_id(
+    snapshot: RunSnapshot, position_id: str, runtime: SmokeRuntime
+) -> str | None:
+    if snapshot.resolved_entity is not None:
+        return snapshot.resolved_entity.entity_id
+    return runtime.deps.repos.runs.get_seed_entity_id(position_id)
+
+
+def _print_expand(
+    position_id: str,
+    entity_id: str | None,
+    runtime: SmokeRuntime,
+) -> None:
+    if entity_id is None:
+        print("expand: seed_entity_missing")
+        return
+    count_before = _expand_run_count(runtime.conn)
+    first = start_expand_run(entity_id, position_id, runtime.deps)
+    count_after_first = _expand_run_count(runtime.conn)
+    print(f"expand_status: {first.status}")
+    _print_graph_edges(entity_id, runtime)
+    second_count_before = _expand_run_count(runtime.conn)
+    second = start_expand_run(entity_id, position_id, runtime.deps)
+    second_count_after = _expand_run_count(runtime.conn)
+    print(f"second_expand_status: {second.status}")
+    print(
+        "expand_run_count: "
+        f"before={count_before} after_first={count_after_first} "
+        f"after_second={second_count_after}"
+    )
+    print(f"expand_run_count_unchanged: {second_count_after == second_count_before}")
+
+
+def _print_graph_edges(entity_id: str, runtime: SmokeRuntime) -> None:
+    edges = runtime.deps.repos.graph_edges.list_from(entity_id)
+    print(f"graph_edges: {len(edges)}")
+    for edge in edges:
+        evidence_ids = edge.evidence_ids()
+        neighbor = runtime.deps.repos.entities.get(edge.to_entity_id)
+        to_name = neighbor.name if neighbor is not None else edge.to_entity_id
+        to_symbol = neighbor.identifiers().get("symbol") if neighbor is not None else None
+        print(
+            "graph_edge "
+            f"relation={edge.relation} basis={edge.basis} "
+            f"confidence={edge.confidence} to_name={to_name} "
+            f"to_symbol={to_symbol} evidence_ids={evidence_ids}"
+        )
+        if edge.basis == "source_backed":
+            print(f"source_backed_has_evidence={bool(evidence_ids)}")
+
+
+def _expand_run_count(conn: sqlite3.Connection) -> int:
+    row = conn.execute(
+        "SELECT COUNT(*) FROM run_registry WHERE node_kind = ?",
+        ("expand",),
+    ).fetchone()
+    return int(row[0]) if row is not None else 0
 
 
 def _snippet(value: str) -> str:
