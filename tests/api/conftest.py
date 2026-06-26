@@ -65,6 +65,23 @@ class ApiFakeLLM:
                     ]
                 }
             )
+        if schema.__name__ == "ExpandPayload":
+            return schema.model_validate(
+                {
+                    "edges": [
+                        {
+                            "to_name": "Taiwan Semiconductor Manufacturing",
+                            "to_symbol": "TSM",
+                            "to_node_type": "company",
+                            "relation": "supplier",
+                            "basis": "source_backed",
+                            "confidence": 0.82,
+                            "evidence_ids": [evidence_id],
+                            "rationale": "Supplier relationship is cited in evidence.",
+                        }
+                    ]
+                }
+            )
         return schema.model_validate(
             {
                 "summary": "AAPL may benefit as supplier pressure eases.",

@@ -6,9 +6,13 @@ from uuid import uuid4
 from langgraph.types import Command
 
 from noesis.db.connection import with_tx
-from noesis.db.models import RunRow
+from noesis.db.models import EntityRow, RunRow
 from noesis.db.models import EvidenceRow, IntelItemRow, ThesisRow
-from noesis.graph.build_graph import build_seed_graph, make_sqlite_checkpointer
+from noesis.graph.build_graph import (
+    build_expand_graph,
+    build_seed_graph,
+    make_sqlite_checkpointer,
+)
 from noesis.graph.errors import ResearchNodeError
 from noesis.graph.runtime import RepoRuntime
 from noesis.graph.schemas import (
@@ -105,6 +109,30 @@ def resume_run(
     return _handle(run_id, deps)
 
 
+def start_expand_run(entity_id: str, position_id: str, deps: GraphDeps) -> RunHandle:
+    cached = deps.repos.node_expansions.get(entity_id)
+    if cached is not None and cached.researched == 1:
+        return RunHandle(run_id=cached.cached_run_id or "", status="cached")
+    entity = deps.repos.entities.get(entity_id)
+    if entity is None:
+        raise ResearchNodeError("entity not found", reason="entity_not_found")
+    run_id = f"run-{uuid4().hex}"
+    _insert_expand_run(run_id, position_id, entity_id, deps)
+    state: ResearchState = {
+        "run_id": run_id,
+        "position_id": position_id,
+        "entity_id": entity_id,
+        "node_kind": "expand",
+        "raw_input": _position_input_from_entity(entity),
+        "degraded": [],
+    }
+    try:
+        _expand_graph(deps).invoke(state, _config(run_id))
+    except ResearchNodeError:
+        _set_run_failed(run_id, deps)
+    return _handle(run_id, deps)
+
+
 def get_run_snapshot(run_id: str, deps: GraphDeps) -> RunSnapshot:
     row = deps.repos.runs.get(run_id)
     if row is None:
@@ -151,6 +179,16 @@ def _graph(deps: GraphDeps) -> object:
     )
 
 
+def _expand_graph(deps: GraphDeps) -> object:
+    if deps.checkpointer is None:
+        raise ResearchNodeError("checkpointer is required", reason="missing_checkpointer")
+    return build_expand_graph(
+        deps,
+        checkpointer=deps.checkpointer,
+        node_wrapper=trace_node,
+    )
+
+
 def _insert_run(run_id: str, position_id: str, deps: GraphDeps) -> None:
     with with_tx(deps.repos.conn):
         deps.repos.runs.insert(
@@ -165,6 +203,35 @@ def _insert_run(run_id: str, position_id: str, deps: GraphDeps) -> None:
                 created_at=deps.now(),
             )
         )
+
+
+def _insert_expand_run(
+    run_id: str, position_id: str, entity_id: str, deps: GraphDeps
+) -> None:
+    with with_tx(deps.repos.conn):
+        deps.repos.runs.insert(
+            RunRow(
+                id=run_id,
+                position_id=position_id,
+                entity_id=entity_id,
+                node_kind="expand",
+                status="running",
+                started_at=deps.now(),
+                ended_at=None,
+                created_at=deps.now(),
+            )
+        )
+
+
+def _position_input_from_entity(entity: EntityRow) -> PositionInput:
+    identifiers = entity.identifiers()
+    symbol = identifiers.get("symbol") or entity.name
+    return PositionInput(
+        symbol=symbol,
+        market=entity.market or "",
+        name=entity.name,
+        kind="watching",
+    )
 
 
 def _typed_list(value: object, item_type: type) -> list:

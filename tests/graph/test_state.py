@@ -125,6 +125,9 @@ def test_graph_deps_can_hold_repo_bundle_and_adapters() -> None:
         theses=object(),
         assumptions=object(),
         approvals=object(),
+        graph_edges=object(),
+        node_expansions=object(),
+        holding_relevances=object(),
     )
     deps = GraphDeps(
         repos=bundle,

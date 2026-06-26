@@ -134,6 +134,8 @@ class ScenarioFakeLLM:
             return schema.model_validate(
                 {"items": _intel_items(evidence_id, self.mode)}
             )
+        if schema.__name__ == "ExpandPayload":
+            return schema.model_validate(_edge_payload(evidence_id))
         return schema.model_validate(_thesis_payload(evidence_id, self.mode))
 
     def complete_text(self, role: LLMRole, prompt: str) -> str:
@@ -228,6 +230,38 @@ def _intel_items(evidence_id: str | None, mode: str) -> list[dict[str, object]]:
             "evidence_ids": [used_id],
         }
     ]
+
+
+def _edge_payload(evidence_id: str | None) -> dict[str, object]:
+    if evidence_id is None:
+        return {
+            "edges": [
+                {
+                    "to_name": "Semiconductor Suppliers",
+                    "to_symbol": None,
+                    "to_node_type": "segment",
+                    "relation": "belongs_to",
+                    "basis": "inferred",
+                    "confidence": 0.55,
+                    "evidence_ids": [],
+                    "rationale": "Apple participates in this supply-chain segment.",
+                }
+            ]
+        }
+    return {
+        "edges": [
+            {
+                "to_name": "Taiwan Semiconductor Manufacturing",
+                "to_symbol": "TSM",
+                "to_node_type": "company",
+                "relation": "supplier",
+                "basis": "source_backed",
+                "confidence": 0.82,
+                "evidence_ids": [evidence_id],
+                "rationale": "Supplier relationship is cited in evidence.",
+            }
+        ]
+    }
 
 
 def _thesis_payload(evidence_id: str | None, mode: str) -> dict[str, object]:

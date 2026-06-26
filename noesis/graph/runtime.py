@@ -54,6 +54,9 @@ class EntitiesRuntime:
     def upsert(self, row: EntityRow, *, conn: Connection | None = None) -> EntityRow:
         return self.repo.upsert(row, conn=conn or self.conn)
 
+    def get(self, id: str, *, conn: Connection | None = None) -> EntityRow | None:
+        return self.repo.get(id, conn=conn or self.conn)
+
 
 @dataclass
 class RunsRuntime:
