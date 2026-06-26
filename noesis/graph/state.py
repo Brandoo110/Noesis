@@ -7,6 +7,7 @@ from noesis.graph.schemas import (
     ConfirmationResult,
     DegradeNote,
     EvidenceRecord,
+    GraphEdgeDraft,
     IngestedDoc,
     IntelItemDraft,
     PositionInput,
@@ -41,6 +42,7 @@ class ResearchState(TypedDict, total=False):
     ingested_docs: list[IngestedDoc]
     filtered_docs: list[IngestedDoc]
     evidences: list[EvidenceRecord]
+    graph_edges: list[GraphEdgeDraft]
     intel_items: list[IntelItemDraft]
     thesis_draft: ThesisDraft | None
     risk_findings: list[RiskFinding]
