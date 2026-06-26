@@ -1,11 +1,25 @@
 from noesis.config.settings import Settings, get_settings
 
 
+LLM_ENV_KEYS = (
+    "DEEPSEEK_API_KEY",
+    "DEEPSEEK_ENDPOINT",
+    "DEEPSEEK_MODEL",
+    "LIGHT_LLM_API_KEY",
+    "LIGHT_ENDPOINT",
+    "LIGHT_MODEL",
+    "RISK_LLM_API_KEY",
+    "RISK_ENDPOINT",
+    "RISK_MODEL",
+)
+
+
 def test_settings_default_db_path_and_disabled_deepseek(monkeypatch) -> None:
-    monkeypatch.setenv("DEEPSEEK_API_KEY", "")
+    for key in LLM_ENV_KEYS:
+        monkeypatch.delenv(key, raising=False)
     monkeypatch.delenv("NOESIS_DB_PATH", raising=False)
 
-    settings = Settings()
+    settings = Settings(_env_file=None)
 
     assert settings.db_path == "./noesis.db"
     assert settings.deepseek_enabled is False
@@ -22,7 +36,7 @@ def test_settings_default_db_path_and_disabled_deepseek(monkeypatch) -> None:
 def test_settings_enable_deepseek_when_key_is_present(monkeypatch) -> None:
     monkeypatch.setenv("DEEPSEEK_API_KEY", "test-key")
 
-    settings = Settings()
+    settings = Settings(_env_file=None)
 
     assert settings.deepseek_enabled is True
 
@@ -37,7 +51,7 @@ def test_settings_llm_endpoint_and_model_env_overrides(
     monkeypatch.setenv("RISK_ENDPOINT", "https://risk.example/chat")
     monkeypatch.setenv("RISK_MODEL", "gemini-test")
 
-    settings = Settings()
+    settings = Settings(_env_file=None)
 
     assert settings.deepseek_endpoint == "https://deep.example/chat"
     assert settings.deepseek_model == "deep-test"
