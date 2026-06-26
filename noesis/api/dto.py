@@ -34,6 +34,39 @@ class RunResponse(BaseModel):
     thesis_id: str | None = None
 
 
+class ExpandRequest(BaseModel):
+    position_id: str
+
+
+class EntityNodeResponse(BaseModel):
+    id: str
+    name: str
+    node_type: str
+    symbol: str | None
+    market: str | None
+
+
+class EdgeResponse(BaseModel):
+    id: str
+    to_entity_id: str
+    to_name: str
+    to_symbol: str | None
+    relation: str
+    basis: Literal["inferred", "source_backed"]
+    confidence: float
+    evidence_ids: list[str]
+    source_tier: int | None
+    rationale: str | None
+    neighbor: EntityNodeResponse
+
+
+class ExpandResponse(BaseModel):
+    entity_id: str
+    run_id: str
+    status: str
+    edges: list[EdgeResponse]
+
+
 class EvidenceResponse(BaseModel):
     id: str
     source: str
