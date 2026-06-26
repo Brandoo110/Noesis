@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { getRun, startRun } from "../api/client";
-import type { RunStatus } from "../types/api";
+import type { EntityNode, RunDetail, RunStatus } from "../types/api";
 
 type RunViewStatus = "idle" | RunStatus;
 
@@ -15,6 +15,7 @@ export interface UseRunResult {
   runId: string | null;
   thesisId: string | null;
   entityId: string | null;
+  entity: EntityNode | null;
 }
 
 const DEFAULT_POLL_MS = 1000;
@@ -25,17 +26,25 @@ export function useRun(options: UseRunOptions = {}): UseRunResult {
   const [runId, setRunId] = useState<string | null>(null);
   const [thesisId, setThesisId] = useState<string | null>(null);
   const [entityId, setEntityId] = useState<string | null>(null);
+  const [entity, setEntity] = useState<EntityNode | null>(null);
   const [pollingRunId, setPollingRunId] = useState<string | null>(null);
 
-  const pollRun = useCallback(async (nextRunId: string): Promise<void> => {
-    const detail = await getRun(nextRunId);
+  const applyDetail = useCallback((detail: RunDetail): void => {
     setStatus(detail.status as RunStatus);
     setThesisId(detail.thesis_id);
     setEntityId(detail.entity?.id ?? null);
+    setEntity(detail.entity);
     if (detail.status !== "running") {
       setPollingRunId(null);
     }
   }, []);
+
+  const pollRun = useCallback(
+    async (nextRunId: string): Promise<void> => {
+      applyDetail(await getRun(nextRunId));
+    },
+    [applyDetail]
+  );
 
   useEffect(() => {
     if (!pollingRunId) {
@@ -55,14 +64,21 @@ export function useRun(options: UseRunOptions = {}): UseRunResult {
     setStatus(summary.status);
     setThesisId(summary.thesis_id);
     setEntityId(null);
-    setPollingRunId(summary.status === "running" ? summary.run_id : null);
-  }, []);
+    setEntity(null);
+    if (summary.status === "running") {
+      setPollingRunId(summary.run_id);
+      return;
+    }
+    setPollingRunId(null);
+    await pollRun(summary.run_id);
+  }, [pollRun]);
 
   return {
     start,
     status,
     runId,
     thesisId,
-    entityId
+    entityId,
+    entity
   };
 }

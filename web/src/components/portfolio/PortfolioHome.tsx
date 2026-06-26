@@ -1,8 +1,14 @@
 import { type FormEvent, useCallback, useEffect, useState } from "react";
 
 import { createPosition, listPositions } from "../../api/client";
+import { GraphExplorer } from "../graph/GraphExplorer";
 import { useRun } from "../../hooks/use-run";
-import type { CreatePositionInput, Position, PositionKind } from "../../types/api";
+import type {
+  CreatePositionInput,
+  EntityNode,
+  Position,
+  PositionKind
+} from "../../types/api";
 
 interface PositionFormState {
   symbol: string;
@@ -24,6 +30,7 @@ export function PortfolioHome(): JSX.Element {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [activePositionId, setActivePositionId] = useState<string | null>(null);
+  const [graphSeed, setGraphSeed] = useState<GraphSeed | null>(null);
   const [error, setError] = useState<string | null>(null);
   const run = useRun();
 
@@ -125,28 +132,47 @@ export function PortfolioHome(): JSX.Element {
       ) : (
         <PositionList
           activePositionId={activePositionId}
+          onViewGraph={(positionId, seedEntity) =>
+            setGraphSeed({ positionId, seedEntity })
+          }
           onStartRun={handleStartRun}
           positions={positions}
+          runEntity={run.entity}
           runId={run.runId}
           runStatus={run.status}
         />
       )}
+      {graphSeed ? (
+        <GraphExplorer
+          positionId={graphSeed.positionId}
+          seedEntity={graphSeed.seedEntity}
+        />
+      ) : null}
     </section>
   );
 }
 
+interface GraphSeed {
+  positionId: string;
+  seedEntity: EntityNode;
+}
+
 interface PositionListProps {
   activePositionId: string | null;
+  onViewGraph: (positionId: string, seedEntity: EntityNode) => void;
   onStartRun: (positionId: string) => Promise<void>;
   positions: Position[];
+  runEntity: EntityNode | null;
   runId: string | null;
   runStatus: string;
 }
 
 function PositionList({
   activePositionId,
+  onViewGraph,
   onStartRun,
   positions,
+  runEntity,
   runId,
   runStatus
 }: PositionListProps): JSX.Element {
@@ -173,11 +199,30 @@ function PositionList({
             <span aria-label={`研究状态 ${position.symbol}`}>
               <span>{runStatus}</span>
               {runId ? <span>{runId}</span> : null}
+              {canViewGraph(runStatus, runEntity) ? (
+                <button
+                  aria-label={`查看图谱 ${position.symbol}`}
+                  onClick={() => onViewGraph(position.id, runEntity)}
+                  type="button"
+                >
+                  查看图谱
+                </button>
+              ) : null}
             </span>
           ) : null}
         </li>
       ))}
     </ul>
+  );
+}
+
+function canViewGraph(
+  runStatus: string,
+  runEntity: EntityNode | null
+): runEntity is EntityNode {
+  return (
+    runEntity !== null &&
+    (runStatus === "awaiting_confirmation" || runStatus === "completed")
   );
 }
 

@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import * as client from "../../api/client";
-import type { Position } from "../../types/api";
+import type { Position, RunDetail } from "../../types/api";
 import { PortfolioHome } from "./PortfolioHome";
 
 vi.mock("../../api/client", () => ({
@@ -12,9 +12,20 @@ vi.mock("../../api/client", () => ({
   startRun: vi.fn()
 }));
 
+vi.mock("../graph/GraphExplorer", () => ({
+  GraphExplorer: ({
+    positionId,
+    seedEntity
+  }: {
+    positionId: string;
+    seedEntity: { id: string };
+  }) => <div data-testid="graph-explorer">{`${positionId}:${seedEntity.id}`}</div>
+}));
+
 const listPositionsMock = vi.mocked(client.listPositions);
 const createPositionMock = vi.mocked(client.createPosition);
 const startRunMock = vi.mocked(client.startRun);
+const getRunMock = vi.mocked(client.getRun);
 
 describe("PortfolioHome", () => {
   beforeEach(() => {
@@ -101,6 +112,7 @@ describe("PortfolioHome", () => {
       status: "awaiting_confirmation",
       thesis_id: "thesis-1"
     });
+    getRunMock.mockResolvedValue(makeRunDetail());
 
     render(<PortfolioHome />);
 
@@ -110,6 +122,31 @@ describe("PortfolioHome", () => {
     await waitFor(() => expect(startRunMock).toHaveBeenCalledWith("position-1"));
     expect(screen.getByText("awaiting_confirmation")).toBeInTheDocument();
     expect(screen.getByText("run-1")).toBeInTheDocument();
+  });
+
+  it("opens GraphExplorer when a run has a seed entity", async () => {
+    listPositionsMock.mockResolvedValue([
+      makePosition({ id: "position-1", symbol: "AAPL", name: "Apple" })
+    ]);
+    startRunMock.mockResolvedValue({
+      run_id: "run-1",
+      status: "awaiting_confirmation",
+      thesis_id: "thesis-1"
+    });
+    getRunMock.mockResolvedValue(makeRunDetail());
+
+    render(<PortfolioHome />);
+
+    await screen.findByText("AAPL");
+    fireEvent.click(screen.getByRole("button", { name: "开始研究 AAPL" }));
+    const graphButton = await screen.findByRole("button", {
+      name: "查看图谱 AAPL"
+    });
+    fireEvent.click(graphButton);
+
+    expect(await screen.findByTestId("graph-explorer")).toHaveTextContent(
+      "position-1:entity-aapl"
+    );
   });
 });
 
@@ -123,5 +160,23 @@ function makePosition(overrides: Partial<Position> = {}): Position {
     qty: null,
     cost_basis: null,
     ...overrides
+  };
+}
+
+function makeRunDetail(): RunDetail {
+  return {
+    run_id: "run-1",
+    status: "awaiting_confirmation",
+    thesis_id: "thesis-1",
+    entity: {
+      id: "entity-aapl",
+      name: "Apple Inc.",
+      node_type: "company",
+      symbol: "AAPL",
+      market: "US"
+    },
+    evidences: [],
+    intel_items: [],
+    thesis: null
   };
 }
