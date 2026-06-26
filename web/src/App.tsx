@@ -1,7 +1,9 @@
+import { PortfolioHome } from "./components/portfolio/PortfolioHome";
+
 export function App(): JSX.Element {
   return (
     <main>
-      <h1>Noesis</h1>
+      <PortfolioHome />
     </main>
   );
 }
