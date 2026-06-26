@@ -63,6 +63,7 @@ def finalize(state: ResearchState, deps: GraphDeps) -> ResearchStateUpdate:
         )
         _finalize_approval(thesis_id, confirmation.status, now, deps, conn)
         _persist_graph_data(state, entity_id, position_id, run_id, now, deps, conn)
+        deps.repos.runs.set_entity(run_id, entity_id, conn=conn)
         deps.repos.runs.set_status(run_id, "completed", now, conn=conn)
     return {
         "evidence_ids": [item.id for item in state.get("evidences", [])],

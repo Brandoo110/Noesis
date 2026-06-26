@@ -6,11 +6,14 @@ from noesis.api.dto import (
     EntityNodeResponse,
     ExpandRequest,
     ExpandResponse,
+    NeighborsResponse,
+    RelevanceResponse,
 )
 from noesis.db.models import EntityRow, GraphEdgeRow
 from noesis.graph.errors import ResearchNodeError
 from noesis.graph.runner import start_expand_run
 from noesis.graph.state import GraphDeps
+from noesis.graph.traversal import relevance_path
 
 router = APIRouter(prefix="/entities", tags=["entities"])
 
@@ -28,6 +31,37 @@ def expand_entity(
         run_id=handle.run_id,
         status=handle.status,
         edges=[_edge_response(edge, deps) for edge in edges],
+    )
+
+
+@router.get("/{entity_id}/neighbors", response_model=NeighborsResponse)
+def list_neighbors(
+    entity_id: str,
+    deps: GraphDeps = Depends(get_graph_deps),
+) -> NeighborsResponse:
+    edges = deps.repos.graph_edges.list_from(entity_id)
+    return NeighborsResponse(
+        entity_id=entity_id,
+        edges=[_edge_response(edge, deps) for edge in edges],
+    )
+
+
+@router.get("/{entity_id}/relevance", response_model=RelevanceResponse)
+def get_relevance(
+    entity_id: str,
+    position_id: str,
+    deps: GraphDeps = Depends(get_graph_deps),
+) -> RelevanceResponse:
+    seed_entity_id = deps.repos.runs.get_seed_entity_id(position_id)
+    path_ids = (
+        relevance_path(entity_id, seed_entity_id, deps.repos.graph_edges)
+        if seed_entity_id is not None
+        else None
+    )
+    return RelevanceResponse(
+        entity_id=entity_id,
+        position_id=position_id,
+        path=_entity_path(path_ids or [], deps),
     )
 
 
@@ -59,6 +93,16 @@ def _entity_response(row: EntityRow) -> EntityNodeResponse:
         symbol=row.identifiers().get("symbol"),
         market=row.market,
     )
+
+
+def _entity_path(entity_ids: list[str], deps: GraphDeps) -> list[EntityNodeResponse]:
+    rows: list[EntityNodeResponse] = []
+    for entity_id in entity_ids:
+        row = deps.repos.entities.get(entity_id)
+        if row is None:
+            raise ResearchNodeError("path entity not found", reason="entity_not_found")
+        rows.append(_entity_response(row))
+    return rows
 
 
 def _source_tier(evidence_ids: list[str], deps: GraphDeps) -> int | None:

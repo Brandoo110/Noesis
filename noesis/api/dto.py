@@ -67,6 +67,28 @@ class ExpandResponse(BaseModel):
     edges: list[EdgeResponse]
 
 
+class NeighborsResponse(BaseModel):
+    entity_id: str
+    edges: list[EdgeResponse]
+
+
+class RelevanceResponse(BaseModel):
+    entity_id: str
+    position_id: str
+    path: list[EntityNodeResponse]
+
+
+class RepresentativeStockResponse(BaseModel):
+    id: str
+    name: str
+    symbol: str | None
+
+
+class RepresentativesResponse(BaseModel):
+    segment_id: str
+    representatives: list[RepresentativeStockResponse]
+
+
 class EvidenceResponse(BaseModel):
     id: str
     source: str

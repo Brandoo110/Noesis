@@ -257,6 +257,24 @@ def test_finalize_completes_without_thesis_when_upstream_degraded(tmp_path: Path
     assert update["degraded"][0].fallback_used == "complete_without_thesis"
 
 
+def test_finalize_backfills_run_entity_id(tmp_path: Path) -> None:
+    conn = make_db(tmp_path)
+    try:
+        with with_tx(conn):
+            conn.execute("UPDATE run_registry SET entity_id = NULL WHERE id = ?", ("run-1",))
+        repos = make_repo_session(conn)
+        state = make_state(ConfirmationResult(status="confirmed"), None)
+
+        finalize(state, make_deps(repos))
+
+        run = repos.runs.get("run-1", conn=conn)
+    finally:
+        conn.close()
+
+    assert run is not None
+    assert run.entity_id == "entity-1"
+
+
 def test_finalize_persists_graph_edges_and_expansion_state(tmp_path: Path) -> None:
     conn = make_db(tmp_path)
     try:

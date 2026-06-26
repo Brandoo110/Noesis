@@ -69,6 +69,16 @@ class RunsRuntime:
     def get(self, id: str, *, conn: Connection | None = None) -> RunRow | None:
         return self.repo.get(id, conn=conn or self.conn)
 
+    def get_seed_entity_id(
+        self, position_id: str, *, conn: Connection | None = None
+    ) -> str | None:
+        return self.repo.get_seed_entity_id(position_id, conn=conn or self.conn)
+
+    def set_entity(
+        self, id: str, entity_id: str, *, conn: Connection | None = None
+    ) -> None:
+        self.repo.set_entity(id, entity_id, conn=conn or self.conn)
+
     def set_status(
         self,
         id: str,
