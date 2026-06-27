@@ -206,7 +206,7 @@ describe("App M3 integration path", () => {
         status: "confirmed"
       })
     );
-    expect(getRunMock).toHaveBeenCalledTimes(3);
+    expect(getRunMock).toHaveBeenCalledTimes(4);
 
     fireEvent.click(
       within(screen.getByLabelText("情报 Supplier update")).getByRole("button", {

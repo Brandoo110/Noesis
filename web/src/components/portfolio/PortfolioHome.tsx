@@ -9,6 +9,7 @@ import type {
   Position,
   PositionKind
 } from "../../types/api";
+import { PositionList } from "./PositionList";
 
 interface PositionFormState {
   symbol: string;
@@ -70,6 +71,15 @@ export function PortfolioHome(): JSX.Element {
     setActivePositionId(positionId);
     try {
       await run.start(positionId);
+    } catch (caught) {
+      setError(toErrorMessage(caught));
+    }
+  }
+
+  async function handleThesisConfirmed(): Promise<void> {
+    setError(null);
+    try {
+      await run.refresh();
     } catch (caught) {
       setError(toErrorMessage(caught));
     }
@@ -144,6 +154,7 @@ export function PortfolioHome(): JSX.Element {
       )}
       {graphSeed ? (
         <GraphExplorer
+          onThesisConfirmed={() => void handleThesisConfirmed()}
           positionId={graphSeed.positionId}
           runId={run.runId ?? undefined}
           seedEntity={graphSeed.seedEntity}
@@ -156,75 +167,6 @@ export function PortfolioHome(): JSX.Element {
 interface GraphSeed {
   positionId: string;
   seedEntity: EntityNode;
-}
-
-interface PositionListProps {
-  activePositionId: string | null;
-  onViewGraph: (positionId: string, seedEntity: EntityNode) => void;
-  onStartRun: (positionId: string) => Promise<void>;
-  positions: Position[];
-  runEntity: EntityNode | null;
-  runId: string | null;
-  runStatus: string;
-}
-
-function PositionList({
-  activePositionId,
-  onViewGraph,
-  onStartRun,
-  positions,
-  runEntity,
-  runId,
-  runStatus
-}: PositionListProps): JSX.Element {
-  if (positions.length === 0) {
-    return <p>暂无持仓</p>;
-  }
-
-  return (
-    <ul aria-label="持仓列表">
-      {positions.map((position) => (
-        <li key={position.id}>
-          <strong>{position.symbol}</strong>
-          <span>{position.name ?? "未命名"}</span>
-          <span>{position.market}</span>
-          <span>{position.kind}</span>
-          <button
-            aria-label={`开始研究 ${position.symbol}`}
-            onClick={() => void onStartRun(position.id)}
-            type="button"
-          >
-            开始研究
-          </button>
-          {activePositionId === position.id ? (
-            <span aria-label={`研究状态 ${position.symbol}`}>
-              <span>{runStatus}</span>
-              {runId ? <span>{runId}</span> : null}
-              {canViewGraph(runStatus, runEntity) ? (
-                <button
-                  aria-label={`查看图谱 ${position.symbol}`}
-                  onClick={() => onViewGraph(position.id, runEntity)}
-                  type="button"
-                >
-                  查看图谱
-                </button>
-              ) : null}
-            </span>
-          ) : null}
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function canViewGraph(
-  runStatus: string,
-  runEntity: EntityNode | null
-): runEntity is EntityNode {
-  return (
-    runEntity !== null &&
-    (runStatus === "awaiting_confirmation" || runStatus === "completed")
-  );
 }
 
 function buildInput(form: PositionFormState): CreatePositionInput {

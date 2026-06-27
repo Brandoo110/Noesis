@@ -15,9 +15,10 @@ import { EntityNodeView } from "./EntityNodeView";
 import { StockDetail } from "../stock/StockDetail";
 
 export interface GraphExplorerProps {
+  onThesisConfirmed?: () => void;
   positionId: string;
-  seedEntity: EntityNode;
   runId?: string;
+  seedEntity: EntityNode;
 }
 
 const NODE_TYPES: NodeTypes = {
@@ -29,6 +30,7 @@ const EDGE_TYPES: EdgeTypes = {
 };
 
 export function GraphExplorer({
+  onThesisConfirmed,
   positionId,
   runId,
   seedEntity
@@ -59,6 +61,7 @@ export function GraphExplorer({
       {isDetailOpen && runId ? (
         <StockDetail
           entityId={seedEntity.id}
+          onConfirmed={onThesisConfirmed}
           positionId={positionId}
           runId={runId}
         />

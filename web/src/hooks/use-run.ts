@@ -11,6 +11,7 @@ export interface UseRunOptions {
 
 export interface UseRunResult {
   start: (positionId: string) => Promise<void>;
+  refresh: () => Promise<void>;
   status: RunViewStatus;
   runId: string | null;
   thesisId: string | null;
@@ -73,8 +74,16 @@ export function useRun(options: UseRunOptions = {}): UseRunResult {
     await pollRun(summary.run_id);
   }, [pollRun]);
 
+  const refresh = useCallback(async (): Promise<void> => {
+    if (!runId) {
+      return;
+    }
+    await pollRun(runId);
+  }, [pollRun, runId]);
+
   return {
     start,
+    refresh,
     status,
     runId,
     thesisId,

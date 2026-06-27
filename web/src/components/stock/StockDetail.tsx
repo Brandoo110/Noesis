@@ -13,12 +13,14 @@ import { ThesisPanel } from "./ThesisPanel";
 
 export interface StockDetailProps {
   entityId: string;
+  onConfirmed?: () => void;
   runId: string;
   positionId: string;
 }
 
 export function StockDetail({
   entityId,
+  onConfirmed,
   runId,
   positionId
 }: StockDetailProps): JSX.Element {
@@ -35,6 +37,7 @@ export function StockDetail({
     }
     await confirmThesis(stock.detail.thesis.id, { status });
     await stock.refresh();
+    onConfirmed?.();
   }
 
   if (stock.isLoading) {

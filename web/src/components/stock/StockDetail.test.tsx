@@ -96,6 +96,7 @@ describe("StockDetail", () => {
 
   it("confirms thesis assumptions and refreshes detail", async () => {
     const refresh = vi.fn().mockResolvedValue(undefined);
+    const onConfirmed = vi.fn();
     useStockDetailMock.mockReturnValue(makeHookResult({ refresh }));
     confirmThesisMock.mockResolvedValue({
       run_id: "run-1",
@@ -105,7 +106,12 @@ describe("StockDetail", () => {
 
     render(
       <EvidenceDrawerProvider>
-        <StockDetail entityId="entity-aapl" positionId="position-1" runId="run-1" />
+        <StockDetail
+          entityId="entity-aapl"
+          onConfirmed={onConfirmed}
+          positionId="position-1"
+          runId="run-1"
+        />
       </EvidenceDrawerProvider>
     );
 
@@ -115,6 +121,7 @@ describe("StockDetail", () => {
       status: "confirmed"
     });
     await vi.waitFor(() => expect(refresh).toHaveBeenCalled());
+    expect(onConfirmed).toHaveBeenCalledTimes(1);
   });
 
   it("keeps investment-related wording only as small attention notes", () => {

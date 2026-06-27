@@ -14,12 +14,21 @@ vi.mock("../../api/client", () => ({
 
 vi.mock("../graph/GraphExplorer", () => ({
   GraphExplorer: ({
+    onThesisConfirmed,
     positionId,
     seedEntity
   }: {
+    onThesisConfirmed?: () => void;
     positionId: string;
     seedEntity: { id: string };
-  }) => <div data-testid="graph-explorer">{`${positionId}:${seedEntity.id}`}</div>
+  }) => (
+    <div data-testid="graph-explorer">
+      <span>{`${positionId}:${seedEntity.id}`}</span>
+      <button onClick={onThesisConfirmed} type="button">
+        mock confirm thesis
+      </button>
+    </div>
+  )
 }));
 
 const listPositionsMock = vi.mocked(client.listPositions);
@@ -148,6 +157,32 @@ describe("PortfolioHome", () => {
       "position-1:entity-aapl"
     );
   });
+
+  it("refreshes portfolio row status after thesis confirmation", async () => {
+    listPositionsMock.mockResolvedValue([
+      makePosition({ id: "position-1", symbol: "AAPL", name: "Apple" })
+    ]);
+    startRunMock.mockResolvedValue({
+      run_id: "run-1",
+      status: "awaiting_confirmation",
+      thesis_id: "thesis-1"
+    });
+    getRunMock.mockResolvedValueOnce(makeRunDetail());
+    getRunMock.mockResolvedValueOnce(makeRunDetail({ status: "completed" }));
+
+    render(<PortfolioHome />);
+
+    await screen.findByText("AAPL");
+    fireEvent.click(screen.getByRole("button", { name: "开始研究 AAPL" }));
+    const graphButton = await screen.findByRole("button", {
+      name: "查看图谱 AAPL"
+    });
+    fireEvent.click(graphButton);
+    fireEvent.click(screen.getByRole("button", { name: "mock confirm thesis" }));
+
+    await waitFor(() => expect(screen.getByText("completed")).toBeInTheDocument());
+    expect(getRunMock).toHaveBeenCalledTimes(2);
+  });
 });
 
 function makePosition(overrides: Partial<Position> = {}): Position {
@@ -163,7 +198,7 @@ function makePosition(overrides: Partial<Position> = {}): Position {
   };
 }
 
-function makeRunDetail(): RunDetail {
+function makeRunDetail(overrides: Partial<RunDetail> = {}): RunDetail {
   return {
     run_id: "run-1",
     status: "awaiting_confirmation",
@@ -177,6 +212,7 @@ function makeRunDetail(): RunDetail {
     },
     evidences: [],
     intel_items: [],
-    thesis: null
+    thesis: null,
+    ...overrides
   };
 }

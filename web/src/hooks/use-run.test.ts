@@ -99,6 +99,54 @@ describe("useRun", () => {
     expect(getRunMock).toHaveBeenCalledWith("run-1");
     expect(result.current.entityId).toBe("entity-aapl");
   });
+
+  it("refreshes the current run detail", async () => {
+    startRunMock.mockResolvedValue(
+      makeRunSummary({
+        run_id: "run-1",
+        status: "awaiting_confirmation",
+        thesis_id: "thesis-1"
+      })
+    );
+    getRunMock.mockResolvedValueOnce(
+      makeRunDetail({
+        status: "awaiting_confirmation",
+        thesis_id: "thesis-1",
+        entity: {
+          id: "entity-aapl",
+          name: "Apple Inc.",
+          node_type: "company",
+          symbol: "AAPL",
+          market: "US"
+        }
+      })
+    );
+    getRunMock.mockResolvedValueOnce(
+      makeRunDetail({
+        status: "completed",
+        thesis_id: "thesis-1",
+        entity: {
+          id: "entity-aapl",
+          name: "Apple Inc.",
+          node_type: "company",
+          symbol: "AAPL",
+          market: "US"
+        }
+      })
+    );
+
+    const { result } = renderHook(() => useRun({ pollMs: 100 }));
+
+    await act(async () => {
+      await result.current.start("position-1");
+    });
+    await act(async () => {
+      await result.current.refresh();
+    });
+
+    expect(getRunMock).toHaveBeenLastCalledWith("run-1");
+    expect(result.current.status).toBe("completed");
+  });
 });
 
 function makeRunSummary(overrides: Partial<RunSummary> = {}): RunSummary {
