@@ -160,6 +160,54 @@ def test_check_investment_redlines_matches_english_rating_terms() -> None:
     assert check_investment_redlines(fundamentals) == []
 
 
+def test_check_investment_redlines_avoids_business_word_false_positives() -> None:
+    false_positive_texts = [
+        "The company plans to reduce manufacturing costs.",
+        "The model outperforms competing TVs on brightness.",
+        "The company may accumulate cash reserves.",
+        "The company's shares underperformed during the quarter.",
+        "The board approved a buyback program.",
+        "The seller channel expanded distribution.",
+    ]
+
+    for text in false_positive_texts:
+        thesis = ThesisDraft(
+            summary=text,
+            assumptions=[
+                ThesisAssumptionDraft(
+                    text="Evidence-backed business assumption.",
+                    kind="assumption",
+                    evidence_ids=["evidence-1"],
+                )
+            ],
+        )
+
+        assert check_investment_redlines(thesis) == []
+
+
+def test_check_investment_redlines_matches_position_and_rating_phrases() -> None:
+    redline_texts = [
+        "Investors should reduce position after the update.",
+        "The stock was rated outperform by analysts.",
+        "Analysts set a price target $250.",
+        "Analysts assigned an overweight rating.",
+    ]
+
+    for text in redline_texts:
+        thesis = ThesisDraft(
+            summary="Evidence-backed business update.",
+            assumptions=[
+                ThesisAssumptionDraft(
+                    text=text,
+                    kind="assumption",
+                    evidence_ids=["evidence-1"],
+                )
+            ],
+        )
+
+        assert check_investment_redlines(thesis)[0].target_ref == "thesis:redline"
+
+
 def test_check_edge_basis_flags_source_backed_without_valid_evidence() -> None:
     evidences = [make_evidence("evidence-1")]
 

@@ -1,3 +1,5 @@
+import re
+
 from noesis.graph.schemas import (
     EvidenceRecord,
     GraphEdgeDraft,
@@ -14,10 +16,11 @@ INVESTMENT_REDLINE_TERMS = (
     "overweight",
     "underweight",
     "strong buy",
-    "outperform",
-    "underperform",
-    "reduce",
-    "accumulate",
+    "reduce position",
+    "reduce holdings",
+    "accumulate shares",
+    "rated outperform",
+    "rated underperform",
     "predict stock price",
     "买入",
     "卖出",
@@ -132,7 +135,13 @@ def thesis_is_grounded(
 
 def _contains_redline(text: str) -> bool:
     lowered = text.lower()
-    return any(term in lowered for term in INVESTMENT_REDLINE_TERMS)
+    return any(_term_matches(lowered, term) for term in INVESTMENT_REDLINE_TERMS)
+
+
+def _term_matches(lowered_text: str, term: str) -> bool:
+    if any("\u4e00" <= char <= "\u9fff" for char in term):
+        return term in lowered_text
+    return re.search(rf"\b{re.escape(term)}\b", lowered_text) is not None
 
 
 def _edge_finding(index: int, edge: GraphEdgeDraft, code: str) -> RiskFinding:
