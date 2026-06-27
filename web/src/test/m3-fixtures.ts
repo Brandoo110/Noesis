@@ -1,0 +1,122 @@
+import type {
+  Edge,
+  EntityNode,
+  Evidence,
+  ExpandResult,
+  Position,
+  RunDetail
+} from "../types/api";
+
+export function makePosition(): Position {
+  return {
+    id: "position-1",
+    symbol: "AAPL",
+    market: "US",
+    name: "Apple",
+    kind: "owned",
+    qty: null,
+    cost_basis: null
+  };
+}
+
+export function makeEntity(overrides: Partial<EntityNode> = {}): EntityNode {
+  return {
+    id: "entity-aapl",
+    name: "Apple Inc.",
+    node_type: "company",
+    symbol: "AAPL",
+    market: "US",
+    ...overrides
+  };
+}
+
+export function makeEvidence(): Evidence {
+  return {
+    id: "evidence-1",
+    source: "web",
+    source_tier: 2,
+    url: "https://example.com/evidence-1",
+    title: "Supplier evidence",
+    snippet: "Supplier pressure eased.",
+    captured_at: "2026-06-27T00:00:00Z",
+    published_at: null
+  };
+}
+
+export function makeEdge(
+  id: string,
+  neighbor: EntityNode,
+  basis: Edge["basis"],
+  evidenceIds: string[]
+): Edge {
+  return {
+    id,
+    to_entity_id: neighbor.id,
+    to_name: neighbor.name,
+    to_symbol: neighbor.symbol,
+    relation: basis === "source_backed" ? "supplier" : "belongs_to",
+    basis,
+    confidence: basis === "source_backed" ? 0.82 : 0.54,
+    evidence_ids: evidenceIds,
+    source_tier: basis === "source_backed" ? 2 : null,
+    rationale: `${neighbor.name} relation`,
+    neighbor
+  };
+}
+
+export function makeExpandResult(edges: Edge[]): ExpandResult {
+  return {
+    entity_id: "entity-aapl",
+    run_id: "run-expand-1",
+    status: "completed",
+    edges
+  };
+}
+
+export function makeRunDetail(
+  entity: EntityNode,
+  evidence: Evidence
+): RunDetail {
+  return {
+    run_id: "run-1",
+    status: "awaiting_confirmation",
+    thesis_id: "thesis-1",
+    entity,
+    evidences: [evidence],
+    intel_items: [
+      {
+        title: "Supplier update",
+        content: "Supplier pressure eased.",
+        event_type: "supply_chain",
+        source: "web",
+        source_tier: 2,
+        url: evidence.url,
+        published_at: null,
+        sentiment: { dir: "neutral", conf: 0.7 },
+        evidence_ids: [evidence.id]
+      }
+    ],
+    thesis: {
+      id: "thesis-1",
+      summary: "Apple supplier pressure is easing.",
+      status: "draft",
+      assumptions: [
+        {
+          text: "Supplier conditions support the current thesis.",
+          kind: "reason",
+          evidence_ids: [evidence.id]
+        },
+        {
+          text: "Supplier conditions remain observable.",
+          kind: "assumption",
+          evidence_ids: [evidence.id]
+        },
+        {
+          text: "Supplier conditions could reverse.",
+          kind: "risk",
+          evidence_ids: [evidence.id]
+        }
+      ]
+    }
+  };
+}
