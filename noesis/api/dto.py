@@ -89,6 +89,21 @@ class RepresentativesResponse(BaseModel):
     representatives: list[RepresentativeStockResponse]
 
 
+class OverlapPositionResponse(BaseModel):
+    position_id: str
+    symbol: str
+    entity_id: str
+    confidence: float
+
+
+class OverlapGroupResponse(BaseModel):
+    segment_id: str
+    segment_name: str
+    node_type: Literal["segment", "theme"]
+    basis: Literal["inferred", "source_backed"]
+    positions: list[OverlapPositionResponse]
+
+
 class EvidenceResponse(BaseModel):
     id: str
     source: str
