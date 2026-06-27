@@ -25,6 +25,8 @@ build/
 outputs/
 output/
 chroma/
+.chroma/
+*.db.checkpoints
 
 # Agent local state
 .claude/
