@@ -27,6 +27,24 @@ class ThesesRepo:
         row = conn.execute("SELECT * FROM theses WHERE id = ?", (id,)).fetchone()
         return row_to_model(row, ThesisRow)
 
+    def latest_for_position(
+        self, position_id: str, *, conn: sqlite3.Connection
+    ) -> ThesisRow | None:
+        row = conn.execute(
+            """
+            SELECT * FROM theses
+            WHERE position_id = ?
+            ORDER BY
+              CASE WHEN status = 'confirmed' THEN 0 ELSE 1 END,
+              created_at DESC,
+              updated_at DESC,
+              id DESC
+            LIMIT 1
+            """,
+            (position_id,),
+        ).fetchone()
+        return row_to_model(row, ThesisRow)
+
     def set_status(
         self, id: str, status: str, updated_at: str, *, conn: sqlite3.Connection
     ) -> None:

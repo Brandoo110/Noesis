@@ -155,6 +155,11 @@ class ThesesRuntime:
     def get(self, id: str, *, conn: Connection | None = None) -> ThesisRow | None:
         return self.repo.get(id, conn=conn or self.conn)
 
+    def latest_for_position(
+        self, position_id: str, *, conn: Connection | None = None
+    ) -> ThesisRow | None:
+        return self.repo.latest_for_position(position_id, conn=conn or self.conn)
+
 
 @dataclass
 class AssumptionsRuntime:

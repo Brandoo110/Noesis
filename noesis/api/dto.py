@@ -104,6 +104,20 @@ class OverlapGroupResponse(BaseModel):
     positions: list[OverlapPositionResponse]
 
 
+class BriefPositionResponse(BaseModel):
+    position_id: str
+    symbol: str
+    name: str | None
+    thesis_summary: str | None
+    thesis_status: str | None
+
+
+class PortfolioBriefResponse(BaseModel):
+    generated_at: str
+    positions: list[BriefPositionResponse]
+    overlaps: list[OverlapGroupResponse]
+
+
 class EvidenceResponse(BaseModel):
     id: str
     source: str
