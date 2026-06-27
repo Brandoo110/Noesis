@@ -150,9 +150,11 @@ export function PortfolioHome(): JSX.Element {
       ) : (
         <PositionList
           activePositionId={activePositionId}
-          onViewGraph={(positionId, seedEntity) =>
-            setGraphSeed({ positionId, seedEntity })
-          }
+          onViewGraph={(positionId, seedEntity) => {
+            if (run.runId) {
+              setGraphSeed({ positionId, runId: run.runId, seedEntity });
+            }
+          }}
           onStartRun={handleStartRun}
           positions={positions}
           runEntity={run.entity}
@@ -165,7 +167,7 @@ export function PortfolioHome(): JSX.Element {
         <GraphExplorer
           onThesisConfirmed={() => void handleThesisConfirmed()}
           positionId={graphSeed.positionId}
-          runId={run.runId ?? undefined}
+          runId={graphSeed.runId}
           seedEntity={graphSeed.seedEntity}
         />
       ) : null}
@@ -175,6 +177,7 @@ export function PortfolioHome(): JSX.Element {
 
 interface GraphSeed {
   positionId: string;
+  runId: string;
   seedEntity: EntityNode;
 }
 

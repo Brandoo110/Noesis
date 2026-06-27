@@ -18,14 +18,16 @@ vi.mock("../graph/GraphExplorer", () => ({
   GraphExplorer: ({
     onThesisConfirmed,
     positionId,
+    runId,
     seedEntity
   }: {
     onThesisConfirmed?: () => void;
     positionId: string;
+    runId?: string;
     seedEntity: { id: string };
   }) => (
     <div data-testid="graph-explorer">
-      <span>{`${positionId}:${seedEntity.id}`}</span>
+      <span>{`${positionId}:${seedEntity.id}:${runId ?? "no-run"}`}</span>
       <button onClick={onThesisConfirmed} type="button">
         mock confirm thesis
       </button>
@@ -177,7 +179,57 @@ describe("PortfolioHome", () => {
     fireEvent.click(graphButton);
 
     expect(await screen.findByTestId("graph-explorer")).toHaveTextContent(
-      "position-1:entity-aapl"
+      "position-1:entity-aapl:run-1"
+    );
+  });
+
+  it("keeps an opened graph locked to the run id captured at click time", async () => {
+    listPositionsMock.mockResolvedValue([
+      makePosition({ id: "position-a", symbol: "AAPL", name: "Apple" }),
+      makePosition({ id: "position-b", symbol: "MSFT", name: "Microsoft" })
+    ]);
+    startRunMock.mockResolvedValueOnce({
+      run_id: "run-a",
+      status: "awaiting_confirmation",
+      thesis_id: "thesis-a"
+    });
+    startRunMock.mockResolvedValueOnce({
+      run_id: "run-b",
+      status: "awaiting_confirmation",
+      thesis_id: "thesis-b"
+    });
+    getRunMock.mockResolvedValueOnce(makeRunDetail({ run_id: "run-a" }));
+    getRunMock.mockResolvedValueOnce(
+      makeRunDetail({
+        run_id: "run-b",
+        entity: {
+          id: "entity-msft",
+          name: "Microsoft",
+          node_type: "company",
+          symbol: "MSFT",
+          market: "US"
+        }
+      })
+    );
+
+    render(<PortfolioHome />);
+
+    await screen.findByText("AAPL");
+    fireEvent.click(screen.getByRole("button", { name: "开始研究 AAPL" }));
+    const graphButton = await screen.findByRole("button", {
+      name: "查看图谱 AAPL"
+    });
+    fireEvent.click(graphButton);
+
+    expect(await screen.findByTestId("graph-explorer")).toHaveTextContent(
+      "position-a:entity-aapl:run-a"
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "开始研究 MSFT" }));
+
+    await waitFor(() => expect(screen.getByText("run-b")).toBeInTheDocument());
+    expect(screen.getByTestId("graph-explorer")).toHaveTextContent(
+      "position-a:entity-aapl:run-a"
     );
   });
 
