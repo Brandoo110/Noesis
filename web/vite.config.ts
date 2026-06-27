@@ -15,7 +15,8 @@ export default defineConfig({
       "/entities": backendProxy,
       "/evidences": backendProxy,
       "/theses": backendProxy,
-      "/segments": backendProxy
+      "/segments": backendProxy,
+      "/portfolio": backendProxy
     }
   },
   test: {
