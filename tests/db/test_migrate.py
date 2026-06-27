@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from sqlite3 import Connection
 
@@ -81,6 +82,22 @@ def test_connect_configures_row_factory_foreign_keys_and_wal(db_path: Path) -> N
     assert row["value"] == 1
     assert foreign_keys == 1
     assert journal_mode.lower() == "wal"
+
+
+def test_connect_can_be_used_from_fastapi_worker_thread(db_path: Path) -> None:
+    conn = connect(db_path)
+    try:
+        conn.execute("CREATE TABLE smoke (id TEXT PRIMARY KEY)")
+        conn.execute("INSERT INTO smoke (id) VALUES (?)", ("row-1",))
+
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            result = executor.submit(
+                lambda: conn.execute("SELECT id FROM smoke").fetchone()["id"]
+            ).result()
+
+        assert result == "row-1"
+    finally:
+        conn.close()
 
 
 def test_with_tx_commits_and_rolls_back(db: Connection) -> None:
