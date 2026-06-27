@@ -3,6 +3,7 @@ import type {
   EntityNode,
   Evidence,
   ExpandResult,
+  OverlapGroup,
   Position,
   RunDetail
 } from "../types/api";
@@ -70,6 +71,32 @@ export function makeExpandResult(edges: Edge[]): ExpandResult {
     run_id: "run-expand-1",
     status: "completed",
     edges
+  };
+}
+
+export function makeOverlapGroup(
+  overrides: Partial<OverlapGroup> = {}
+): OverlapGroup {
+  return {
+    segment_id: "segment-consumer",
+    segment_name: "Consumer Electronics",
+    node_type: "segment",
+    basis: "inferred",
+    positions: [
+      {
+        position_id: "position-1",
+        symbol: "AAPL",
+        entity_id: "entity-aapl",
+        confidence: 0.9
+      },
+      {
+        position_id: "position-msft",
+        symbol: "MSFT",
+        entity_id: "entity-msft",
+        confidence: 0.7
+      }
+    ],
+    ...overrides
   };
 }
 

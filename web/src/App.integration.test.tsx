@@ -9,6 +9,7 @@ import {
   makeEntity,
   makeEvidence,
   makeExpandResult,
+  makeOverlapGroup,
   makePosition,
   makeRunDetail
 } from "./test/m3-fixtures";
@@ -88,6 +89,7 @@ vi.mock("./api/client", () => ({
   expandEntity: vi.fn(),
   getEvidence: vi.fn(),
   getNeighbors: vi.fn(),
+  getOverlaps: vi.fn(),
   getRelevance: vi.fn(),
   getRepresentatives: vi.fn(),
   getRun: vi.fn(),
@@ -100,6 +102,7 @@ const createPositionMock = vi.mocked(client.createPosition);
 const expandEntityMock = vi.mocked(client.expandEntity);
 const getEvidenceMock = vi.mocked(client.getEvidence);
 const getNeighborsMock = vi.mocked(client.getNeighbors);
+const getOverlapsMock = vi.mocked(client.getOverlaps);
 const getRelevanceMock = vi.mocked(client.getRelevance);
 const getRunMock = vi.mocked(client.getRun);
 const listPositionsMock = vi.mocked(client.listPositions);
@@ -144,6 +147,7 @@ describe("App M3 integration path", () => {
     getRunMock.mockResolvedValue(makeRunDetail(aapl, evidence));
     expandEntityMock.mockResolvedValue(makeExpandResult([sourceBacked, inferred]));
     getNeighborsMock.mockResolvedValue({ entity_id: "entity-aapl", edges: [sourceBacked] });
+    getOverlapsMock.mockResolvedValue([makeOverlapGroup()]);
     getRelevanceMock.mockResolvedValue({
       entity_id: "entity-aapl",
       position_id: "position-1",
@@ -164,6 +168,8 @@ describe("App M3 integration path", () => {
 
     await waitFor(() => expect(createPositionMock).toHaveBeenCalled());
     expect(await screen.findByText("AAPL")).toBeInTheDocument();
+    expect(await screen.findByText("Consumer Electronics")).toBeInTheDocument();
+    expect(screen.getByText("基于推断")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "开始研究 AAPL" }));
     expect(
@@ -228,7 +234,7 @@ describe("App M3 integration path", () => {
     expect(attention.tagName.toLowerCase()).toBe("small");
     expect(within(attention).getByText("仅供参考")).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(
-      /买入|卖出|加仓|减仓|目标价|涨幅预测/
+      /买入|卖出|加仓|减仓|目标价|涨幅预测|建议|分散|配置|再平衡/
     );
     expect(consoleErrorMock).not.toHaveBeenCalled();
   });

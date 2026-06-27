@@ -9,6 +9,7 @@ import type {
   Position,
   PositionKind
 } from "../../types/api";
+import { OverlapPanel } from "./OverlapPanel";
 import { PositionList } from "./PositionList";
 
 interface PositionFormState {
@@ -152,6 +153,7 @@ export function PortfolioHome(): JSX.Element {
           runStatus={run.status}
         />
       )}
+      {!isLoading ? <OverlapPanel /> : null}
       {graphSeed ? (
         <GraphExplorer
           onThesisConfirmed={() => void handleThesisConfirmed()}

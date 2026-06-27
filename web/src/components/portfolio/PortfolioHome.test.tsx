@@ -2,11 +2,13 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import * as client from "../../api/client";
+import { makeOverlapGroup } from "../../test/m3-fixtures";
 import type { Position, RunDetail } from "../../types/api";
 import { PortfolioHome } from "./PortfolioHome";
 
 vi.mock("../../api/client", () => ({
   createPosition: vi.fn(),
+  getOverlaps: vi.fn(),
   getRun: vi.fn(),
   listPositions: vi.fn(),
   startRun: vi.fn()
@@ -33,12 +35,14 @@ vi.mock("../graph/GraphExplorer", () => ({
 
 const listPositionsMock = vi.mocked(client.listPositions);
 const createPositionMock = vi.mocked(client.createPosition);
+const getOverlapsMock = vi.mocked(client.getOverlaps);
 const startRunMock = vi.mocked(client.startRun);
 const getRunMock = vi.mocked(client.getRun);
 
 describe("PortfolioHome", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    getOverlapsMock.mockResolvedValue([]);
   });
 
   afterEach(() => {
@@ -65,6 +69,21 @@ describe("PortfolioHome", () => {
     render(<PortfolioHome />);
 
     expect(await screen.findByText("暂无持仓")).toBeInTheDocument();
+  });
+
+  it("mounts portfolio overlap hints below the position list", async () => {
+    listPositionsMock.mockResolvedValue([
+      makePosition({ id: "position-1", symbol: "AAPL", name: "Apple" })
+    ]);
+    getOverlapsMock.mockResolvedValue([
+      makeOverlapGroup({ basis: "source_backed" })
+    ]);
+
+    render(<PortfolioHome />);
+
+    await screen.findByLabelText("持仓列表");
+    expect(await screen.findByText("Consumer Electronics")).toBeInTheDocument();
+    expect(screen.getByText("AAPL / MSFT")).toBeInTheDocument();
   });
 
   it("creates a position and refreshes the list", async () => {
