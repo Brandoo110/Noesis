@@ -14,14 +14,17 @@ def make_edge(
     *,
     from_entity_id: str = "entity-aapl",
     to_entity_id: str = "entity-tsmc",
+    relation: str = "supplier",
+    basis: str = "source_backed",
+    confidence: float = 0.8,
 ) -> GraphEdgeRow:
     return GraphEdgeRow(
         id=id,
         from_entity_id=from_entity_id,
         to_entity_id=to_entity_id,
-        relation="supplier",
-        basis="source_backed",
-        confidence=0.8,
+        relation=relation,
+        basis=basis,
+        confidence=confidence,
         evidence_ids_json='["evidence-1"]',
         run_id="run-1",
         rationale="TSMC supplies chips to Apple.",
@@ -80,6 +83,44 @@ def test_graph_edges_repo_does_not_commit_implicitly(db: Connection) -> None:
     db.rollback()
 
     assert repo.list_from("entity-aapl", conn=db) == []
+
+
+def test_graph_edges_repo_dedupes_source_backed_before_confidence(
+    db: Connection,
+) -> None:
+    repo = GraphEdgesRepo()
+    inferred = make_edge("edge-inferred", basis="inferred", confidence=0.5)
+    source_backed = make_edge("edge-source-backed", basis="source_backed", confidence=0.4)
+
+    with with_tx(db):
+        repo.insert_many([inferred, source_backed], conn=db)
+
+    assert repo.list_from("entity-aapl", conn=db) == [source_backed]
+    assert repo.list_to("entity-tsmc", conn=db) == [source_backed]
+
+
+def test_graph_edges_repo_dedupes_inferred_edges_by_confidence(
+    db: Connection,
+) -> None:
+    repo = GraphEdgesRepo()
+    lower = make_edge("edge-low", basis="inferred", confidence=0.5)
+    higher = make_edge("edge-high", basis="inferred", confidence=0.7)
+
+    with with_tx(db):
+        repo.insert_many([lower, higher], conn=db)
+
+    assert repo.list_from("entity-aapl", conn=db) == [higher]
+
+
+def test_graph_edges_repo_keeps_distinct_relations(db: Connection) -> None:
+    repo = GraphEdgesRepo()
+    supplier = make_edge("edge-1", relation="supplier")
+    competitor = make_edge("edge-2", relation="competitor")
+
+    with with_tx(db):
+        repo.insert_many([supplier, competitor], conn=db)
+
+    assert repo.list_from("entity-aapl", conn=db) == [supplier, competitor]
 
 
 def test_node_expansions_repo_upsert_mark_researched_and_empty_result(
