@@ -46,6 +46,9 @@ describe("StockDetail", () => {
     );
 
     expect(screen.getByRole("heading", { name: "现状一句话" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "查看报告" }));
+    expect(screen.getByRole("heading", { name: "AAPL 深度报告" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "⑧ 来源清单" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "分类情报流" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "产业链位置" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "和持仓关系" })).toBeInTheDocument();
@@ -64,7 +67,9 @@ describe("StockDetail", () => {
     expect(within(drawer).getByText("Supplier update")).toBeInTheDocument();
     expect(getEvidenceMock).not.toHaveBeenCalled();
 
-    expect(screen.getByText("供应商")).toBeInTheDocument();
+    expect(
+      within(screen.getByLabelText("产业链位置")).getByText("供应商")
+    ).toBeInTheDocument();
     expect(screen.getByText("Apple Inc. / TSMC")).toBeInTheDocument();
     expect(screen.getByText("Consumer Electronics")).toBeInTheDocument();
     expect(screen.getByText("MSFT")).toBeInTheDocument();

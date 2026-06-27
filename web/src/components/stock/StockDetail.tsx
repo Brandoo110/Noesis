@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import { confirmThesis } from "../../api/client";
 import { useEvidenceDrawer } from "../../context/evidence-drawer";
@@ -10,6 +10,7 @@ import { IntelStream } from "./IntelStream";
 import { PortfolioOverlap } from "./PortfolioOverlap";
 import { PositionRelation } from "./PositionRelation";
 import { StatusSummary } from "./StatusSummary";
+import { StockReport } from "./StockReport";
 import { ThesisPanel } from "./ThesisPanel";
 
 export interface StockDetailProps {
@@ -27,6 +28,7 @@ export function StockDetail({
 }: StockDetailProps): JSX.Element {
   const stock = useStockDetail(entityId, runId, positionId);
   const { open, remember } = useEvidenceDrawer();
+  const [showReport, setShowReport] = useState(false);
 
   useEffect(() => {
     remember(stock.detail.evidences);
@@ -47,6 +49,12 @@ export function StockDetail({
 
   return (
     <section aria-label="个股详情">
+      <button onClick={() => setShowReport((current) => !current)} type="button">
+        {showReport ? "隐藏报告" : "查看报告"}
+      </button>
+      {showReport ? (
+        <StockReport detail={stock.detail} onEvidenceClick={open} />
+      ) : null}
       <StatusSummary detail={stock.detail} errors={stock.errors} />
       <IntelStream
         items={stock.detail.intelItems}
