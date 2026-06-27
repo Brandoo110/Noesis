@@ -2,17 +2,26 @@ import { renderHook, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import * as client from "../api/client";
-import type { Edge, EntityNode, Relevance, RunDetail } from "../types/api";
+import { makeOverlapGroup } from "../test/m3-fixtures";
+import type {
+  Edge,
+  EntityNode,
+  OverlapGroup,
+  Relevance,
+  RunDetail
+} from "../types/api";
 import { useStockDetail } from "./use-stock-detail";
 
 vi.mock("../api/client", () => ({
   getNeighbors: vi.fn(),
+  getOverlaps: vi.fn(),
   getRelevance: vi.fn(),
   getRun: vi.fn()
 }));
 
 const getRunMock = vi.mocked(client.getRun);
 const getNeighborsMock = vi.mocked(client.getNeighbors);
+const getOverlapsMock = vi.mocked(client.getOverlaps);
 const getRelevanceMock = vi.mocked(client.getRelevance);
 
 describe("useStockDetail", () => {
@@ -20,9 +29,11 @@ describe("useStockDetail", () => {
     const runDeferred = deferred<RunDetail>();
     const neighborsDeferred = deferred<{ entity_id: string; edges: Edge[] }>();
     const relevanceDeferred = deferred<Relevance>();
+    const overlapsDeferred = deferred<OverlapGroup[]>();
     getRunMock.mockReturnValue(runDeferred.promise);
     getNeighborsMock.mockReturnValue(neighborsDeferred.promise);
     getRelevanceMock.mockReturnValue(relevanceDeferred.promise);
+    getOverlapsMock.mockReturnValue(overlapsDeferred.promise);
 
     const { result } = renderHook(() =>
       useStockDetail("entity-aapl", "run-1", "position-1")
@@ -31,11 +42,13 @@ describe("useStockDetail", () => {
     await waitFor(() => expect(getRunMock).toHaveBeenCalledWith("run-1"));
     expect(getNeighborsMock).toHaveBeenCalledWith("entity-aapl");
     expect(getRelevanceMock).toHaveBeenCalledWith("entity-aapl", "position-1");
+    expect(getOverlapsMock).toHaveBeenCalledWith();
     expect(result.current.isLoading).toBe(true);
 
     runDeferred.resolve(makeRunDetail());
     neighborsDeferred.resolve({ entity_id: "entity-aapl", edges: [makeEdge()] });
     relevanceDeferred.resolve(makeRelevance());
+    overlapsDeferred.resolve([makeOverlapGroup()]);
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.detail).toMatchObject({
@@ -47,7 +60,8 @@ describe("useStockDetail", () => {
       evidences: [{ id: "evidence-1" }],
       thesis: { id: "thesis-1" },
       neighbors: [{ id: "edge-1" }],
-      relevancePath: [{ id: "entity-aapl" }, { id: "entity-seed" }]
+      relevancePath: [{ id: "entity-aapl" }, { id: "entity-seed" }],
+      overlaps: [{ segment_id: "segment-consumer" }]
     });
     expect(result.current.errors).toEqual({});
   });
@@ -56,6 +70,7 @@ describe("useStockDetail", () => {
     getRunMock.mockResolvedValue(makeRunDetail());
     getNeighborsMock.mockRejectedValue(new Error("neighbors down"));
     getRelevanceMock.mockResolvedValue(makeRelevance());
+    getOverlapsMock.mockResolvedValue([makeOverlapGroup()]);
 
     const { result } = renderHook(() =>
       useStockDetail("entity-aapl", "run-1", "position-1")
@@ -65,7 +80,24 @@ describe("useStockDetail", () => {
     expect(result.current.detail.run?.run_id).toBe("run-1");
     expect(result.current.detail.neighbors).toEqual([]);
     expect(result.current.detail.relevancePath).toHaveLength(2);
+    expect(result.current.detail.overlaps).toHaveLength(1);
     expect(result.current.errors.neighbors).toBe("neighbors down");
+  });
+
+  it("keeps the detail page available when overlaps fail", async () => {
+    getRunMock.mockResolvedValue(makeRunDetail());
+    getNeighborsMock.mockResolvedValue({ entity_id: "entity-aapl", edges: [] });
+    getRelevanceMock.mockResolvedValue(makeRelevance());
+    getOverlapsMock.mockRejectedValue(new Error("overlaps down"));
+
+    const { result } = renderHook(() =>
+      useStockDetail("entity-aapl", "run-1", "position-1")
+    );
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.detail.run?.run_id).toBe("run-1");
+    expect(result.current.detail.overlaps).toEqual([]);
+    expect(result.current.errors.overlaps).toBe("overlaps down");
   });
 });
 

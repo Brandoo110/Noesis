@@ -1,7 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
 
-import { getNeighbors, getRelevance, getRun } from "../api/client";
-import type { Edge, EntityNode, Evidence, IntelItem, RunDetail, Thesis } from "../types/api";
+import { getNeighbors, getOverlaps, getRelevance, getRun } from "../api/client";
+import type {
+  Edge,
+  EntityNode,
+  Evidence,
+  IntelItem,
+  OverlapGroup,
+  RunDetail,
+  Thesis
+} from "../types/api";
 
 export interface StockDetailData {
   entityId: string;
@@ -13,12 +21,14 @@ export interface StockDetailData {
   intelItems: IntelItem[];
   thesis: Thesis | null;
   neighbors: Edge[];
+  overlaps: OverlapGroup[];
   relevancePath: EntityNode[];
 }
 
 export interface StockDetailErrors {
   run?: string;
   neighbors?: string;
+  overlaps?: string;
   relevance?: string;
 }
 
@@ -49,10 +59,11 @@ export function useStockDetail(
 
   const refresh = useCallback(async (): Promise<void> => {
     setIsLoading(true);
-    const [runSlice, neighborsSlice, relevanceSlice] = await Promise.all([
+    const [runSlice, neighborsSlice, relevanceSlice, overlapsSlice] = await Promise.all([
       settle("run", getRun(runId)),
       settle("neighbors", getNeighbors(entityId)),
-      settle("relevance", getRelevance(entityId, positionId))
+      settle("relevance", getRelevance(entityId, positionId)),
+      settle("overlaps", getOverlaps())
     ]);
 
     setDetail({
@@ -65,12 +76,14 @@ export function useStockDetail(
       intelItems: runSlice.data?.intel_items ?? [],
       thesis: runSlice.data?.thesis ?? null,
       neighbors: neighborsSlice.data?.edges ?? [],
+      overlaps: overlapsSlice.data ?? [],
       relevancePath: relevanceSlice.data?.path ?? []
     });
     setErrors(
       collectErrors({
         run: runSlice,
         neighbors: neighborsSlice,
+        overlaps: overlapsSlice,
         relevance: relevanceSlice
       })
     );
@@ -99,6 +112,7 @@ function emptyDetail(
     intelItems: [],
     thesis: null,
     neighbors: [],
+    overlaps: [],
     relevancePath: []
   };
 }
@@ -117,6 +131,7 @@ async function settle<T>(
 function collectErrors(slices: {
   run: SettledSlice<unknown>;
   neighbors: SettledSlice<unknown>;
+  overlaps: SettledSlice<unknown>;
   relevance: SettledSlice<unknown>;
 }): StockDetailErrors {
   return Object.fromEntries(

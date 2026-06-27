@@ -7,6 +7,7 @@ import type { ConfirmationInput } from "../../types/api";
 import { AttentionNotes } from "./AttentionNotes";
 import { ChainMini } from "./ChainMini";
 import { IntelStream } from "./IntelStream";
+import { PortfolioOverlap } from "./PortfolioOverlap";
 import { PositionRelation } from "./PositionRelation";
 import { StatusSummary } from "./StatusSummary";
 import { ThesisPanel } from "./ThesisPanel";
@@ -53,6 +54,10 @@ export function StockDetail({
       />
       <ChainMini edges={stock.detail.neighbors} />
       <PositionRelation path={stock.detail.relevancePath} />
+      <PortfolioOverlap
+        entityId={entityId}
+        overlaps={stock.detail.overlaps}
+      />
       <ThesisPanel
         onConfirm={(status) => void handleConfirm(status)}
         onEvidenceClick={open}
