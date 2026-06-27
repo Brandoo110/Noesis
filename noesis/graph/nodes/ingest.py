@@ -28,5 +28,5 @@ def ingest(state: ResearchState, deps: GraphDeps) -> ResearchStateUpdate:
 def _query(entity: ResolvedEntity) -> str:
     symbol = entity.identifiers.get("symbol")
     if symbol:
-        return f"{entity.name} {symbol} stock latest news earnings results"
-    return f"{entity.name} stock latest news earnings results"
+        return f'"{entity.name}" {symbol} company business products developments'
+    return f'"{entity.name}" company business products developments'
