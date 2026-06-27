@@ -135,6 +135,8 @@ describe("PortfolioHome", () => {
     listPositionsMock.mockResolvedValue([
       makePosition({ id: "position-1", symbol: "AAPL", name: "Apple" })
     ]);
+    getOverlapsMock.mockResolvedValueOnce([]);
+    getOverlapsMock.mockResolvedValueOnce([makeOverlapGroup()]);
     startRunMock.mockResolvedValue({
       run_id: "run-1",
       status: "awaiting_confirmation",
@@ -150,6 +152,8 @@ describe("PortfolioHome", () => {
     await waitFor(() => expect(startRunMock).toHaveBeenCalledWith("position-1"));
     expect(screen.getByText("awaiting_confirmation")).toBeInTheDocument();
     expect(screen.getByText("run-1")).toBeInTheDocument();
+    expect(await screen.findByText("Consumer Electronics")).toBeInTheDocument();
+    expect(getOverlapsMock).toHaveBeenCalledTimes(2);
   });
 
   it("opens GraphExplorer when a run has a seed entity", async () => {

@@ -33,8 +33,13 @@ export function PortfolioHome(): JSX.Element {
   const [isSaving, setIsSaving] = useState(false);
   const [activePositionId, setActivePositionId] = useState<string | null>(null);
   const [graphSeed, setGraphSeed] = useState<GraphSeed | null>(null);
+  const [overlapRefreshKey, setOverlapRefreshKey] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const run = useRun();
+
+  const refreshOverlaps = useCallback((): void => {
+    setOverlapRefreshKey((current) => current + 1);
+  }, []);
 
   const refreshPositions = useCallback(async (): Promise<void> => {
     setIsLoading(true);
@@ -72,6 +77,7 @@ export function PortfolioHome(): JSX.Element {
     setActivePositionId(positionId);
     try {
       await run.start(positionId);
+      refreshOverlaps();
     } catch (caught) {
       setError(toErrorMessage(caught));
     }
@@ -81,6 +87,7 @@ export function PortfolioHome(): JSX.Element {
     setError(null);
     try {
       await run.refresh();
+      refreshOverlaps();
     } catch (caught) {
       setError(toErrorMessage(caught));
     }
@@ -153,7 +160,7 @@ export function PortfolioHome(): JSX.Element {
           runStatus={run.status}
         />
       )}
-      {!isLoading ? <OverlapPanel /> : null}
+      {!isLoading ? <OverlapPanel refreshKey={overlapRefreshKey} /> : null}
       {graphSeed ? (
         <GraphExplorer
           onThesisConfirmed={() => void handleThesisConfirmed()}

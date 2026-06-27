@@ -2,6 +2,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import * as client from "../../api/client";
+import { makeOverlapGroup } from "../../test/m3-fixtures";
 import { OverlapPanel } from "./OverlapPanel";
 
 vi.mock("../../api/client", () => ({
@@ -90,5 +91,18 @@ describe("OverlapPanel", () => {
     await waitFor(() =>
       expect(screen.getByText("有出处")).toBeInTheDocument()
     );
+  });
+
+  it("reloads overlaps when refreshKey changes", async () => {
+    getOverlapsMock.mockResolvedValueOnce([]);
+    getOverlapsMock.mockResolvedValueOnce([makeOverlapGroup()]);
+
+    const { rerender } = render(<OverlapPanel refreshKey={0} />);
+
+    expect(await screen.findByText("暂无产业段重叠")).toBeInTheDocument();
+    rerender(<OverlapPanel refreshKey={1} />);
+
+    expect(await screen.findByText("Consumer Electronics")).toBeInTheDocument();
+    expect(getOverlapsMock).toHaveBeenCalledTimes(2);
   });
 });

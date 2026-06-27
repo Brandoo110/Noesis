@@ -3,7 +3,13 @@ import { useEffect, useState } from "react";
 import { getOverlaps } from "../../api/client";
 import type { Basis, OverlapGroup } from "../../types/api";
 
-export function OverlapPanel(): JSX.Element {
+interface OverlapPanelProps {
+  refreshKey?: number;
+}
+
+export function OverlapPanel({
+  refreshKey = 0
+}: OverlapPanelProps): JSX.Element {
   const [groups, setGroups] = useState<OverlapGroup[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -31,7 +37,7 @@ export function OverlapPanel(): JSX.Element {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [refreshKey]);
 
   return (
     <small aria-label="组合重叠提示" data-testid="overlap-panel">
