@@ -1,5 +1,7 @@
 from collections import deque
 from dataclasses import dataclass
+from collections.abc import Sequence
+from typing import Literal, cast
 from typing import Protocol
 
 from noesis.db.models import EntityRow, GraphEdgeRow
@@ -20,6 +22,23 @@ class EntityRef:
     id: str
     name: str
     symbol: str | None
+
+
+@dataclass(frozen=True)
+class OverlapPosition:
+    position_id: str
+    symbol: str
+    entity_id: str
+    confidence: float
+
+
+@dataclass(frozen=True)
+class OverlapGroup:
+    segment_id: str
+    segment_name: str
+    node_type: Literal["segment", "theme"]
+    basis: Literal["inferred", "source_backed"]
+    positions: list[OverlapPosition]
 
 
 def relevance_path(
@@ -79,3 +98,60 @@ def representative_stocks(
             )
         )
     return refs
+
+
+def portfolio_overlap(
+    positions_with_seed: Sequence[tuple[str, str, str]],
+    edges_repo: EdgesReader,
+    entities_repo: EntitiesReader,
+) -> list[OverlapGroup]:
+    grouped: dict[str, list[tuple[OverlapPosition, str]]] = {}
+    for position_id, symbol, seed_entity_id in positions_with_seed:
+        belongs_to_edges = [
+            edge
+            for edge in edges_repo.list_from(seed_entity_id)
+            if edge.relation == "belongs_to"
+        ]
+        for edge in belongs_to_edges:
+            grouped.setdefault(edge.to_entity_id, []).append(
+                (
+                    OverlapPosition(
+                        position_id=position_id,
+                        symbol=symbol,
+                        entity_id=seed_entity_id,
+                        confidence=edge.confidence,
+                    ),
+                    edge.basis,
+                )
+            )
+
+    groups: list[OverlapGroup] = []
+    for segment_id, entries in grouped.items():
+        if len(entries) < 2:
+            continue
+        segment = entities_repo.get(segment_id)
+        if segment is None or segment.node_type not in {"segment", "theme"}:
+            continue
+        positions = [position for position, _basis in entries]
+        groups.append(
+            OverlapGroup(
+                segment_id=segment.id,
+                segment_name=segment.name,
+                node_type=cast(Literal["segment", "theme"], segment.node_type),
+                basis=_overlap_basis([basis for _position, basis in entries]),
+                positions=positions,
+            )
+        )
+
+    return sorted(
+        groups,
+        key=lambda group: (
+            len(group.positions),
+            max(position.confidence for position in group.positions),
+        ),
+        reverse=True,
+    )
+
+
+def _overlap_basis(bases: Sequence[str]) -> Literal["inferred", "source_backed"]:
+    return "inferred" if "inferred" in bases else "source_backed"

@@ -2,7 +2,14 @@ from dataclasses import dataclass
 
 from noesis.db.models import EntityRow
 from noesis.db.models import GraphEdgeRow
-from noesis.graph.traversal import EntityRef, relevance_path, representative_stocks
+from noesis.graph.traversal import (
+    EntityRef,
+    OverlapGroup,
+    OverlapPosition,
+    portfolio_overlap,
+    relevance_path,
+    representative_stocks,
+)
 
 NOW = "2026-06-26T00:00:00Z"
 
@@ -98,11 +105,155 @@ def test_representative_stocks_returns_empty_for_empty_segment() -> None:
     assert stocks == []
 
 
+def test_portfolio_overlap_groups_shared_segment_with_weakest_basis() -> None:
+    edges = FakeEdgesRepo(
+        [
+            edge(
+                "entity-aapl",
+                "segment-consumer",
+                relation="belongs_to",
+                basis="source_backed",
+                confidence=0.9,
+            ),
+            edge(
+                "entity-msft",
+                "segment-consumer",
+                relation="belongs_to",
+                basis="inferred",
+                confidence=0.7,
+            ),
+        ]
+    )
+    entities = FakeEntitiesRepo(
+        {"segment-consumer": entity("segment-consumer", "Consumer Electronics", None, "segment")}
+    )
+
+    groups = portfolio_overlap(
+        [
+            ("position-aapl", "AAPL", "entity-aapl"),
+            ("position-msft", "MSFT", "entity-msft"),
+        ],
+        edges,
+        entities,
+    )
+
+    assert groups == [
+        OverlapGroup(
+            segment_id="segment-consumer",
+            segment_name="Consumer Electronics",
+            node_type="segment",
+            basis="inferred",
+            positions=[
+                OverlapPosition(
+                    position_id="position-aapl",
+                    symbol="AAPL",
+                    entity_id="entity-aapl",
+                    confidence=0.9,
+                ),
+                OverlapPosition(
+                    position_id="position-msft",
+                    symbol="MSFT",
+                    entity_id="entity-msft",
+                    confidence=0.7,
+                ),
+            ],
+        )
+    ]
+
+
+def test_portfolio_overlap_ignores_single_position_segments() -> None:
+    groups = portfolio_overlap(
+        [("position-aapl", "AAPL", "entity-aapl")],
+        FakeEdgesRepo(
+            [
+                edge(
+                    "entity-aapl",
+                    "segment-consumer",
+                    relation="belongs_to",
+                    basis="source_backed",
+                )
+            ]
+        ),
+        FakeEntitiesRepo(
+            {"segment-consumer": entity("segment-consumer", "Consumer Electronics", None, "segment")}
+        ),
+    )
+
+    assert groups == []
+
+
+def test_portfolio_overlap_returns_empty_for_distinct_segments() -> None:
+    edges = FakeEdgesRepo(
+        [
+            edge("entity-a", "segment-a", relation="belongs_to"),
+            edge("entity-b", "segment-b", relation="belongs_to"),
+            edge("entity-c", "segment-c", relation="belongs_to"),
+        ]
+    )
+    entities = FakeEntitiesRepo(
+        {
+            "segment-a": entity("segment-a", "Segment A", None, "segment"),
+            "segment-b": entity("segment-b", "Segment B", None, "segment"),
+            "segment-c": entity("segment-c", "Segment C", None, "segment"),
+        }
+    )
+
+    groups = portfolio_overlap(
+        [
+            ("position-a", "AAA", "entity-a"),
+            ("position-b", "BBB", "entity-b"),
+            ("position-c", "CCC", "entity-c"),
+        ],
+        edges,
+        entities,
+    )
+
+    assert groups == []
+
+
+def test_portfolio_overlap_sorts_by_position_count_then_confidence() -> None:
+    edges = FakeEdgesRepo(
+        [
+            edge("entity-a", "segment-big", relation="belongs_to", confidence=0.5),
+            edge("entity-b", "segment-big", relation="belongs_to", confidence=0.6),
+            edge("entity-c", "segment-big", relation="belongs_to", confidence=0.7),
+            edge("entity-a", "segment-high", relation="belongs_to", confidence=0.99),
+            edge("entity-b", "segment-high", relation="belongs_to", confidence=0.98),
+            edge("entity-a", "segment-low", relation="belongs_to", confidence=0.4),
+            edge("entity-c", "segment-low", relation="belongs_to", confidence=0.3),
+        ]
+    )
+    entities = FakeEntitiesRepo(
+        {
+            "segment-big": entity("segment-big", "Big Segment", None, "segment"),
+            "segment-high": entity("segment-high", "High Confidence Segment", None, "segment"),
+            "segment-low": entity("segment-low", "Low Confidence Segment", None, "segment"),
+        }
+    )
+
+    groups = portfolio_overlap(
+        [
+            ("position-a", "AAA", "entity-a"),
+            ("position-b", "BBB", "entity-b"),
+            ("position-c", "CCC", "entity-c"),
+        ],
+        edges,
+        entities,
+    )
+
+    assert [group.segment_id for group in groups] == [
+        "segment-big",
+        "segment-high",
+        "segment-low",
+    ]
+
+
 def edge(
     from_entity_id: str,
     to_entity_id: str,
     *,
     relation: str = "supplier",
+    basis: str = "inferred",
     confidence: float = 0.7,
 ) -> GraphEdgeRow:
     return GraphEdgeRow(
@@ -110,7 +261,7 @@ def edge(
         from_entity_id=from_entity_id,
         to_entity_id=to_entity_id,
         relation=relation,
-        basis="inferred",
+        basis=basis,
         confidence=confidence,
         evidence_ids_json="[]",
         run_id="run-1",
@@ -119,13 +270,20 @@ def edge(
     )
 
 
-def entity(id: str, name: str, symbol: str) -> EntityRow:
+def entity(
+    id: str,
+    name: str,
+    symbol: str | None,
+    node_type: str = "company",
+) -> EntityRow:
+    identifiers = "{}" if symbol is None else f'{{"symbol":"{symbol}"}}'
+    aliases = "[]" if symbol is None else f'["{symbol}"]'
     return EntityRow(
         id=id,
-        node_type="company",
+        node_type=node_type,
         name=name,
-        aliases_json=f'["{symbol}"]',
-        identifiers_json=f'{{"symbol":"{symbol}"}}',
+        aliases_json=aliases,
+        identifiers_json=identifiers,
         market="US",
         created_at=NOW,
         updated_at=NOW,
