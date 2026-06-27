@@ -1,4 +1,4 @@
-import type { NodeProps } from "reactflow";
+import { Handle, Position as FlowPosition, type NodeProps } from "reactflow";
 
 import { nodeClassName, nodeStyle } from "../../lib/visual";
 import type { EntityNode } from "../../types/api";
@@ -12,7 +12,8 @@ export interface EntityNodeViewData {
 }
 
 export function EntityNodeView({
-  data
+  data,
+  isConnectable
 }: NodeProps<EntityNodeViewData>): JSX.Element {
   const { entity } = data;
   return (
@@ -21,6 +22,12 @@ export function EntityNodeView({
       data-testid={`entity-node-${entity.id}`}
       style={nodeStyle(entity.node_type, data.isSeed)}
     >
+      <Handle
+        data-testid={`target-handle-${entity.id}`}
+        isConnectable={isConnectable}
+        position={FlowPosition.Left}
+        type="target"
+      />
       <strong>{entity.symbol ?? entity.name}</strong>
       <span>{entity.name}</span>
       <small>{entity.node_type}</small>
@@ -42,6 +49,12 @@ export function EntityNodeView({
           详情
         </button>
       ) : null}
+      <Handle
+        data-testid={`source-handle-${entity.id}`}
+        isConnectable={isConnectable}
+        position={FlowPosition.Right}
+        type="source"
+      />
     </article>
   );
 }

@@ -68,6 +68,17 @@ vi.mock("reactflow", async () => ({
   ),
   Background: () => null,
   Controls: () => null,
+  Handle: ({
+    "data-testid": testId,
+    type
+  }: {
+    "data-testid"?: string;
+    type: string;
+  }) => <span data-testid={testId} data-type={type} />,
+  Position: {
+    Left: "left",
+    Right: "right"
+  },
   ReactFlowProvider: ({ children }: { children: ReactNode }) => <>{children}</>
 }));
 
