@@ -11,6 +11,7 @@ import {
   makeOverlapGroup,
   makeRunDetail
 } from "../../test/m3-fixtures";
+import { REDLINE_PATTERN } from "../../test/redline";
 import type { UseStockDetailResult } from "../../hooks/use-stock-detail";
 import { useStockDetail } from "../../hooks/use-stock-detail";
 import type { StockDetailData } from "../../hooks/use-stock-detail";
@@ -150,11 +151,7 @@ describe("StockDetail", () => {
       </EvidenceDrawerProvider>
     );
 
-    expect(
-      screen.queryByText(
-        /买入|卖出|加仓|减仓|目标价|股价预测|target price|建议|分散|配置|再平衡/i
-      )
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText(REDLINE_PATTERN)).not.toBeInTheDocument();
     const attention = screen.getByLabelText("关注点列表");
     expect(attention.tagName.toLowerCase()).toBe("small");
     expect(within(attention).getByText(/仅供参考/)).toBeInTheDocument();

@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as client from "./api/client";
 import { App } from "./App";
 import { makeEntity, makeEvidence, makeOverlapGroup, makeRunDetail } from "./test/m3-fixtures";
+import { REDLINE_PATTERN } from "./test/redline";
 import type { CreatePositionInput, EntityNode, Position, RunDetail } from "./types/api";
 
 vi.mock("reactflow", async () => ({
@@ -144,9 +145,7 @@ describe("App M4 overlap path", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "确认 thesis 假设" }));
     await waitFor(() => expect(screen.getByText("completed")).toBeInTheDocument());
-    expect(document.body.textContent).not.toMatch(
-      /买入|卖出|加仓|减仓|目标价|建议分散|调整配置|再平衡/
-    );
+    expect(document.body.textContent).not.toMatch(REDLINE_PATTERN);
     expect(consoleErrorMock).not.toHaveBeenCalled();
   });
 });

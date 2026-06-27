@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import * as client from "../../api/client";
 import { makeOverlapGroup } from "../../test/m3-fixtures";
+import { REDLINE_PATTERN } from "../../test/redline";
 import { OverlapPanel } from "./OverlapPanel";
 
 vi.mock("../../api/client", () => ({
@@ -49,7 +50,7 @@ describe("OverlapPanel", () => {
     expect(within(panel).getByText("Consumer Electronics")).toBeInTheDocument();
     expect(within(panel).getByText("AAPL / MSFT")).toBeInTheDocument();
     expect(within(panel).getByText("基于推断")).toBeInTheDocument();
-    expect(panel.textContent).not.toMatch(/建议|减仓|分散|配置|再平衡/);
+    expect(panel.textContent).not.toMatch(REDLINE_PATTERN);
   });
 
   it("shows an empty overlap state", async () => {

@@ -13,6 +13,7 @@ import {
   makePosition,
   makeRunDetail
 } from "./test/m3-fixtures";
+import { REDLINE_PATTERN } from "./test/redline";
 import type { Position } from "./types/api";
 
 vi.mock("reactflow", async () => ({
@@ -233,9 +234,7 @@ describe("App M3 integration path", () => {
     const attention = screen.getByLabelText("关注点列表");
     expect(attention.tagName.toLowerCase()).toBe("small");
     expect(within(attention).getByText("仅供参考")).toBeInTheDocument();
-    expect(document.body.textContent).not.toMatch(
-      /买入|卖出|加仓|减仓|目标价|涨幅预测|建议|分散|配置|再平衡/
-    );
+    expect(document.body.textContent).not.toMatch(REDLINE_PATTERN);
     expect(consoleErrorMock).not.toHaveBeenCalled();
   });
 });

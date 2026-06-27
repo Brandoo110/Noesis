@@ -2,6 +2,7 @@ import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { makeOverlapGroup } from "../../test/m3-fixtures";
+import { REDLINE_PATTERN } from "../../test/redline";
 import { PortfolioOverlap } from "./PortfolioOverlap";
 
 describe("PortfolioOverlap", () => {
@@ -22,7 +23,7 @@ describe("PortfolioOverlap", () => {
     expect(within(notes).getByText("MSFT")).toBeInTheDocument();
     expect(within(notes).queryByText("AAPL")).not.toBeInTheDocument();
     expect(within(notes).getByText("基于推断")).toBeInTheDocument();
-    expect(notes.textContent).not.toMatch(/建议|减仓|分散|配置|再平衡/);
+    expect(notes.textContent).not.toMatch(REDLINE_PATTERN);
   });
 
   it("shows an empty state when the current entity is not in any overlap group", () => {

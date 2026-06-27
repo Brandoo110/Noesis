@@ -123,6 +123,43 @@ def test_check_investment_redlines_matches_english_and_chinese_terms() -> None:
     assert check_investment_redlines(chinese)[0].target_ref == "thesis:redline"
 
 
+def test_check_investment_redlines_matches_english_rating_terms() -> None:
+    price_target = ThesisDraft(
+        summary="Analysts set a price target $250.",
+        assumptions=[
+            ThesisAssumptionDraft(
+                text="Evidence-backed assumption.",
+                kind="assumption",
+                evidence_ids=["evidence-1"],
+            )
+        ],
+    )
+    overweight = ThesisDraft(
+        summary="Evidence-backed business update.",
+        assumptions=[
+            ThesisAssumptionDraft(
+                text="The thesis mentions an overweight rating.",
+                kind="assumption",
+                evidence_ids=["evidence-1"],
+            )
+        ],
+    )
+    fundamentals = ThesisDraft(
+        summary="Revenue grew due to stronger product demand.",
+        assumptions=[
+            ThesisAssumptionDraft(
+                text="Management expanded capacity for a new product line.",
+                kind="assumption",
+                evidence_ids=["evidence-1"],
+            )
+        ],
+    )
+
+    assert check_investment_redlines(price_target)[0].target_ref == "thesis:redline"
+    assert check_investment_redlines(overweight)[0].code == "bad_basis"
+    assert check_investment_redlines(fundamentals) == []
+
+
 def test_check_edge_basis_flags_source_backed_without_valid_evidence() -> None:
     evidences = [make_evidence("evidence-1")]
 
