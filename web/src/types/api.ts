@@ -95,6 +95,21 @@ export interface Relevance {
   path: EntityNode[];
 }
 
+export interface OverlapPosition {
+  position_id: string;
+  symbol: string;
+  entity_id: string;
+  confidence: number;
+}
+
+export interface OverlapGroup {
+  segment_id: string;
+  segment_name: string;
+  node_type: "segment" | "theme";
+  basis: Basis;
+  positions: OverlapPosition[];
+}
+
 export interface CreatePositionInput {
   symbol: string;
   market: string;

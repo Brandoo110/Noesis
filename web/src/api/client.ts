@@ -5,6 +5,7 @@ import type {
   EntityNode,
   Evidence,
   ExpandResult,
+  OverlapGroup,
   Position,
   Relevance,
   RunDetail,
@@ -98,6 +99,10 @@ export async function getRepresentatives(segmentId: string): Promise<EntityNode[
 
 export function getEvidence(id: string): Promise<Evidence> {
   return request<Evidence>(`/evidences/${encodeURIComponent(id)}`);
+}
+
+export function getOverlaps(): Promise<OverlapGroup[]> {
+  return request<OverlapGroup[]>("/portfolio/overlaps");
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
