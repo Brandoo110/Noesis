@@ -152,7 +152,7 @@ export function PortfolioHome(): JSX.Element {
         <PositionList
           activePositionId={activePositionId}
           onViewGraph={(positionId, seedEntity) => {
-            if (run.runId) {
+            if (run.runId && run.positionId === positionId) {
               setGraphSeed({ positionId, runId: run.runId, seedEntity });
             }
           }}
@@ -160,6 +160,7 @@ export function PortfolioHome(): JSX.Element {
           positions={positions}
           runEntity={run.entity}
           runId={run.runId}
+          runPositionId={run.positionId}
           runStatus={run.status}
         />
       )}

@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { getRun, startRun } from "../api/client";
-import type { EntityNode, RunDetail, RunStatus } from "../types/api";
+import type { EntityNode, RunDetail, RunStatus, RunSummary } from "../types/api";
 
 type RunViewStatus = "idle" | RunStatus;
 
@@ -14,6 +14,7 @@ export interface UseRunResult {
   refresh: () => Promise<void>;
   status: RunViewStatus;
   runId: string | null;
+  positionId: string | null;
   thesisId: string | null;
   entityId: string | null;
   entity: EntityNode | null;
@@ -25,10 +26,12 @@ export function useRun(options: UseRunOptions = {}): UseRunResult {
   const pollMs = options.pollMs ?? DEFAULT_POLL_MS;
   const [status, setStatus] = useState<RunViewStatus>("idle");
   const [runId, setRunId] = useState<string | null>(null);
+  const [positionId, setPositionId] = useState<string | null>(null);
   const [thesisId, setThesisId] = useState<string | null>(null);
   const [entityId, setEntityId] = useState<string | null>(null);
   const [entity, setEntity] = useState<EntityNode | null>(null);
   const [pollingRunId, setPollingRunId] = useState<string | null>(null);
+  const startRequestIdRef = useRef(0);
 
   const applyDetail = useCallback((detail: RunDetail): void => {
     setStatus(detail.status as RunStatus);
@@ -59,20 +62,41 @@ export function useRun(options: UseRunOptions = {}): UseRunResult {
     return () => window.clearInterval(intervalId);
   }, [pollingRunId, pollMs, pollRun]);
 
-  const start = useCallback(async (positionId: string): Promise<void> => {
-    const summary = await startRun(positionId);
+  const start = useCallback(async (nextPositionId: string): Promise<void> => {
+    const requestId = startRequestIdRef.current + 1;
+    startRequestIdRef.current = requestId;
+    setPositionId(nextPositionId);
+    setRunId(null);
+    setThesisId(null);
+    setEntityId(null);
+    setEntity(null);
+    setPollingRunId(null);
+    setStatus("running");
+    let summary: RunSummary;
+    try {
+      summary = await startRun(nextPositionId);
+    } catch (caught) {
+      if (requestId === startRequestIdRef.current) {
+        setStatus("failed");
+      }
+      throw caught;
+    }
+    if (requestId !== startRequestIdRef.current) {
+      return;
+    }
     setRunId(summary.run_id);
     setStatus(summary.status);
     setThesisId(summary.thesis_id);
-    setEntityId(null);
-    setEntity(null);
     if (summary.status === "running") {
       setPollingRunId(summary.run_id);
       return;
     }
     setPollingRunId(null);
-    await pollRun(summary.run_id);
-  }, [pollRun]);
+    const detail = await getRun(summary.run_id);
+    if (requestId === startRequestIdRef.current) {
+      applyDetail(detail);
+    }
+  }, [applyDetail]);
 
   const refresh = useCallback(async (): Promise<void> => {
     if (!runId) {
@@ -86,6 +110,7 @@ export function useRun(options: UseRunOptions = {}): UseRunResult {
     refresh,
     status,
     runId,
+    positionId,
     thesisId,
     entityId,
     entity

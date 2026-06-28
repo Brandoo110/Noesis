@@ -7,6 +7,7 @@ export interface PositionListProps {
   positions: Position[];
   runEntity: EntityNode | null;
   runId: string | null;
+  runPositionId: string | null;
   runStatus: string;
 }
 
@@ -17,6 +18,7 @@ export function PositionList({
   positions,
   runEntity,
   runId,
+  runPositionId,
   runStatus
 }: PositionListProps): JSX.Element {
   if (positions.length === 0) {
@@ -42,7 +44,7 @@ export function PositionList({
             <span aria-label={`研究状态 ${position.symbol}`}>
               <span>{runStatus}</span>
               {runId ? <span>{runId}</span> : null}
-              {canViewGraph(runStatus, runEntity) ? (
+              {canViewGraph(runStatus, runEntity, runPositionId, position.id) ? (
                 <button
                   aria-label={`查看图谱 ${position.symbol}`}
                   onClick={() => onViewGraph(position.id, runEntity)}
@@ -61,9 +63,12 @@ export function PositionList({
 
 function canViewGraph(
   runStatus: string,
-  runEntity: EntityNode | null
+  runEntity: EntityNode | null,
+  runPositionId: string | null,
+  positionId: string
 ): runEntity is EntityNode {
   return (
+    runPositionId === positionId &&
     runEntity !== null &&
     (runStatus === "awaiting_confirmation" || runStatus === "completed")
   );
