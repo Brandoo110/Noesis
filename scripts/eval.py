@@ -1,0 +1,319 @@
+"""Run Noesis research quality evaluation.
+
+Default mode is offline: read existing runs from the configured SQLite DB and
+print quality metrics. Use --live only when you intentionally want to call real
+search/LLM providers.
+"""
+
+from __future__ import annotations
+
+import argparse
+import sqlite3
+import sys
+from collections.abc import Iterator, Sequence
+from contextlib import contextmanager
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Literal, cast
+from uuid import uuid4
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from noesis.config.settings import Settings
+from noesis.db.connection import connect, with_tx
+from noesis.db.migrate import migrate
+from noesis.db.models import EntityRow, GraphEdgeRow, PositionRow, RunRow
+from noesis.eval.cases import EVAL_CASES, EvalCase
+from noesis.eval.metrics import EvalMetrics, evaluate_run
+from noesis.graph.runner import build_graph_deps, get_run_snapshot, start_run
+from noesis.graph.schemas import GraphEdgeDraft, PositionInput, ResolvedEntity
+from noesis.graph.state import GraphDeps
+from noesis.tools.llm.router import LLMRouter
+from noesis.tools.search.tavily import TavilySearchAdapter
+
+
+@dataclass(frozen=True)
+class EvalArgs:
+    from_db: bool
+    db_path: str | None
+
+
+@dataclass(frozen=True)
+class EvalCaseResult:
+    symbol: str
+    run_id: str | None
+    status: str
+    metrics: EvalMetrics | None
+
+
+@dataclass(frozen=True)
+class EvalReport:
+    results: tuple[EvalCaseResult, ...]
+    averages: EvalMetrics
+
+
+@dataclass(frozen=True)
+class EvalRuntime:
+    deps: GraphDeps
+    conn: sqlite3.Connection
+    checkpoint_conn: sqlite3.Connection
+
+
+def parse_args(argv: Sequence[str] | None = None) -> EvalArgs:
+    parser = argparse.ArgumentParser(description="Run Noesis eval metrics.")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--from-db", dest="from_db", action="store_true", default=True)
+    mode.add_argument("--live", dest="from_db", action="store_false")
+    parser.add_argument("--db-path", default=None)
+    parsed = parser.parse_args(argv)
+    return EvalArgs(from_db=bool(parsed.from_db), db_path=parsed.db_path)
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    args = parse_args(argv)
+    settings = Settings()
+    db_path = args.db_path or settings.db_path
+    with runtime(settings, db_path) as current:
+        report = (
+            evaluate_existing_runs(EVAL_CASES, current.deps)
+            if args.from_db
+            else evaluate_live_runs(EVAL_CASES, current.deps)
+        )
+    print(format_report(report))
+    return 0
+
+
+def evaluate_existing_runs(
+    cases: Sequence[EvalCase], deps: GraphDeps
+) -> EvalReport:
+    results: list[EvalCaseResult] = []
+    for case in cases:
+        run = _latest_seed_run(case, deps)
+        if run is None:
+            results.append(
+                EvalCaseResult(
+                    symbol=case.symbol,
+                    run_id=None,
+                    status="missing",
+                    metrics=None,
+                )
+            )
+            continue
+        results.append(_evaluate_run_row(case, run, deps))
+    return EvalReport(results=tuple(results), averages=_average_metrics(results))
+
+
+def evaluate_live_runs(cases: Sequence[EvalCase], deps: GraphDeps) -> EvalReport:
+    results: list[EvalCaseResult] = []
+    for case in cases:
+        position_id = _ensure_position(case, deps)
+        handle = start_run(position_id, deps)
+        run = deps.repos.runs.get(handle.run_id)
+        if run is None:
+            results.append(
+                EvalCaseResult(
+                    symbol=case.symbol,
+                    run_id=handle.run_id,
+                    status="missing",
+                    metrics=None,
+                )
+            )
+            continue
+        results.append(_evaluate_run_row(case, run, deps))
+    return EvalReport(results=tuple(results), averages=_average_metrics(results))
+
+
+def format_report(report: EvalReport) -> str:
+    lines: list[str] = ["Noesis eval report"]
+    for result in report.results:
+        if result.metrics is None:
+            lines.append(f"case {result.symbol} status={result.status} run_id=None")
+            continue
+        lines.append(
+            "case "
+            f"{result.symbol} status={result.status} run_id={result.run_id} "
+            f"grounding_rate={result.metrics['grounding_rate']:.2f} "
+            f"redline_compliance={result.metrics['redline_compliance']:.2f} "
+            f"basis_honesty={result.metrics['basis_honesty']:.2f} "
+            f"anchor_rate={result.metrics['anchor_rate']:.2f}"
+        )
+    lines.append(
+        "average "
+        f"grounding_rate={report.averages['grounding_rate']:.2f} "
+        f"redline_compliance={report.averages['redline_compliance']:.2f} "
+        f"basis_honesty={report.averages['basis_honesty']:.2f} "
+        f"anchor_rate={report.averages['anchor_rate']:.2f}"
+    )
+    return "\n".join(lines)
+
+
+@contextmanager
+def runtime(settings: Settings, db_path: str) -> Iterator[EvalRuntime]:
+    conn = connect(db_path)
+    checkpoint_conn = sqlite3.connect(_checkpoint_path(db_path), check_same_thread=False)
+    try:
+        migrate(conn)
+        deps = build_graph_deps(
+            conn=conn,
+            checkpoint_conn=checkpoint_conn,
+            chroma_dir=settings.chroma_dir,
+            search=TavilySearchAdapter(settings.tavily_api_key),
+            llm=LLMRouter.from_env(settings),
+            now=_utc_now,
+        )
+        yield EvalRuntime(deps=deps, conn=conn, checkpoint_conn=checkpoint_conn)
+    finally:
+        checkpoint_conn.close()
+        conn.close()
+
+
+def _evaluate_run_row(case: EvalCase, run: RunRow, deps: GraphDeps) -> EvalCaseResult:
+    snapshot = get_run_snapshot(run.id, deps)
+    target = snapshot.resolved_entity or _target_from_case(case, run.entity_id, deps)
+    entity_id = run.entity_id or target.entity_id
+    edges = _edges_for_entity(entity_id, deps) if entity_id else []
+    metrics = evaluate_run(
+        snapshot.intel_items,
+        snapshot.thesis_draft,
+        edges,
+        snapshot.evidences,
+        target,
+    )
+    return EvalCaseResult(
+        symbol=case.symbol,
+        run_id=run.id,
+        status="evaluated",
+        metrics=metrics,
+    )
+
+
+def _latest_seed_run(case: EvalCase, deps: GraphDeps) -> RunRow | None:
+    row = deps.repos.conn.execute(
+        """
+        SELECT run_registry.* FROM run_registry
+        JOIN positions ON positions.id = run_registry.position_id
+        WHERE upper(positions.symbol) = ?
+          AND positions.market = ?
+          AND run_registry.node_kind = 'seed'
+        ORDER BY run_registry.started_at DESC, run_registry.created_at DESC,
+                 run_registry.id DESC
+        LIMIT 1
+        """,
+        (case.symbol.upper(), case.market),
+    ).fetchone()
+    if row is None:
+        return None
+    return deps.repos.runs.get(str(row["id"]))
+
+
+def _ensure_position(case: EvalCase, deps: GraphDeps) -> str:
+    row = deps.repos.conn.execute(
+        """
+        SELECT * FROM positions
+        WHERE user_id = 'local-user' AND upper(symbol) = ? AND market = ?
+        ORDER BY created_at DESC, id DESC
+        LIMIT 1
+        """,
+        (case.symbol.upper(), case.market),
+    ).fetchone()
+    if row is not None:
+        return str(row["id"])
+    position_id = f"position-{uuid4().hex}"
+    now = deps.now()
+    with with_tx(deps.repos.conn):
+        deps.repos.positions.insert(
+            PositionRow(
+                id=position_id,
+                user_id="local-user",
+                symbol=case.symbol,
+                market=case.market,
+                name=case.name,
+                kind="owned",
+                qty=None,
+                cost_basis=None,
+                created_at=now,
+                updated_at=now,
+            )
+        )
+    return position_id
+
+
+def _target_from_case(
+    case: EvalCase, entity_id: str | None, deps: GraphDeps
+) -> ResolvedEntity:
+    row = deps.repos.entities.get(entity_id) if entity_id else None
+    if row is not None:
+        return _target_from_entity(row)
+    return ResolvedEntity(
+        entity_id=entity_id or "",
+        node_type="company",
+        name=case.name,
+        aliases=[case.symbol],
+        identifiers={"symbol": case.symbol},
+        market=case.market,
+    )
+
+
+def _target_from_entity(row: EntityRow) -> ResolvedEntity:
+    return ResolvedEntity(
+        entity_id=row.id,
+        node_type=cast(Literal["company", "segment", "theme"], row.node_type),
+        name=row.name,
+        aliases=row.aliases(),
+        identifiers=row.identifiers(),
+        market=row.market,
+    )
+
+
+def _edges_for_entity(entity_id: str, deps: GraphDeps) -> list[GraphEdgeDraft]:
+    return [_edge_from_row(row, deps) for row in deps.repos.graph_edges.list_from(entity_id)]
+
+
+def _edge_from_row(row: GraphEdgeRow, deps: GraphDeps) -> GraphEdgeDraft:
+    to_entity = deps.repos.entities.get(row.to_entity_id)
+    to_name = to_entity.name if to_entity is not None else row.to_entity_id
+    to_symbol = to_entity.identifiers().get("symbol") if to_entity is not None else None
+    to_node_type = to_entity.node_type if to_entity is not None else "company"
+    return GraphEdgeDraft(
+        to_name=to_name,
+        to_symbol=to_symbol,
+        to_node_type=cast(Literal["company", "segment", "theme"], to_node_type),
+        relation=cast(Literal["supplier", "customer", "competitor", "belongs_to"], row.relation),
+        basis=cast(Literal["inferred", "source_backed"], row.basis),
+        confidence=row.confidence,
+        evidence_ids=row.evidence_ids(),
+        rationale=row.rationale or "",
+    )
+
+
+def _average_metrics(results: Sequence[EvalCaseResult]) -> EvalMetrics:
+    metrics = [result.metrics for result in results if result.metrics is not None]
+    if not metrics:
+        return {
+            "grounding_rate": 0.0,
+            "redline_compliance": 0.0,
+            "basis_honesty": 0.0,
+            "anchor_rate": 0.0,
+        }
+    return {
+        key: sum(item[key] for item in metrics) / len(metrics)
+        for key in ("grounding_rate", "redline_compliance", "basis_honesty", "anchor_rate")
+    }
+
+
+def _checkpoint_path(db_path: str) -> str:
+    path = Path(db_path)
+    if path.suffix:
+        return str(path.with_suffix(f"{path.suffix}.checkpoints"))
+    return f"{db_path}.checkpoints"
+
+
+def _utc_now() -> str:
+    return datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
