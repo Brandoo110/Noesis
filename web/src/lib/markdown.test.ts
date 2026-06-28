@@ -3,7 +3,8 @@ import { describe, expect, it, vi } from "vitest";
 import { makeEdge, makeEntity, makeEvidence, makeOverlapGroup, makeRunDetail } from "../test/m3-fixtures";
 import { REDLINE_PATTERN } from "../test/redline";
 import type { StockDetailData } from "../hooks/use-stock-detail";
-import { downloadMarkdown, stockReportToMarkdown } from "./markdown";
+import type { PortfolioBrief } from "../types/api";
+import { downloadMarkdown, portfolioBriefToMarkdown, stockReportToMarkdown } from "./markdown";
 
 describe("stockReportToMarkdown", () => {
   it("renders an eight-section stock report without redline wording", () => {
@@ -58,6 +59,21 @@ describe("downloadMarkdown", () => {
   });
 });
 
+describe("portfolioBriefToMarkdown", () => {
+  it("renders portfolio positions and overlaps without redline wording", () => {
+    const markdown = portfolioBriefToMarkdown(makePortfolioBrief());
+
+    expect(markdown).toContain("# 组合 Brief");
+    expect(markdown).toContain("- **AAPL**: Apple supplier pressure is easing.");
+    expect(markdown).toContain("- **MSFT**: 尚未研究");
+    expect(markdown).toContain("Consumer Electronics");
+    expect(markdown).toContain("AAPL / MSFT");
+    expect(markdown).toContain("基于推断");
+    expect(markdown).toContain("仅供参考");
+    expect(markdown).not.toMatch(REDLINE_PATTERN);
+  });
+});
+
 function makeDetail(): StockDetailData {
   const entity = makeEntity({ id: "entity-aapl", name: "Apple Inc.", symbol: "AAPL" });
   const evidence = { ...makeEvidence(), title: "Supplier evidence" };
@@ -84,5 +100,28 @@ function makeDetail(): StockDetailData {
     ],
     overlaps: [makeOverlapGroup()],
     relevancePath: [entity, tsm]
+  };
+}
+
+function makePortfolioBrief(): PortfolioBrief {
+  return {
+    generated_at: "2026-06-28T00:00:00Z",
+    positions: [
+      {
+        position_id: "position-aapl",
+        symbol: "AAPL",
+        name: "Apple",
+        thesis_summary: "Apple supplier pressure is easing.",
+        thesis_status: "confirmed"
+      },
+      {
+        position_id: "position-msft",
+        symbol: "MSFT",
+        name: null,
+        thesis_summary: null,
+        thesis_status: null
+      }
+    ],
+    overlaps: [makeOverlapGroup()]
   };
 }

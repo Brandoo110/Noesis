@@ -3,12 +3,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import * as client from "../../api/client";
 import { makeOverlapGroup } from "../../test/m3-fixtures";
-import type { Position, RunDetail } from "../../types/api";
+import type { PortfolioBrief, Position, RunDetail } from "../../types/api";
 import { PortfolioHome } from "./PortfolioHome";
 
 vi.mock("../../api/client", () => ({
   createPosition: vi.fn(),
   getOverlaps: vi.fn(),
+  getPortfolioBrief: vi.fn(),
   getRun: vi.fn(),
   listPositions: vi.fn(),
   startRun: vi.fn()
@@ -38,6 +39,7 @@ vi.mock("../graph/GraphExplorer", () => ({
 const listPositionsMock = vi.mocked(client.listPositions);
 const createPositionMock = vi.mocked(client.createPosition);
 const getOverlapsMock = vi.mocked(client.getOverlaps);
+const getPortfolioBriefMock = vi.mocked(client.getPortfolioBrief);
 const startRunMock = vi.mocked(client.startRun);
 const getRunMock = vi.mocked(client.getRun);
 
@@ -45,6 +47,7 @@ describe("PortfolioHome", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     getOverlapsMock.mockResolvedValue([]);
+    getPortfolioBriefMock.mockResolvedValue(makeBrief());
   });
 
   afterEach(() => {
@@ -84,8 +87,11 @@ describe("PortfolioHome", () => {
     render(<PortfolioHome />);
 
     await screen.findByLabelText("持仓列表");
-    expect(await screen.findByText("Consumer Electronics")).toBeInTheDocument();
-    expect(screen.getByText("AAPL / MSFT")).toBeInTheDocument();
+    const overlapPanel = await screen.findByLabelText("组合重叠提示");
+    expect(within(overlapPanel).getByText("Consumer Electronics")).toBeInTheDocument();
+    expect(within(overlapPanel).getByText("AAPL / MSFT")).toBeInTheDocument();
+    expect(await screen.findByLabelText("组合 Brief")).toBeInTheDocument();
+    expect(screen.getByText("Apple supplier pressure is easing.")).toBeInTheDocument();
   });
 
   it("creates a position and refreshes the list", async () => {
@@ -154,8 +160,10 @@ describe("PortfolioHome", () => {
     await waitFor(() => expect(startRunMock).toHaveBeenCalledWith("position-1"));
     expect(screen.getByText("awaiting_confirmation")).toBeInTheDocument();
     expect(screen.getByText("run-1")).toBeInTheDocument();
-    expect(await screen.findByText("Consumer Electronics")).toBeInTheDocument();
+    const overlapPanel = await screen.findByLabelText("组合重叠提示");
+    expect(within(overlapPanel).getByText("Consumer Electronics")).toBeInTheDocument();
     expect(getOverlapsMock).toHaveBeenCalledTimes(2);
+    expect(getPortfolioBriefMock).toHaveBeenCalledTimes(2);
   });
 
   it("opens GraphExplorer when a run has a seed entity", async () => {
@@ -289,5 +297,21 @@ function makeRunDetail(overrides: Partial<RunDetail> = {}): RunDetail {
     intel_items: [],
     thesis: null,
     ...overrides
+  };
+}
+
+function makeBrief(): PortfolioBrief {
+  return {
+    generated_at: "2026-06-28T00:00:00Z",
+    positions: [
+      {
+        position_id: "position-1",
+        symbol: "AAPL",
+        name: "Apple",
+        thesis_summary: "Apple supplier pressure is easing.",
+        thesis_status: "confirmed"
+      }
+    ],
+    overlaps: [makeOverlapGroup()]
   };
 }

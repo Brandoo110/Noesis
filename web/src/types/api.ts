@@ -110,6 +110,20 @@ export interface OverlapGroup {
   positions: OverlapPosition[];
 }
 
+export interface BriefPosition {
+  position_id: string;
+  symbol: string;
+  name: string | null;
+  thesis_summary: string | null;
+  thesis_status: string | null;
+}
+
+export interface PortfolioBrief {
+  generated_at: string;
+  positions: BriefPosition[];
+  overlaps: OverlapGroup[];
+}
+
 export interface CreatePositionInput {
   symbol: string;
   market: string;

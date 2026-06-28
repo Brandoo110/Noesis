@@ -46,6 +46,7 @@ vi.mock("./api/client", () => ({
   getEvidence: vi.fn(),
   getNeighbors: vi.fn(),
   getOverlaps: vi.fn(),
+  getPortfolioBrief: vi.fn(),
   getRelevance: vi.fn(),
   getRepresentatives: vi.fn(),
   getRun: vi.fn(),
@@ -67,6 +68,7 @@ const confirmThesisMock = vi.mocked(client.confirmThesis);
 const createPositionMock = vi.mocked(client.createPosition);
 const getNeighborsMock = vi.mocked(client.getNeighbors);
 const getOverlapsMock = vi.mocked(client.getOverlaps);
+const getPortfolioBriefMock = vi.mocked(client.getPortfolioBrief);
 const getRelevanceMock = vi.mocked(client.getRelevance);
 const getRunMock = vi.mocked(client.getRun);
 const listPositionsMock = vi.mocked(client.listPositions);
@@ -111,6 +113,17 @@ describe("App M4 overlap path", () => {
     getOverlapsMock.mockImplementation(async () =>
       statusByRun.size >= 2 ? [overlap] : []
     );
+    getPortfolioBriefMock.mockImplementation(async () => ({
+      generated_at: "2026-06-28T00:00:00Z",
+      positions: positions.map((position) => ({
+        position_id: position.id,
+        symbol: position.symbol,
+        name: position.name,
+        thesis_summary: statusByRun.size > 0 ? `${position.symbol} thesis` : null,
+        thesis_status: statusByRun.size > 0 ? "confirmed" : null
+      })),
+      overlaps: statusByRun.size >= 2 ? [overlap] : []
+    }));
     getNeighborsMock.mockResolvedValue({ entity_id: "entity-msft", edges: [] });
     getRelevanceMock.mockResolvedValue({
       entity_id: "entity-msft",

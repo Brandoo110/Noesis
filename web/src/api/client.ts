@@ -6,6 +6,7 @@ import type {
   Evidence,
   ExpandResult,
   OverlapGroup,
+  PortfolioBrief,
   Position,
   Relevance,
   RunDetail,
@@ -103,6 +104,10 @@ export function getEvidence(id: string): Promise<Evidence> {
 
 export function getOverlaps(): Promise<OverlapGroup[]> {
   return request<OverlapGroup[]>("/portfolio/overlaps");
+}
+
+export function getPortfolioBrief(): Promise<PortfolioBrief> {
+  return request<PortfolioBrief>("/portfolio/brief");
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {

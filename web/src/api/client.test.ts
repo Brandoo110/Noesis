@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { getOverlaps, listPositions } from "./client";
+import { getOverlaps, getPortfolioBrief, listPositions } from "./client";
 
 describe("api client", () => {
   afterEach(() => {
@@ -116,6 +116,100 @@ describe("api client", () => {
 
     await expect(getOverlaps()).rejects.toThrow(
       "GET /portfolio/overlaps failed: 502"
+    );
+  });
+
+  it("parses getPortfolioBrief response", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          generated_at: "2026-06-28T00:00:00Z",
+          positions: [
+            {
+              position_id: "position-aapl",
+              symbol: "AAPL",
+              name: "Apple",
+              thesis_summary: "Apple supplier pressure is easing.",
+              thesis_status: "confirmed"
+            },
+            {
+              position_id: "position-msft",
+              symbol: "MSFT",
+              name: null,
+              thesis_summary: null,
+              thesis_status: null
+            }
+          ],
+          overlaps: [
+            {
+              segment_id: "segment-consumer",
+              segment_name: "Consumer Electronics",
+              node_type: "segment",
+              basis: "inferred",
+              positions: [
+                {
+                  position_id: "position-aapl",
+                  symbol: "AAPL",
+                  entity_id: "entity-aapl",
+                  confidence: 0.9
+                }
+              ]
+            }
+          ]
+        }),
+        { status: 200 }
+      )
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(getPortfolioBrief()).resolves.toEqual({
+      generated_at: "2026-06-28T00:00:00Z",
+      positions: [
+        {
+          position_id: "position-aapl",
+          symbol: "AAPL",
+          name: "Apple",
+          thesis_summary: "Apple supplier pressure is easing.",
+          thesis_status: "confirmed"
+        },
+        {
+          position_id: "position-msft",
+          symbol: "MSFT",
+          name: null,
+          thesis_summary: null,
+          thesis_status: null
+        }
+      ],
+      overlaps: [
+        {
+          segment_id: "segment-consumer",
+          segment_name: "Consumer Electronics",
+          node_type: "segment",
+          basis: "inferred",
+          positions: [
+            {
+              position_id: "position-aapl",
+              symbol: "AAPL",
+              entity_id: "entity-aapl",
+              confidence: 0.9
+            }
+          ]
+        }
+      ]
+    });
+    expect(fetchMock).toHaveBeenCalledWith("/portfolio/brief", {
+      headers: { "Content-Type": "application/json" }
+    });
+  });
+
+  it("throws when getPortfolioBrief fails", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response("error", { status: 500 }))
+    );
+
+    await expect(getPortfolioBrief()).rejects.toThrow(
+      "GET /portfolio/brief failed: 500"
     );
   });
 });
