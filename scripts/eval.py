@@ -25,11 +25,11 @@ if str(ROOT) not in sys.path:
 from noesis.config.settings import Settings
 from noesis.db.connection import connect, with_tx
 from noesis.db.migrate import migrate
-from noesis.db.models import EntityRow, GraphEdgeRow, PositionRow, RunRow
+from noesis.db.models import EntityRow, EvidenceRow, GraphEdgeRow, PositionRow, RunRow
 from noesis.eval.cases import EVAL_CASES, EvalCase
 from noesis.eval.metrics import EvalMetrics, evaluate_run
 from noesis.graph.runner import build_graph_deps, get_run_snapshot, start_run
-from noesis.graph.schemas import GraphEdgeDraft, PositionInput, ResolvedEntity
+from noesis.graph.schemas import EvidenceRecord, GraphEdgeDraft, PositionInput, ResolvedEntity
 from noesis.graph.state import GraphDeps
 from noesis.tools.llm.router import LLMRouter
 from noesis.tools.search.tavily import TavilySearchAdapter
@@ -181,6 +181,7 @@ def _evaluate_run_row(case: EvalCase, run: RunRow, deps: GraphDeps) -> EvalCaseR
         edges,
         snapshot.evidences,
         target,
+        edge_evidences=_evidences_for_edges(edges, deps),
     )
     return EvalCaseResult(
         symbol=case.symbol,
@@ -286,6 +287,36 @@ def _edge_from_row(row: GraphEdgeRow, deps: GraphDeps) -> GraphEdgeDraft:
         confidence=row.confidence,
         evidence_ids=row.evidence_ids(),
         rationale=row.rationale or "",
+    )
+
+
+def _evidences_for_edges(
+    edges: Sequence[GraphEdgeDraft], deps: GraphDeps
+) -> list[EvidenceRecord]:
+    evidence_ids = {
+        evidence_id
+        for edge in edges
+        for evidence_id in edge.evidence_ids
+    }
+    records: list[EvidenceRecord] = []
+    for evidence_id in sorted(evidence_ids):
+        row = deps.repos.evidences.get(evidence_id, conn=deps.repos.conn)
+        if row is not None:
+            records.append(_evidence_from_row(row))
+    return records
+
+
+def _evidence_from_row(row: EvidenceRow) -> EvidenceRecord:
+    return EvidenceRecord(
+        id=row.id,
+        run_id=row.run_id,
+        source=row.source,
+        source_tier=row.source_tier,
+        url=row.url,
+        title=row.title,
+        snippet=row.snippet,
+        captured_at=row.captured_at,
+        published_at=row.published_at,
     )
 
 

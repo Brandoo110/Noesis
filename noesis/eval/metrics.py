@@ -29,14 +29,16 @@ def evaluate_run(
     edges: Sequence[GraphEdgeDraft],
     evidences: Sequence[EvidenceRecord],
     target: ResolvedEntity,
+    edge_evidences: Sequence[EvidenceRecord] | None = None,
 ) -> EvalMetrics:
     evidence_list = list(evidences)
+    edge_evidence_list = list(edge_evidences) if edge_evidences is not None else evidence_list
     intel_list = list(intel_items)
     edge_list = list(edges)
     return {
         "grounding_rate": _grounding_rate(intel_list, thesis, evidence_list),
         "redline_compliance": _redline_compliance(thesis),
-        "basis_honesty": _basis_honesty(edge_list, evidence_list),
+        "basis_honesty": _basis_honesty(edge_list, edge_evidence_list),
         "anchor_rate": _anchor_rate(intel_list, target),
     }
 
