@@ -159,7 +159,24 @@ def test_intake_resolve_degrades_when_light_llm_unavailable() -> None:
     assert update["entity_id"] == "entity-us-tsla"
     assert update["resolved_entity"].name == "TSLA"
     assert update["degraded"][0].node_name == "intake_resolve"
-    assert update["degraded"][0].fallback_used == "raw_symbol_entity"
+    assert update["degraded"][0].fallback_used == "raw_input_entity"
+
+
+def test_intake_resolve_name_only_fallback_does_not_invent_symbol() -> None:
+    state: ResearchState = {
+        "raw_input": PositionInput(symbol=None, market="US", name="SpaceX"),
+        "degraded": [],
+    }
+    entities = FakeEntitiesRepo()
+    deps = make_deps(entities, FakeLLMRouter(available_roles=set()))
+
+    update = intake_resolve(state, deps)
+
+    assert update["entity_id"] == "entity-us-spacex"
+    assert update["resolved_entity"].name == "SpaceX"
+    assert update["resolved_entity"].identifiers == {}
+    assert update["resolved_entity"].aliases == ["SpaceX"]
+    assert update["degraded"][0].fallback_used == "raw_input_entity"
 
 
 class FailingLightLLM(FakeLLMRouter):
@@ -187,4 +204,4 @@ def test_intake_resolve_degrades_when_light_llm_request_fails() -> None:
     assert len(entities.upserted) == 1
     assert update["degraded"][0].node_name == "intake_resolve"
     assert update["degraded"][0].reason == "light_llm_request_failed"
-    assert update["degraded"][0].fallback_used == "raw_symbol_entity"
+    assert update["degraded"][0].fallback_used == "raw_input_entity"

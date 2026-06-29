@@ -31,6 +31,31 @@ class PositionsRepo:
         row = conn.execute("SELECT * FROM positions WHERE id = ?", (id,)).fetchone()
         return row_to_model(row, PositionRow)
 
+    def list_by_identity(
+        self,
+        user_id: str,
+        label: str,
+        market: str,
+        kind: str,
+        *,
+        conn: sqlite3.Connection,
+    ) -> list[PositionRow]:
+        rows = conn.execute(
+            """
+            SELECT * FROM positions
+            WHERE user_id = ?
+              AND lower(market) = lower(?)
+              AND kind = ?
+              AND (
+                lower(symbol) = lower(?)
+                OR lower(coalesce(name, '')) = lower(?)
+              )
+            ORDER BY created_at, id
+            """,
+            (user_id, market, kind, label, label),
+        ).fetchall()
+        return rows_to_models(rows, PositionRow)
+
     def list_by_user(self, user_id: str, *, conn: sqlite3.Connection) -> list[PositionRow]:
         rows = conn.execute(
             "SELECT * FROM positions WHERE user_id = ? ORDER BY created_at, id",

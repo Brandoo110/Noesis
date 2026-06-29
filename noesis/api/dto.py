@@ -1,17 +1,25 @@
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 from noesis.graph.schemas import ConfirmationResult, ThesisAssumptionDraft
 
 
 class CreatePositionRequest(BaseModel):
-    symbol: str
+    symbol: str | None = None
     market: str
     name: str | None = None
     kind: Literal["owned", "watching"] = "owned"
     qty: float | None = None
     cost_basis: float | None = None
+
+    @model_validator(mode="after")
+    def require_symbol_or_name(self) -> "CreatePositionRequest":
+        symbol = self.symbol.strip() if self.symbol is not None else ""
+        name = self.name.strip() if self.name is not None else ""
+        if not symbol and not name:
+            raise ValueError("symbol or name is required")
+        return self
 
 
 class PositionResponse(BaseModel):
@@ -22,6 +30,9 @@ class PositionResponse(BaseModel):
     kind: str
     qty: float | None
     cost_basis: float | None
+    latest_run_id: str | None = None
+    latest_run_status: str | None = None
+    latest_run_entity: "EntityNodeResponse | None" = None
 
 
 class CreateRunRequest(BaseModel):

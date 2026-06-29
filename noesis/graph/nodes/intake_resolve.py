@@ -16,10 +16,11 @@ def intake_resolve(state: ResearchState, deps: GraphDeps) -> ResearchStateUpdate
     raw_input = state.get("raw_input")
     if raw_input is None:
         raise EntityResolveError("raw_input is required", reason="missing_raw_input")
-    existing = deps.repos.entities.find_by_symbol(raw_input.market, raw_input.symbol)
-    if existing is not None:
-        resolved = _row_to_resolved(existing)
-        return {"resolved_entity": resolved, "entity_id": resolved.entity_id, "degraded": state.get("degraded", [])}
+    if raw_input.symbol:
+        existing = deps.repos.entities.find_by_symbol(raw_input.market, raw_input.symbol)
+        if existing is not None:
+            resolved = _row_to_resolved(existing)
+            return {"resolved_entity": resolved, "entity_id": resolved.entity_id, "degraded": state.get("degraded", [])}
     degraded = list(state.get("degraded", []))
     if deps.llm.available(LLMRole.LIGHT):
         try:
@@ -62,15 +63,19 @@ def _resolved_to_row(entity: ResolvedEntity, now: str) -> EntityRow:
 
 
 def _fallback_entity(raw_input: PositionInput) -> ResolvedEntity:
-    symbol = raw_input.symbol.upper()
+    symbol = raw_input.symbol.upper() if raw_input.symbol else None
     market = raw_input.market.upper()
-    entity_id = f"entity-{_slug(market)}-{_slug(symbol)}"
+    label = symbol or raw_input.name or "unknown"
+    name = raw_input.name or label
+    entity_id = f"entity-{_slug(market)}-{_slug(label)}"
+    aliases = [symbol] if symbol else [name]
+    identifiers = {"symbol": symbol} if symbol else {}
     return ResolvedEntity(
         entity_id=entity_id,
         node_type="company",
-        name=raw_input.name or symbol,
-        aliases=[symbol],
-        identifiers={"symbol": symbol},
+        name=name,
+        aliases=aliases,
+        identifiers=identifiers,
         market=raw_input.market,
     )
 
@@ -79,7 +84,7 @@ def _degrade(reason: str) -> DegradeNote:
     return DegradeNote(
         node_name="intake_resolve",
         reason=reason,
-        fallback_used="raw_symbol_entity",
+        fallback_used="raw_input_entity",
     )
 
 
@@ -92,7 +97,11 @@ def _normalize_entity_identifiers(entity: ResolvedEntity) -> ResolvedEntity:
                 identifiers["symbol"] = value.strip().upper()
                 break
     else:
-        identifiers["symbol"] = identifiers["symbol"].strip().upper()
+        symbol = identifiers["symbol"].strip().upper()
+        if symbol:
+            identifiers["symbol"] = symbol
+        else:
+            del identifiers["symbol"]
     return entity.model_copy(update={"identifiers": identifiers})
 
 
@@ -100,9 +109,10 @@ def _prompt(raw_input: PositionInput) -> str:
     return (
         "Resolve this investment holding into a company entity. "
         "In identifiers, use the key 'symbol' for listed tickers; do not use "
+        "a symbol identifier for private companies or when no public ticker exists. "
         "'ticker' or 'code'. Examples: {'symbol':'AAPL'}, {'cik':'0000320193'}, "
         "{'isin':'US0378331005'}. "
-        f"symbol={raw_input.symbol}; market={raw_input.market}; name={raw_input.name or ''}"
+        f"symbol={raw_input.symbol or ''}; market={raw_input.market}; name={raw_input.name or ''}"
     )
 
 

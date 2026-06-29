@@ -34,6 +34,31 @@ def test_positions_repo_insert_get_and_list_by_user(db: Connection) -> None:
     assert repo.list_by_user("user-1", conn=db) == [row]
 
 
+def test_positions_repo_lists_matching_identity_case_insensitively(
+    db: Connection,
+) -> None:
+    repo = PositionsRepo()
+    row = make_position("position-1")
+
+    with with_tx(db):
+        repo.insert(row, conn=db)
+
+    assert repo.list_by_identity(
+        "user-1",
+        "aapl",
+        "us",
+        "owned",
+        conn=db,
+    ) == [row]
+    assert repo.list_by_identity(
+        "user-1",
+        "aapl",
+        "us",
+        "watching",
+        conn=db,
+    ) == []
+
+
 def test_positions_repo_empty_results(db: Connection) -> None:
     repo = PositionsRepo()
 
