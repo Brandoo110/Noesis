@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, BackgroundTasks, Depends
 
 from noesis.api.deps import get_graph_deps
 from noesis.api.dto import (
@@ -13,7 +13,13 @@ from noesis.api.dto import (
     ThesisResponse,
 )
 from noesis.api.routes.entities import _entity_response
-from noesis.graph.runner import RunHandle, RunSnapshot, get_run_snapshot, start_run
+from noesis.graph.runner import (
+    RunHandle,
+    RunSnapshot,
+    create_seed_run,
+    execute_seed_run,
+    get_run_snapshot,
+)
 from noesis.graph.schemas import EvidenceRecord, IntelItemDraft, ThesisDraft
 from noesis.graph.state import GraphDeps
 
@@ -23,9 +29,13 @@ router = APIRouter(prefix="/runs", tags=["runs"])
 @router.post("", response_model=RunResponse)
 def create_run(
     request: CreateRunRequest,
+    background_tasks: BackgroundTasks,
     deps: GraphDeps = Depends(get_graph_deps),
 ) -> RunResponse:
-    return _run_response(start_run(request.position_id, deps))
+    handle = create_seed_run(request.position_id, deps)
+    if handle.created:
+        background_tasks.add_task(execute_seed_run, handle.run_id, deps)
+    return _run_response(handle)
 
 
 @router.get("/{run_id}", response_model=RunDetailResponse)

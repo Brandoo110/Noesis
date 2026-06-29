@@ -4,6 +4,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
+from time import sleep
 
 import pytest
 from fastapi.testclient import TestClient
@@ -191,6 +192,7 @@ def _run_to_completion(ctx: ScenarioContext) -> tuple[str, dict[str, object]]:
         json={"position_id": position.json()["id"]},
     )
     payload = started.json()
+    payload = _wait_for_terminal_run_payload(ctx, str(payload["run_id"]))
     thesis_id = payload.get("thesis_id")
     if payload["status"] == "awaiting_confirmation" and isinstance(thesis_id, str):
         confirmed = ctx.client.post(
@@ -199,6 +201,20 @@ def _run_to_completion(ctx: ScenarioContext) -> tuple[str, dict[str, object]]:
         )
         return str(confirmed.json()["run_id"]), confirmed.json()
     return str(payload["run_id"]), payload
+
+
+def _wait_for_terminal_run_payload(
+    ctx: ScenarioContext,
+    run_id: str,
+) -> dict[str, object]:
+    last_payload: dict[str, object] = {}
+    for _ in range(40):
+        response = ctx.client.get(f"/runs/{run_id}")
+        last_payload = response.json()
+        if last_payload.get("status") != "running":
+            return last_payload
+        sleep(0.05)
+    raise AssertionError(f"run {run_id} did not finish: {last_payload}")
 
 
 def _docs() -> list[IngestedDoc]:

@@ -1,5 +1,6 @@
+import logging
 import sqlite3
-from collections.abc import Callable, Mapping
+from collections.abc import Callable
 from dataclasses import dataclass
 from uuid import uuid4
 
@@ -7,7 +8,6 @@ from langgraph.types import Command
 
 from noesis.db.connection import with_tx
 from noesis.db.models import EntityRow, RunRow
-from noesis.db.models import EvidenceRow, IntelItemRow, ThesisRow
 from noesis.graph.build_graph import (
     build_expand_graph,
     build_seed_graph,
@@ -21,14 +21,16 @@ from noesis.graph.schemas import (
     IntelItemDraft,
     PositionInput,
     ResolvedEntity,
-    ThesisAssumptionDraft,
     ThesisDraft,
 )
+from noesis.graph.snapshots import get_run_snapshot
 from noesis.graph.state import GraphDeps, ResearchState
 from noesis.graph.tracing import trace_node
 from noesis.tools.llm.router import LLMRouter
 from noesis.tools.retrieval.store import EvidenceRetriever
 from noesis.tools.search.base import SearchAdapter
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -36,6 +38,7 @@ class RunHandle:
     run_id: str
     status: str
     thesis_id: str | None = None
+    created: bool = False
 
 
 @dataclass(frozen=True)
@@ -70,17 +73,42 @@ def build_graph_deps(
 
 
 def start_run(position_id: str, deps: GraphDeps) -> RunHandle:
-    run_id = f"run-{uuid4().hex}"
+    handle = create_seed_run(position_id, deps)
+    if handle.created:
+        execute_seed_run(handle.run_id, deps)
+    return _handle(handle.run_id, deps)
+
+
+def create_seed_run(position_id: str, deps: GraphDeps) -> RunHandle:
     position = deps.repos.positions.get(position_id)
     if position is None:
         raise ResearchNodeError("position not found", reason="position_not_found")
+    running = deps.repos.runs.latest_seed_for_position(position_id)
+    if running is not None and running.status == "running":
+        return _handle(running.id, deps, created=False)
+    run_id = f"run-{uuid4().hex}"
     _insert_run(run_id, position_id, deps)
+    return _handle(run_id, deps, created=True)
+
+
+def execute_seed_run(run_id: str, deps: GraphDeps) -> None:
+    row = deps.repos.runs.get(run_id)
+    if row is None:
+        raise ResearchNodeError("run not found", reason="run_not_found")
+    if row.node_kind != "seed":
+        raise ResearchNodeError("run is not a seed run", reason="invalid_run_kind")
+    if row.status != "running":
+        return
+    position = deps.repos.positions.get(row.position_id)
+    if position is None:
+        _set_run_failed(run_id, deps)
+        raise ResearchNodeError("position not found", reason="position_not_found")
     state: ResearchState = {
         "run_id": run_id,
-        "position_id": position_id,
+        "position_id": row.position_id,
         "node_kind": "seed",
         "raw_input": PositionInput(
-            symbol=position.symbol,
+            symbol=position.symbol or None,
             market=position.market,
             name=position.name,
             kind=position.kind,
@@ -93,7 +121,9 @@ def start_run(position_id: str, deps: GraphDeps) -> RunHandle:
         _graph(deps).invoke(state, _config(run_id))
     except ResearchNodeError:
         _set_run_failed(run_id, deps)
-    return _handle(run_id, deps)
+    except Exception:
+        logger.exception("seed run failed unexpectedly", extra={"run_id": run_id})
+        _set_run_failed(run_id, deps)
 
 
 def resume_run(
@@ -105,6 +135,9 @@ def resume_run(
             _config(run_id),
         )
     except ResearchNodeError:
+        _set_run_failed(run_id, deps)
+    except Exception:
+        logger.exception("resume run failed unexpectedly", extra={"run_id": run_id})
         _set_run_failed(run_id, deps)
     return _handle(run_id, deps)
 
@@ -130,43 +163,10 @@ def start_expand_run(entity_id: str, position_id: str, deps: GraphDeps) -> RunHa
         _expand_graph(deps).invoke(state, _config(run_id))
     except ResearchNodeError:
         _set_run_failed(run_id, deps)
+    except Exception:
+        logger.exception("expand run failed unexpectedly", extra={"run_id": run_id})
+        _set_run_failed(run_id, deps)
     return _handle(run_id, deps)
-
-
-def get_run_snapshot(run_id: str, deps: GraphDeps) -> RunSnapshot:
-    row = deps.repos.runs.get(run_id)
-    if row is None:
-        raise ResearchNodeError("run not found", reason="run_not_found")
-    values = _checkpoint_values(run_id, deps)
-    resolved_entity = values.get("resolved_entity")
-    if not isinstance(resolved_entity, ResolvedEntity):
-        resolved_entity = None
-    evidences = _typed_list(values.get("evidences"), EvidenceRecord)
-    intel_items = _typed_list(values.get("intel_items"), IntelItemDraft)
-    thesis_draft = values.get("thesis_draft")
-    if not isinstance(thesis_draft, ThesisDraft):
-        thesis_draft = None
-    evidence_rows = deps.repos.evidences.list_by_run(run_id)
-    if not evidences:
-        evidences = [_evidence_from_row(item) for item in evidence_rows]
-    if not intel_items:
-        intel_items = _intel_from_rows(run_id, evidence_rows, deps)
-    thesis_id = f"thesis-{run_id}"
-    thesis_row = deps.repos.theses.get(thesis_id)
-    thesis_status = "draft" if thesis_draft is not None else None
-    if thesis_row is not None:
-        thesis_draft = _thesis_from_row(thesis_row, deps)
-        thesis_status = thesis_row.status
-    return RunSnapshot(
-        run_id=run_id,
-        status=row.status,
-        thesis_id=thesis_id if thesis_draft is not None else None,
-        thesis_status=thesis_status,
-        resolved_entity=resolved_entity,
-        evidences=evidences,
-        intel_items=intel_items,
-        thesis_draft=thesis_draft,
-    )
 
 
 def _graph(deps: GraphDeps) -> object:
@@ -225,7 +225,7 @@ def _insert_expand_run(
 
 def _position_input_from_entity(entity: EntityRow) -> PositionInput:
     identifiers = entity.identifiers()
-    symbol = identifiers.get("symbol") or entity.name
+    symbol = identifiers.get("symbol")
     return PositionInput(
         symbol=symbol,
         market=entity.market or "",
@@ -234,85 +234,28 @@ def _position_input_from_entity(entity: EntityRow) -> PositionInput:
     )
 
 
-def _typed_list(value: object, item_type: type) -> list:
-    if not isinstance(value, list):
-        return []
-    return [item for item in value if isinstance(item, item_type)]
-
-
-def _checkpoint_values(run_id: str, deps: GraphDeps) -> Mapping[str, object]:
-    graph = _graph(deps)
-    snapshot = graph.get_state(_config(run_id))
-    values = getattr(snapshot, "values", {})
-    return values if isinstance(values, Mapping) else {}
-
-
-def _evidence_from_row(row: EvidenceRow) -> EvidenceRecord:
-    return EvidenceRecord(
-        id=row.id,
-        run_id=row.run_id,
-        source=row.source,
-        source_tier=row.source_tier,
-        url=row.url,
-        title=row.title,
-        snippet=row.snippet,
-        captured_at=row.captured_at,
-        published_at=row.published_at,
-    )
-
-
-def _intel_from_rows(
-    run_id: str, evidence_rows: list[EvidenceRow], deps: GraphDeps
-) -> list[IntelItemDraft]:
-    entity_id = next((row.entity_id for row in evidence_rows if row.entity_id), None)
-    if entity_id is None:
-        return []
-    rows = deps.repos.intel.list_by_entity(entity_id)
-    return [_intel_from_row(row) for row in rows if row.run_id == run_id]
-
-
-def _intel_from_row(row: IntelItemRow) -> IntelItemDraft:
-    return IntelItemDraft(
-        title=row.title,
-        content=row.content,
-        event_type=row.event_type,
-        source=row.source,
-        source_tier=row.source_tier,
-        url=row.url,
-        published_at=row.published_at,
-        sentiment=row.sentiment(),
-        evidence_ids=row.evidence_ids(),
-    )
-
-
-def _thesis_from_row(row: ThesisRow, deps: GraphDeps) -> ThesisDraft:
-    assumptions = [
-        ThesisAssumptionDraft(
-            text=item.text,
-            kind=item.kind,
-            evidence_ids=item.evidence_ids(),
-        )
-        for item in deps.repos.assumptions.list_by_thesis(row.id)
-    ]
-    return ThesisDraft(summary=row.summary, assumptions=assumptions)
-
-
 def _config(run_id: str) -> dict[str, dict[str, str]]:
     return {"configurable": {"thread_id": run_id}}
 
 
-def _handle(run_id: str, deps: GraphDeps) -> RunHandle:
+def _handle(run_id: str, deps: GraphDeps, *, created: bool = False) -> RunHandle:
     row = deps.repos.runs.get(run_id)
     if row is None:
         raise ResearchNodeError("run not found", reason="run_not_found")
     thesis_id = f"thesis-{run_id}"
     if row.status == "awaiting_confirmation":
-        return RunHandle(run_id=run_id, status=row.status, thesis_id=thesis_id)
+        return RunHandle(
+            run_id=run_id,
+            status=row.status,
+            thesis_id=thesis_id,
+            created=created,
+        )
     thesis = deps.repos.theses.get(thesis_id)
     return RunHandle(
         run_id=run_id,
         status=row.status,
         thesis_id=thesis_id if thesis is not None else None,
+        created=created,
     )
 
 

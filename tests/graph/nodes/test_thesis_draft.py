@@ -186,6 +186,106 @@ def test_thesis_draft_anchors_summary_to_target_entity() -> None:
     assert not draft.summary.startswith("Intel")
 
 
+def test_thesis_draft_allows_business_words_without_position_advice() -> None:
+    state: ResearchState = {
+        "position_id": "position-1",
+        "resolved_entity": make_entity(),
+        "intel_items": [make_intel()],
+        "evidences": [make_evidence()],
+        "degraded": [],
+    }
+    deps = make_deps(
+        FakeLLMRouter(
+            json_by_role={
+                LLMRole.SYNTH: {
+                    "summary": "Apple approved a buyback program after supplier pressure eased.",
+                    "assumptions": [
+                        {
+                            "text": "Apple capital return remains a business update, not advice.",
+                            "kind": "assumption",
+                            "evidence_ids": ["evidence-1"],
+                        }
+                    ],
+                }
+            }
+        )
+    )
+
+    update = thesis_draft(state, deps)
+
+    draft = update["thesis_draft"]
+    assert draft is not None
+    assert "buyback" in draft.summary
+    assert update["degraded"] == []
+
+
+def test_thesis_draft_falls_back_when_llm_draft_is_off_target() -> None:
+    state: ResearchState = {
+        "position_id": "position-1",
+        "resolved_entity": make_entity(),
+        "intel_items": [make_intel()],
+        "evidences": [make_evidence()],
+        "degraded": [],
+    }
+    deps = make_deps(
+        FakeLLMRouter(
+            json_by_role={
+                LLMRole.SYNTH: {
+                    "summary": "Intel faces demand headwinds from memory cost pressure.",
+                    "assumptions": [
+                        {
+                            "text": "Apple remains exposed to supplier pressure.",
+                            "kind": "assumption",
+                            "evidence_ids": ["evidence-1"],
+                        }
+                    ],
+                }
+            }
+        )
+    )
+
+    update = thesis_draft(state, deps)
+
+    draft = update["thesis_draft"]
+    assert draft is not None
+    assert "Apple" in draft.summary
+    assert draft.assumptions[0].evidence_ids == ["evidence-1"]
+    assert update["degraded"][0].reason == "off_target_thesis"
+    assert update["degraded"][0].fallback_used == "safe_rule_based_thesis"
+
+
+def test_thesis_draft_degrades_when_llm_draft_is_unsafe() -> None:
+    state: ResearchState = {
+        "position_id": "position-1",
+        "resolved_entity": make_entity(),
+        "intel_items": [make_intel()],
+        "evidences": [make_evidence()],
+        "degraded": [],
+    }
+    deps = make_deps(
+        FakeLLMRouter(
+            json_by_role={
+                LLMRole.SYNTH: {
+                    "summary": "Apple is a strong buy after the supplier update.",
+                    "assumptions": [
+                        {
+                            "text": "Investors should buy Apple.",
+                            "kind": "assumption",
+                            "evidence_ids": ["evidence-1"],
+                        }
+                    ],
+                }
+            }
+        )
+    )
+
+    update = thesis_draft(state, deps)
+
+    assert update["thesis_draft"] is None
+    assert update["degraded"][0].reason == "invalid_or_unsafe_thesis"
+    assert update["degraded"][0].fallback_used == "no_thesis_draft"
+
+
 def test_thesis_draft_degrades_when_synth_unavailable() -> None:
     state: ResearchState = {
         "position_id": "position-1",

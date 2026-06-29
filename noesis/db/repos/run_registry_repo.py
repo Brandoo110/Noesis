@@ -1,7 +1,7 @@
 import sqlite3
 
 from noesis.db.models import RunRow
-from noesis.db.repos._mapping import row_to_model
+from noesis.db.repos._mapping import row_to_model, rows_to_models
 
 
 class RunRegistryRepo:
@@ -44,6 +44,52 @@ class RunRegistryRepo:
             (position_id,),
         ).fetchone()
         return str(row["entity_id"]) if row is not None else None
+
+    def latest_seed_for_position(
+        self, position_id: str, *, conn: sqlite3.Connection
+    ) -> RunRow | None:
+        row = conn.execute(
+            """
+            SELECT * FROM run_registry
+            WHERE position_id = ?
+              AND node_kind = 'seed'
+            ORDER BY started_at DESC, created_at DESC, id DESC
+            LIMIT 1
+            """,
+            (position_id,),
+        ).fetchone()
+        return row_to_model(row, RunRow)
+
+    def latest_seed_for_positions(
+        self, position_ids: list[str], *, conn: sqlite3.Connection
+    ) -> list[RunRow]:
+        if not position_ids:
+            return []
+        placeholders = ", ".join("?" for _ in position_ids)
+        rows = conn.execute(
+            f"""
+            WITH ranked AS (
+              SELECT
+                id, position_id, entity_id, node_kind, status, started_at,
+                ended_at, created_at,
+                ROW_NUMBER() OVER (
+                  PARTITION BY position_id
+                  ORDER BY started_at DESC, created_at DESC, id DESC
+                ) AS rn
+              FROM run_registry
+              WHERE node_kind = 'seed'
+                AND position_id IN ({placeholders})
+            )
+            SELECT
+              id, position_id, entity_id, node_kind, status, started_at,
+              ended_at, created_at
+            FROM ranked
+            WHERE rn = 1
+            ORDER BY started_at DESC, created_at DESC, id DESC
+            """,
+            tuple(position_ids),
+        ).fetchall()
+        return rows_to_models(rows, RunRow)
 
     def set_entity(
         self, id: str, entity_id: str, *, conn: sqlite3.Connection

@@ -28,6 +28,15 @@ from noesis.db.migrate import migrate
 from noesis.db.models import EntityRow, EvidenceRow, GraphEdgeRow, PositionRow, RunRow
 from noesis.eval.cases import EVAL_CASES, EvalCase
 from noesis.eval.metrics import EvalMetrics, evaluate_run
+from noesis.eval.report import (
+    EvalCaseResult,
+    EvalMode,
+    EvalReport,
+    ReportFormat,
+    empty_trace_summary,
+    format_report,
+    trace_summary,
+)
 from noesis.graph.runner import build_graph_deps, get_run_snapshot, start_run
 from noesis.graph.schemas import EvidenceRecord, GraphEdgeDraft, PositionInput, ResolvedEntity
 from noesis.graph.state import GraphDeps
@@ -39,20 +48,7 @@ from noesis.tools.search.tavily import TavilySearchAdapter
 class EvalArgs:
     from_db: bool
     db_path: str | None
-
-
-@dataclass(frozen=True)
-class EvalCaseResult:
-    symbol: str
-    run_id: str | None
-    status: str
-    metrics: EvalMetrics | None
-
-
-@dataclass(frozen=True)
-class EvalReport:
-    results: tuple[EvalCaseResult, ...]
-    averages: EvalMetrics
+    format: ReportFormat
 
 
 @dataclass(frozen=True)
@@ -68,8 +64,18 @@ def parse_args(argv: Sequence[str] | None = None) -> EvalArgs:
     mode.add_argument("--from-db", dest="from_db", action="store_true", default=True)
     mode.add_argument("--live", dest="from_db", action="store_false")
     parser.add_argument("--db-path", default=None)
+    parser.add_argument(
+        "--format",
+        choices=("text", "json", "markdown"),
+        default="text",
+        help="Report format for local review, CI, or evidence packages.",
+    )
     parsed = parser.parse_args(argv)
-    return EvalArgs(from_db=bool(parsed.from_db), db_path=parsed.db_path)
+    return EvalArgs(
+        from_db=bool(parsed.from_db),
+        db_path=parsed.db_path,
+        format=cast(ReportFormat, parsed.format),
+    )
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -82,7 +88,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             if args.from_db
             else evaluate_live_runs(EVAL_CASES, current.deps)
         )
-    print(format_report(report))
+    mode: EvalMode = "from_db" if args.from_db else "live"
+    print(format_report(report, mode=mode, output_format=args.format))
     return 0
 
 
@@ -99,6 +106,7 @@ def evaluate_existing_runs(
                     run_id=None,
                     status="missing",
                     metrics=None,
+                    trace_summary=empty_trace_summary(),
                 )
             )
             continue
@@ -119,35 +127,12 @@ def evaluate_live_runs(cases: Sequence[EvalCase], deps: GraphDeps) -> EvalReport
                     run_id=handle.run_id,
                     status="missing",
                     metrics=None,
+                    trace_summary=empty_trace_summary(),
                 )
             )
             continue
         results.append(_evaluate_run_row(case, run, deps))
     return EvalReport(results=tuple(results), averages=_average_metrics(results))
-
-
-def format_report(report: EvalReport) -> str:
-    lines: list[str] = ["Noesis eval report"]
-    for result in report.results:
-        if result.metrics is None:
-            lines.append(f"case {result.symbol} status={result.status} run_id=None")
-            continue
-        lines.append(
-            "case "
-            f"{result.symbol} status={result.status} run_id={result.run_id} "
-            f"grounding_rate={result.metrics['grounding_rate']:.2f} "
-            f"redline_compliance={result.metrics['redline_compliance']:.2f} "
-            f"basis_honesty={result.metrics['basis_honesty']:.2f} "
-            f"anchor_rate={result.metrics['anchor_rate']:.2f}"
-        )
-    lines.append(
-        "average "
-        f"grounding_rate={report.averages['grounding_rate']:.2f} "
-        f"redline_compliance={report.averages['redline_compliance']:.2f} "
-        f"basis_honesty={report.averages['basis_honesty']:.2f} "
-        f"anchor_rate={report.averages['anchor_rate']:.2f}"
-    )
-    return "\n".join(lines)
 
 
 @contextmanager
@@ -188,6 +173,7 @@ def _evaluate_run_row(case: EvalCase, run: RunRow, deps: GraphDeps) -> EvalCaseR
         run_id=run.id,
         status="evaluated",
         metrics=metrics,
+        trace_summary=trace_summary(run.id, deps),
     )
 
 

@@ -38,3 +38,19 @@ class NodeTracesRepo:
             (run_id,),
         ).fetchall()
         return rows_to_models(rows, NodeTraceRow)
+
+    def list_by_run_ids(
+        self, run_ids: list[str], *, conn: sqlite3.Connection
+    ) -> list[NodeTraceRow]:
+        if not run_ids:
+            return []
+        placeholders = ", ".join("?" for _ in run_ids)
+        rows = conn.execute(
+            f"""
+            SELECT * FROM node_traces
+            WHERE run_id IN ({placeholders})
+            ORDER BY started_at, id
+            """,
+            tuple(run_ids),
+        ).fetchall()
+        return rows_to_models(rows, NodeTraceRow)

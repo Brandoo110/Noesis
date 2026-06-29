@@ -41,6 +41,21 @@ def test_node_traces_repo_empty_result(db: Connection) -> None:
     assert NodeTracesRepo().list_by_run("missing", conn=db) == []
 
 
+def test_node_traces_repo_lists_by_run_ids(db: Connection) -> None:
+    repo = NodeTracesRepo()
+    first = make_trace("trace-1", "run-1")
+    second = make_trace("trace-2", "run-2")
+    skipped = make_trace("trace-3", "run-3")
+
+    with with_tx(db):
+        repo.insert(first, conn=db)
+        repo.insert(second, conn=db)
+        repo.insert(skipped, conn=db)
+
+    assert repo.list_by_run_ids(["run-1", "run-2"], conn=db) == [first, second]
+    assert repo.list_by_run_ids([], conn=db) == []
+
+
 def test_node_traces_repo_reads_started_trace_without_ended_at(
     db: Connection,
 ) -> None:

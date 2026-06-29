@@ -40,6 +40,23 @@ class PositionsRuntime:
     def get(self, id: str, *, conn: Connection | None = None) -> PositionRow | None:
         return self.repo.get(id, conn=conn or self.conn)
 
+    def list_by_identity(
+        self,
+        user_id: str,
+        symbol: str,
+        market: str,
+        kind: str,
+        *,
+        conn: Connection | None = None,
+    ) -> list[PositionRow]:
+        return self.repo.list_by_identity(
+            user_id,
+            symbol,
+            market,
+            kind,
+            conn=conn or self.conn,
+        )
+
     def list_by_user(
         self, user_id: str, *, conn: Connection | None = None
     ) -> list[PositionRow]:
@@ -79,6 +96,16 @@ class RunsRuntime:
     ) -> str | None:
         return self.repo.get_seed_entity_id(position_id, conn=conn or self.conn)
 
+    def latest_seed_for_position(
+        self, position_id: str, *, conn: Connection | None = None
+    ) -> RunRow | None:
+        return self.repo.latest_seed_for_position(position_id, conn=conn or self.conn)
+
+    def latest_seed_for_positions(
+        self, position_ids: list[str], *, conn: Connection | None = None
+    ) -> list[RunRow]:
+        return self.repo.latest_seed_for_positions(position_ids, conn=conn or self.conn)
+
     def set_entity(
         self, id: str, entity_id: str, *, conn: Connection | None = None
     ) -> None:
@@ -107,6 +134,11 @@ class TracesRuntime:
         self, run_id: str, *, conn: Connection | None = None
     ) -> list[NodeTraceRow]:
         return self.repo.list_by_run(run_id, conn=conn or self.conn)
+
+    def list_by_run_ids(
+        self, run_ids: list[str], *, conn: Connection | None = None
+    ) -> list[NodeTraceRow]:
+        return self.repo.list_by_run_ids(run_ids, conn=conn or self.conn)
 
 
 @dataclass
@@ -159,6 +191,11 @@ class ThesesRuntime:
         self, position_id: str, *, conn: Connection | None = None
     ) -> ThesisRow | None:
         return self.repo.latest_for_position(position_id, conn=conn or self.conn)
+
+    def list_by_run_ids(
+        self, run_ids: list[str], *, conn: Connection | None = None
+    ) -> list[ThesisRow]:
+        return self.repo.list_by_run_ids(run_ids, conn=conn or self.conn)
 
 
 @dataclass

@@ -8,14 +8,20 @@ from noesis.db.repos.run_registry_repo import RunRegistryRepo
 NOW = "2026-06-26T00:00:00Z"
 
 
-def make_run() -> RunRow:
+def make_run(
+    id: str = "run-1",
+    position_id: str = "position-1",
+    *,
+    status: str = "running",
+    started_at: str = NOW,
+) -> RunRow:
     return RunRow(
-        id="run-1",
-        position_id="position-1",
+        id=id,
+        position_id=position_id,
         entity_id="entity-1",
         node_kind="seed",
-        status="running",
-        started_at=NOW,
+        status=status,
+        started_at=started_at,
         ended_at=None,
         created_at=NOW,
     )
@@ -39,3 +45,27 @@ def test_run_registry_repo_empty_result(db: Connection) -> None:
     repo = RunRegistryRepo()
 
     assert repo.get("missing", conn=db) is None
+
+
+def test_run_registry_repo_lists_latest_seed_for_positions(
+    db: Connection,
+) -> None:
+    repo = RunRegistryRepo()
+
+    with with_tx(db):
+        repo.insert(make_run("run-old", "position-1"), conn=db)
+        repo.insert(
+            make_run(
+                "run-new",
+                "position-1",
+                status="completed",
+                started_at="2026-06-27T00:00:00Z",
+            ),
+            conn=db,
+        )
+        repo.insert(make_run("run-other", "position-2", status="failed"), conn=db)
+
+    rows = repo.latest_seed_for_positions(["position-1", "position-2"], conn=db)
+
+    assert [row.id for row in rows] == ["run-new", "run-other"]
+    assert repo.latest_seed_for_positions([], conn=db) == []

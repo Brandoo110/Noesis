@@ -8,8 +8,15 @@ from noesis.db.migrate import migrate
 from noesis.db.models import EntityRow, PositionRow
 from noesis.db.repos.entities_repo import EntitiesRepo
 from noesis.db.repos.positions_repo import PositionsRepo
+from noesis.graph import runner as runner_module
 from noesis.graph.errors import ResearchNodeError
-from noesis.graph.runner import build_graph_deps, resume_run, start_run
+from noesis.graph.runner import (
+    build_graph_deps,
+    create_seed_run,
+    execute_seed_run,
+    resume_run,
+    start_run,
+)
 from noesis.graph.schemas import ConfirmationResult, IngestedDoc
 from noesis.tools.llm.router import LLMRole
 from noesis.tools.search.fake import FakeSearchAdapter
@@ -290,3 +297,28 @@ def test_runner_completes_without_thesis_when_intel_empty(
         and trace.reason == "no_intel_for_thesis"
         for trace in traces
     )
+
+
+def test_execute_seed_run_marks_failed_on_unexpected_graph_error(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    conn = make_conn(tmp_path)
+    try:
+        seed_position_and_entity(conn)
+        deps = make_deps(tmp_path, conn, llm=DynamicFakeLLM())
+        handle = create_seed_run("position-1", deps)
+
+        def fail_graph(unused_deps: object) -> object:
+            raise RuntimeError("graph wiring failed")
+
+        monkeypatch.setattr(runner_module, "_graph", fail_graph)
+
+        execute_seed_run(handle.run_id, deps)
+
+        row = deps.repos.runs.get(handle.run_id, conn=conn)
+    finally:
+        conn.close()
+
+    assert row is not None
+    assert row.status == "failed"

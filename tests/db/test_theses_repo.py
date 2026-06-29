@@ -8,11 +8,16 @@ from noesis.db.repos.theses_repo import ThesesRepo
 NOW = "2026-06-26T00:00:00Z"
 
 
-def make_thesis() -> ThesisRow:
+def make_thesis(
+    id: str = "thesis-1",
+    run_id: str = "run-1",
+    *,
+    position_id: str = "position-1",
+) -> ThesisRow:
     return ThesisRow(
-        id="thesis-1",
-        position_id="position-1",
-        run_id="run-1",
+        id=id,
+        position_id=position_id,
+        run_id=run_id,
         summary="Draft thesis",
         status="draft",
         created_at=NOW,
@@ -36,6 +41,23 @@ def test_theses_repo_insert_get_and_set_status(db: Connection) -> None:
 
 def test_theses_repo_empty_result(db: Connection) -> None:
     assert ThesesRepo().get("missing", conn=db) is None
+
+
+def test_theses_repo_lists_by_run_ids(db: Connection) -> None:
+    repo = ThesesRepo()
+    first = make_thesis("thesis-1", "run-1")
+    second = make_thesis("thesis-2", "run-2", position_id="position-2")
+    skipped = make_thesis("thesis-3", "run-3", position_id="position-3")
+
+    with with_tx(db):
+        repo.insert(first, conn=db)
+        repo.insert(second, conn=db)
+        repo.insert(skipped, conn=db)
+
+    rows = repo.list_by_run_ids(["run-1", "run-2"], conn=db)
+
+    assert {row.id for row in rows} == {"thesis-1", "thesis-2"}
+    assert repo.list_by_run_ids([], conn=db) == []
 
 
 def test_theses_repo_latest_for_position_prefers_confirmed_then_latest(

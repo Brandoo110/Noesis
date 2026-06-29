@@ -47,7 +47,7 @@ describe("OverlapPanel", () => {
 
     expect(panel.tagName.toLowerCase()).toBe("small");
     expect(within(panel).getByText("仅供参考")).toBeInTheDocument();
-    expect(within(panel).getByText("Consumer Electronics")).toBeInTheDocument();
+    expect(await within(panel).findByText("Consumer Electronics")).toBeInTheDocument();
     expect(within(panel).getByText("AAPL / MSFT")).toBeInTheDocument();
     expect(within(panel).getByText("基于推断")).toBeInTheDocument();
     expect(panel.textContent).not.toMatch(REDLINE_PATTERN);

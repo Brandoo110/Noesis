@@ -1,4 +1,5 @@
 from sqlite3 import Connection
+from time import sleep
 
 import pytest
 
@@ -21,7 +22,8 @@ def test_m1_api_happy_path_persists_grounded_outputs(
     position_id = _create_position(api_context)
     started = api_context.client.post("/runs", json={"position_id": position_id})
     run_id = str(started.json()["run_id"])
-    thesis_id = str(started.json()["thesis_id"])
+    detail_before = _wait_for_status(api_context, run_id, "awaiting_confirmation")
+    thesis_id = str(detail_before["thesis_id"])
 
     confirmed = api_context.client.post(
         f"/theses/{thesis_id}/confirm",
@@ -82,3 +84,18 @@ def _intel_rows(conn: Connection, run_id: str) -> list[IntelItemRow]:
     if row is None:
         return []
     return IntelItemsRepo().list_by_entity(row["entity_id"], conn=conn)
+
+
+def _wait_for_status(
+    api_context: ApiTestContext,
+    run_id: str,
+    expected_status: str,
+) -> dict[str, object]:
+    last_payload: dict[str, object] = {}
+    for _ in range(40):
+        response = api_context.client.get(f"/runs/{run_id}")
+        last_payload = response.json()
+        if last_payload.get("status") == expected_status:
+            return last_payload
+        sleep(0.05)
+    raise AssertionError(f"run {run_id} did not reach {expected_status}: {last_payload}")

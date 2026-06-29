@@ -123,10 +123,36 @@ class BriefPositionResponse(BaseModel):
     thesis_status: str | None
 
 
+class FailedRunResponse(BaseModel):
+    position_id: str
+    symbol: str
+    run_id: str
+    status: str
+    reason: str | None
+
+
+class DegradedReasonResponse(BaseModel):
+    reason: str
+    count: int
+
+
+class PortfolioRunHealthResponse(BaseModel):
+    total_latest_runs: int
+    running: int
+    awaiting_confirmation: int
+    completed: int
+    failed: int
+    completed_without_thesis: int
+    degraded_runs: int
+    failed_runs: list[FailedRunResponse]
+    degraded_reasons: list[DegradedReasonResponse]
+
+
 class PortfolioBriefResponse(BaseModel):
     generated_at: str
     positions: list[BriefPositionResponse]
     overlaps: list[OverlapGroupResponse]
+    run_health: PortfolioRunHealthResponse
 
 
 class EvidenceResponse(BaseModel):

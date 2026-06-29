@@ -1,7 +1,7 @@
 import sqlite3
 
 from noesis.db.models import ThesisRow
-from noesis.db.repos._mapping import row_to_model
+from noesis.db.repos._mapping import row_to_model, rows_to_models
 
 
 class ThesesRepo:
@@ -44,6 +44,22 @@ class ThesesRepo:
             (position_id,),
         ).fetchone()
         return row_to_model(row, ThesisRow)
+
+    def list_by_run_ids(
+        self, run_ids: list[str], *, conn: sqlite3.Connection
+    ) -> list[ThesisRow]:
+        if not run_ids:
+            return []
+        placeholders = ", ".join("?" for _ in run_ids)
+        rows = conn.execute(
+            f"""
+            SELECT * FROM theses
+            WHERE run_id IN ({placeholders})
+            ORDER BY created_at DESC, updated_at DESC, id DESC
+            """,
+            tuple(run_ids),
+        ).fetchall()
+        return rows_to_models(rows, ThesisRow)
 
     def set_status(
         self, id: str, status: str, updated_at: str, *, conn: sqlite3.Connection

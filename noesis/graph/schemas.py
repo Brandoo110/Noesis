@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 
 
 class PositionInput(BaseModel):
-    symbol: str
+    symbol: str | None = None
     market: str
     name: str | None = None
     kind: Literal["owned", "watching"] = "owned"

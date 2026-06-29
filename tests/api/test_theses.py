@@ -1,3 +1,5 @@
+from time import sleep
+
 from tests.api.conftest import ApiTestContext
 
 
@@ -6,7 +8,9 @@ def test_confirm_thesis_completes_run_across_requests(
 ) -> None:
     position_id = _create_position(api_context)
     started = api_context.client.post("/runs", json={"position_id": position_id})
-    thesis_id = str(started.json()["thesis_id"])
+    run_id = str(started.json()["run_id"])
+    detail_before = _wait_for_status(api_context, run_id, "awaiting_confirmation")
+    thesis_id = str(detail_before["thesis_id"])
 
     confirmed = api_context.client.post(
         f"/theses/{thesis_id}/confirm",
@@ -46,3 +50,18 @@ def _create_position(api_context: ApiTestContext) -> str:
         },
     )
     return str(response.json()["id"])
+
+
+def _wait_for_status(
+    api_context: ApiTestContext,
+    run_id: str,
+    expected_status: str,
+) -> dict[str, object]:
+    last_payload: dict[str, object] = {}
+    for _ in range(40):
+      response = api_context.client.get(f"/runs/{run_id}")
+      last_payload = response.json()
+      if last_payload.get("status") == expected_status:
+          return last_payload
+      sleep(0.05)
+    raise AssertionError(f"run {run_id} did not reach {expected_status}: {last_payload}")

@@ -1,4 +1,5 @@
 from noesis.graph.errors import LLMUnavailableError, ResearchNodeError
+from noesis.graph.grounding import check_investment_redlines
 from noesis.graph.schemas import (
     DegradeNote,
     EvidenceRecord,
@@ -11,17 +12,6 @@ from noesis.tools.llm.router import LLMRole
 
 REQUIRED_STATE_KEYS = ("position_id", "resolved_entity", "intel_items", "evidences")
 OUTPUT_STATE_KEYS = ("thesis_draft", "degraded")
-PROHIBITED_TERMS = (
-    "buy",
-    "sell",
-    "price target",
-    "target price",
-    "predict stock price",
-    "买入",
-    "卖出",
-    "目标价",
-    "预测股价",
-)
 
 
 def thesis_draft(state: ResearchState, deps: GraphDeps) -> ResearchStateUpdate:
@@ -47,8 +37,23 @@ def thesis_draft(state: ResearchState, deps: GraphDeps) -> ResearchStateUpdate:
         degraded.append(_degrade(exc.reason or "llm_failed", "no_thesis_draft"))
         return {"thesis_draft": None, "degraded": degraded}
     valid_ids = {item.id for item in state.get("evidences", [])}
-    if not _valid_draft(draft, valid_ids, state.get("resolved_entity")):
-        degraded.append(_degrade("invalid_or_unsafe_thesis", "no_thesis_draft"))
+    invalid_reason = _invalid_draft_reason(draft, valid_ids, state.get("resolved_entity"))
+    if invalid_reason is not None:
+        fallback = _fallback_draft(
+            state.get("resolved_entity"),
+            intel_items,
+            valid_ids,
+        )
+        if invalid_reason == "off_target_thesis" and fallback is not None and _valid_draft(
+            fallback,
+            valid_ids,
+            state.get("resolved_entity"),
+        ):
+            degraded.append(
+                _degrade("off_target_thesis", "safe_rule_based_thesis")
+            )
+            return {"thesis_draft": fallback, "degraded": degraded}
+        degraded.append(_degrade(invalid_reason, "no_thesis_draft"))
         return {"thesis_draft": None, "degraded": degraded}
     return {"thesis_draft": draft, "degraded": degraded}
 
@@ -79,21 +84,53 @@ def _valid_draft(
     valid_ids: set[str],
     target: ResolvedEntity | None,
 ) -> bool:
-    if _has_redline_text(draft.summary) or not draft.assumptions:
-        return False
-    if target is not None and not _mentions_target(draft.summary, target):
-        return False
+    return _invalid_draft_reason(draft, valid_ids, target) is None
+
+
+def _invalid_draft_reason(
+    draft: ThesisDraft,
+    valid_ids: set[str],
+    target: ResolvedEntity | None,
+) -> str | None:
+    if check_investment_redlines(draft) or not draft.assumptions:
+        return "invalid_or_unsafe_thesis"
     for assumption in draft.assumptions:
-        if _has_redline_text(assumption.text):
-            return False
         if not assumption.evidence_ids or not set(assumption.evidence_ids).issubset(valid_ids):
-            return False
-    return True
+            return "invalid_or_unsafe_thesis"
+    if target is not None and not _mentions_target(draft.summary, target):
+        return "off_target_thesis"
+    return None
 
 
-def _has_redline_text(text: str) -> bool:
-    lowered = text.lower()
-    return any(term in lowered for term in PROHIBITED_TERMS)
+def _fallback_draft(
+    target: ResolvedEntity | None,
+    intel_items: list[IntelItemDraft],
+    valid_ids: set[str],
+) -> ThesisDraft | None:
+    label = _target_label(target)
+    for item in intel_items:
+        evidence_ids = [
+            evidence_id for evidence_id in item.evidence_ids if evidence_id in valid_ids
+        ]
+        if not evidence_ids:
+            continue
+        return ThesisDraft(
+            summary=(
+                f"{label} has evidence-backed developments that require "
+                "confirmation before forming a research view."
+            ),
+            assumptions=[
+                {
+                    "text": (
+                        f"{label} remains linked to the cited development; "
+                        "the implication should be reviewed against the evidence."
+                    ),
+                    "kind": "assumption",
+                    "evidence_ids": evidence_ids,
+                }
+            ],
+        )
+    return None
 
 
 def _mentions_target(text: str, target: ResolvedEntity) -> bool:
@@ -113,6 +150,17 @@ def _target_symbol(target: ResolvedEntity | None) -> str:
     if symbol:
         return symbol
     return target.aliases[0] if target.aliases else "unknown"
+
+
+def _target_label(target: ResolvedEntity | None) -> str:
+    if target is None:
+        return "The target entity"
+    symbol = _target_symbol(target)
+    if target.name:
+        return target.name
+    if symbol != "unknown":
+        return symbol
+    return "The target entity"
 
 
 def _degrade(reason: str, fallback_used: str) -> DegradeNote:
