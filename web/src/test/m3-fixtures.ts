@@ -5,6 +5,7 @@ import type {
   ExpandResult,
   OverlapGroup,
   Position,
+  PortfolioRunHealth,
   RunDetail
 } from "../types/api";
 
@@ -96,6 +97,23 @@ export function makeOverlapGroup(
         confidence: 0.7
       }
     ],
+    ...overrides
+  };
+}
+
+export function makeRunHealth(
+  overrides: Partial<PortfolioRunHealth> = {}
+): PortfolioRunHealth {
+  return {
+    total_latest_runs: 0,
+    running: 0,
+    awaiting_confirmation: 0,
+    completed: 0,
+    failed: 0,
+    completed_without_thesis: 0,
+    degraded_runs: 0,
+    failed_runs: [],
+    degraded_reasons: [],
     ...overrides
   };
 }

@@ -18,9 +18,9 @@ export function ThesisPanel({
   onEvidenceClick
 }: ThesisPanelProps): JSX.Element {
   return (
-    <section aria-label="thesis">
+    <section aria-label="thesis" className="detail-section thesis-section">
       <h2>Thesis</h2>
-      {thesis ? <p>{thesis.summary}</p> : <p>暂无 thesis。</p>}
+      {thesis ? <p>{thesis.summary}</p> : <p className="empty-note">暂无 thesis。</p>}
       {thesis ? (
         <>
           {(["reason", "assumption", "risk"] as const).map((kind) => (
@@ -31,15 +31,17 @@ export function ThesisPanel({
               onEvidenceClick={onEvidenceClick}
             />
           ))}
-          <button onClick={() => onConfirm("confirmed")} type="button">
-            确认 thesis 假设
-          </button>
-          <button onClick={() => onConfirm("edited")} type="button">
-            标记需修改
-          </button>
-          <button onClick={() => onConfirm("rejected")} type="button">
-            拒绝 thesis
-          </button>
+          <div className="button-row">
+            <button className="primary-action" onClick={() => onConfirm("confirmed")} type="button">
+              确认 thesis 假设
+            </button>
+            <button onClick={() => onConfirm("edited")} type="button">
+              标记需修改
+            </button>
+            <button onClick={() => onConfirm("rejected")} type="button">
+              拒绝 thesis
+            </button>
+          </div>
         </>
       ) : null}
     </section>
@@ -58,10 +60,10 @@ function AssumptionGroup({
   onEvidenceClick
 }: AssumptionGroupProps): JSX.Element {
   return (
-    <section aria-label={KIND_LABELS[kind]}>
+    <section aria-label={KIND_LABELS[kind]} className="assumption-group">
       <h3>{KIND_LABELS[kind]}</h3>
-      {assumptions.length === 0 ? <p>暂无。</p> : null}
-      <ul>
+      {assumptions.length === 0 ? <p className="empty-note">暂无。</p> : null}
+      <ul className="summary-list">
         {assumptions.map((assumption) => (
           <li key={assumption.text}>
             <span>{assumption.text}</span>

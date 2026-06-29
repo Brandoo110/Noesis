@@ -39,8 +39,7 @@ describe("EdgeView", () => {
 
     const edgePath = screen.getByTestId("edge-path-edge-1");
     expect(edgePath).toHaveClass("edge-source-backed");
-    expect(edgePath).toHaveStyle({ strokeDasharray: "none", opacity: "1" });
-    expect(screen.getByText("supplier 82%")).toBeInTheDocument();
+    expect(edgePath).toHaveStyle({ strokeDasharray: "none", opacity: "0.88" });
   });
 
   it("renders inferred edges as dashed and translucent", () => {
@@ -67,7 +66,7 @@ describe("EdgeView", () => {
 
     const edgePath = screen.getByTestId("edge-path-edge-2");
     expect(edgePath).toHaveClass("edge-inferred");
-    expect(edgePath).toHaveStyle({ strokeDasharray: "6 4", opacity: "0.55" });
+    expect(edgePath).toHaveStyle({ strokeDasharray: "4 4", opacity: "0.5" });
   });
 
   it("opens the global evidence drawer from edge evidence ids", async () => {

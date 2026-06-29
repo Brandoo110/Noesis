@@ -14,6 +14,7 @@ export interface UseExpandOptions {
 
 export interface UseExpandResult {
   expand: (entityId: string) => Promise<void>;
+  reset: () => void;
   nodes: FlowNode<EntityNodeViewData>[];
   edges: FlowEdge<EdgeViewData>[];
 }
@@ -72,21 +73,29 @@ export function useExpand({
     [positionId]
   );
 
+  const reset = useCallback((): void => {
+    setEntitiesById(new Map([[seedEntity.id, seedEntity]]));
+    setEdgesById(new Map());
+    setExpandedEntityIds(new Set());
+  }, [seedEntity]);
+
   const nodes = useMemo(
     () =>
-      Array.from(entitiesById.values()).map((entity, index) =>
-        toFlowNode(entity, index, {
-          expanded: expandedEntityIds.has(entity.id),
-          isSeed: entity.id === seedEntity.id,
-          onExpand: expand,
-          onViewDetail: entity.id === seedEntity.id ? onViewDetail : undefined
-        })
+      positionEntities(Array.from(entitiesById.values()), seedEntity.id).map(
+        ({ entity, position }) =>
+          toFlowNode(entity, position, {
+            expanded: expandedEntityIds.has(entity.id),
+            isSeed: entity.id === seedEntity.id,
+            onExpand: expand,
+            onViewDetail: entity.id === seedEntity.id ? onViewDetail : undefined
+          })
       ),
     [entitiesById, expandedEntityIds, expand, onViewDetail, seedEntity.id]
   );
 
   return {
     expand,
+    reset,
     nodes,
     edges: Array.from(edgesById.values())
   };
@@ -94,21 +103,60 @@ export function useExpand({
 
 function toFlowNode(
   entity: EntityNode,
-  index: number,
+  position: { x: number; y: number },
   data: Omit<EntityNodeViewData, "entity">
 ): FlowNode<EntityNodeViewData> {
   return {
     id: entity.id,
     type: "entity",
-    position: {
-      x: index === 0 ? 0 : 240 * index,
-      y: index === 0 ? 0 : 80 * (index % 2)
-    },
+    position,
     data: {
       ...data,
       entity
     }
   };
+}
+
+function positionEntities(
+  entities: EntityNode[],
+  seedEntityId: string
+): Array<{ entity: EntityNode; position: { x: number; y: number } }> {
+  const seed = entities.find((entity) => entity.id === seedEntityId);
+  const companies = entities.filter(
+    (entity) => entity.id !== seedEntityId && entity.node_type === "company"
+  );
+  const themes = entities.filter(
+    (entity) => entity.id !== seedEntityId && entity.node_type !== "company"
+  );
+
+  return [
+    ...(seed ? [{ entity: seed, position: { x: 0, y: 0 } }] : []),
+    ...companies.map((entity, index) => ({
+      entity,
+      position: lanePosition("left", index, companies.length)
+    })),
+    ...themes.map((entity, index) => ({
+      entity,
+      position: lanePosition("right", index, themes.length)
+    }))
+  ];
+}
+
+function lanePosition(
+  side: "left" | "right",
+  index: number,
+  total: number
+): { x: number; y: number } {
+  const sideSign = side === "left" ? -1 : 1;
+  const rowsPerColumn = 4;
+  const column = Math.floor(index / rowsPerColumn);
+  const row = index % rowsPerColumn;
+  const rowsInColumn = Math.min(rowsPerColumn, total - column * rowsPerColumn);
+  const spacingY = 86;
+  const x = sideSign * (190 + column * 180);
+  const y = Math.round((row - (rowsInColumn - 1) / 2) * spacingY);
+
+  return { x, y };
 }
 
 function toFlowEdge(fromEntityId: string, edge: ApiEdge): FlowEdge<EdgeViewData> {

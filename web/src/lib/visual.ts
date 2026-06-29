@@ -16,25 +16,25 @@ export const NODE_VISUALS: Record<NodeType, NodeVisual> = {
   company: {
     className: "node-company",
     style: {
-      backgroundColor: "#f8fafc",
-      borderColor: "#2563eb",
-      color: "#0f172a"
+      backgroundColor: "#ffffff",
+      borderColor: "#9fbac9",
+      color: "#233f50"
     }
   },
   segment: {
     className: "node-segment",
     style: {
-      backgroundColor: "#fef3c7",
-      borderColor: "#d97706",
-      color: "#431407"
+      backgroundColor: "#ffffff",
+      borderColor: "#a6c892",
+      color: "#334b2a"
     }
   },
   theme: {
     className: "node-theme",
     style: {
-      backgroundColor: "#ecfdf5",
-      borderColor: "#059669",
-      color: "#052e16"
+      backgroundColor: "#ffffff",
+      borderColor: "#d9ad73",
+      color: "#67471f"
     }
   }
 };
@@ -42,9 +42,11 @@ export const NODE_VISUALS: Record<NodeType, NodeVisual> = {
 export const SEED_NODE_VISUAL: NodeVisual = {
   className: "node-seed",
   style: {
-    borderColor: "#111827",
+    backgroundColor: "#ffffff",
+    borderColor: "#005155",
     borderWidth: "2px",
-    boxShadow: "0 0 0 3px rgba(17, 24, 39, 0.12)"
+    boxShadow: "0 2px 10px rgba(0, 81, 85, 0.14)",
+    color: "#005155"
   }
 };
 
@@ -52,8 +54,8 @@ export const EDGE_VISUALS: Record<Basis, EdgeVisual> = {
   source_backed: {
     className: "edge-source-backed",
     style: {
-      opacity: 1,
-      stroke: "#0f766e",
+      opacity: 0.88,
+      stroke: "#005155",
       strokeDasharray: "none",
       strokeWidth: 2
     }
@@ -61,9 +63,9 @@ export const EDGE_VISUALS: Record<Basis, EdgeVisual> = {
   inferred: {
     className: "edge-inferred",
     style: {
-      opacity: 0.55,
-      stroke: "#64748b",
-      strokeDasharray: "6 4",
+      opacity: 0.5,
+      stroke: "#bec9c9",
+      strokeDasharray: "4 4",
       strokeWidth: 2
     }
   }

@@ -4,7 +4,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import * as client from "./api/client";
 import { App } from "./App";
-import { makeEntity, makeEvidence, makeOverlapGroup, makeRunDetail } from "./test/m3-fixtures";
+import {
+  makeEntity,
+  makeEvidence,
+  makeOverlapGroup,
+  makeRunDetail,
+  makeRunHealth
+} from "./test/m3-fixtures";
 import { REDLINE_PATTERN } from "./test/redline";
 import type { CreatePositionInput, EntityNode, Position, RunDetail } from "./types/api";
 
@@ -122,7 +128,8 @@ describe("App M4 overlap path", () => {
         thesis_summary: statusByRun.size > 0 ? `${position.symbol} thesis` : null,
         thesis_status: statusByRun.size > 0 ? "confirmed" : null
       })),
-      overlaps: statusByRun.size >= 2 ? [overlap] : []
+      overlaps: statusByRun.size >= 2 ? [overlap] : [],
+      run_health: makeRunHealth({ total_latest_runs: statusByRun.size })
     }));
     getNeighborsMock.mockResolvedValue({ entity_id: "entity-msft", edges: [] });
     getRelevanceMock.mockResolvedValue({
@@ -171,9 +178,10 @@ async function addHolding(symbol: string, name: string): Promise<void> {
 }
 
 function addPosition(positions: Position[], input: CreatePositionInput): Position {
+  const label = input.symbol ?? input.name ?? "unknown";
   const row = {
-    id: `position-${input.symbol.toLowerCase()}`,
-    symbol: input.symbol,
+    id: `position-${label.toLowerCase()}`,
+    symbol: label,
     market: input.market,
     name: input.name ?? null,
     kind: input.kind ?? "owned",

@@ -6,7 +6,7 @@ interface PositionRelationProps {
 
 export function PositionRelation({ path }: PositionRelationProps): JSX.Element {
   return (
-    <section aria-label="持仓关系">
+    <section aria-label="持仓关系" className="detail-section relation-section">
       <h2>和持仓关系</h2>
       {path.length === 0 ? <p>暂无路径。</p> : <p>{formatPath(path)}</p>}
     </section>

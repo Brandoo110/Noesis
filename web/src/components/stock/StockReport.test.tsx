@@ -56,6 +56,7 @@ describe("StockReport", () => {
       "AAPL-report.md",
       "# AAPL 深度报告"
     );
+    expect(screen.getByRole("status")).toHaveTextContent("AAPL-report.md");
   });
 });
 

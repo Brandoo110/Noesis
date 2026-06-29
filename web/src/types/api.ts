@@ -70,6 +70,9 @@ export interface Position {
   kind: PositionKind;
   qty?: number | null;
   cost_basis?: number | null;
+  latest_run_id?: string | null;
+  latest_run_status?: RunStatus | string | null;
+  latest_run_entity?: EntityNode | null;
 }
 
 export interface RunDetail {
@@ -118,14 +121,40 @@ export interface BriefPosition {
   thesis_status: string | null;
 }
 
+export interface FailedRun {
+  position_id: string;
+  symbol: string;
+  run_id: string;
+  status: string;
+  reason: string | null;
+}
+
+export interface DegradedReason {
+  reason: string;
+  count: number;
+}
+
+export interface PortfolioRunHealth {
+  total_latest_runs: number;
+  running: number;
+  awaiting_confirmation: number;
+  completed: number;
+  failed: number;
+  completed_without_thesis: number;
+  degraded_runs: number;
+  failed_runs: FailedRun[];
+  degraded_reasons: DegradedReason[];
+}
+
 export interface PortfolioBrief {
   generated_at: string;
   positions: BriefPosition[];
   overlaps: OverlapGroup[];
+  run_health: PortfolioRunHealth;
 }
 
 export interface CreatePositionInput {
-  symbol: string;
+  symbol?: string | null;
   market: string;
   name?: string | null;
   kind?: PositionKind;

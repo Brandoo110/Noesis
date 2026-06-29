@@ -10,16 +10,20 @@ export function IntelStream({
   onEvidenceClick
 }: IntelStreamProps): JSX.Element {
   return (
-    <section aria-label="分类情报">
+    <section aria-label="分类情报" className="detail-section">
       <h2>分类情报流</h2>
-      {items.length === 0 ? <p>暂无情报。</p> : null}
-      <ul>
+      {items.length === 0 ? <p className="empty-note">暂无情报。</p> : null}
+      <ul className="intel-list">
         {items.map((item) => (
           <li aria-label={`情报 ${item.title}`} key={item.title}>
-            <strong>{item.title}</strong>
-            <span>{item.event_type}</span>
-            <span>{item.sentiment.dir}</span>
-            <span>{`tier ${item.source_tier}`}</span>
+            <div className="item-heading">
+              <strong>{item.title}</strong>
+              <span>{item.event_type}</span>
+            </div>
+            <div className="meta-row">
+              <span>{item.sentiment.dir}</span>
+              <span>{`tier ${item.source_tier}`}</span>
+            </div>
             <p>{item.content}</p>
             <button
               onClick={() => onEvidenceClick?.(item.evidence_ids)}

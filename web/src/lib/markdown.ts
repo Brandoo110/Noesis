@@ -40,6 +40,7 @@ export function portfolioBriefToMarkdown(brief: PortfolioBrief): string {
   return [
     "# 组合 Brief",
     "仅供参考：以下内容用于研究跟踪，保留来源与推断标记。",
+    section("运行健康", briefRunHealthLines(brief)),
     section("持仓一句话", briefPositionLines(brief)),
     section("产业段重叠", briefOverlapLines(brief.overlaps))
   ].join("\n\n");
@@ -76,6 +77,23 @@ function briefOverlapLines(overlaps: OverlapGroup[]): string[] {
     const basis = group.basis === "inferred" ? "基于推断" : "有出处";
     return `- ${group.segment_name}: ${symbols}（${basis}）`;
   });
+}
+
+function briefRunHealthLines(brief: PortfolioBrief): string[] {
+  const health = brief.run_health;
+  return [
+    `- latest runs: ${health.total_latest_runs}`,
+    `- failed: ${health.failed}`,
+    `- degraded: ${health.degraded_runs}`,
+    `- completed without thesis: ${health.completed_without_thesis}`,
+    ...health.failed_runs.map(
+      (run) =>
+        `- failed run ${run.symbol || run.position_id}: ${run.reason ?? run.status}`
+    ),
+    ...health.degraded_reasons.map(
+      (item) => `- degraded reason ${item.reason}: ${item.count}`
+    )
+  ];
 }
 
 function section(title: string, lines: string[]): string {

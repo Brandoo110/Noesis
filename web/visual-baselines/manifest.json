@@ -1,0 +1,21 @@
+{
+  "web": "http://127.0.0.1:5174",
+  "viewports": [
+    {
+      "name": "desktop",
+      "width": 1280,
+      "height": 900,
+      "screenshot": "output/playwright/visual-smoke/desktop.png",
+      "baseline": "web/visual-baselines/desktop.png",
+      "sha256": "176a4580b0431534a39d5cc91a09e3941bb30c9e4b40f002560bfdf111b1d60d"
+    },
+    {
+      "name": "mobile",
+      "width": 390,
+      "height": 844,
+      "screenshot": "output/playwright/visual-smoke/mobile.png",
+      "baseline": "web/visual-baselines/mobile.png",
+      "sha256": "b671a60c999778ba707917c5ac8716e132c7985e0cf980e2519717ed52858766"
+    }
+  ]
+}

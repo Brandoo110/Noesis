@@ -11,7 +11,8 @@ import {
   makeExpandResult,
   makeOverlapGroup,
   makePosition,
-  makeRunDetail
+  makeRunDetail,
+  makeRunHealth
 } from "./test/m3-fixtures";
 import { REDLINE_PATTERN } from "./test/redline";
 import type { Position } from "./types/api";
@@ -70,6 +71,7 @@ vi.mock("reactflow", async () => ({
   ),
   Background: () => null,
   Controls: () => null,
+  getBezierPath: () => ["M0,0 L10,10", 5, 5],
   Handle: ({
     "data-testid": testId,
     type
@@ -154,7 +156,8 @@ describe("App M3 integration path", () => {
     getPortfolioBriefMock.mockResolvedValue({
       generated_at: "2026-06-28T00:00:00Z",
       positions: [],
-      overlaps: []
+      overlaps: [],
+      run_health: makeRunHealth()
     });
     getRelevanceMock.mockResolvedValue({
       entity_id: "entity-aapl",

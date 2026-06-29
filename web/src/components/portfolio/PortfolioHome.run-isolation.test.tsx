@@ -5,6 +5,7 @@ import * as client from "../../api/client";
 import type {
   EntityNode,
   PortfolioBrief,
+  PortfolioRunHealth,
   Position,
   RunDetail,
   RunSummary
@@ -131,6 +132,21 @@ function makeBrief(): PortfolioBrief {
   return {
     generated_at: "2026-06-28T00:00:00Z",
     positions: [],
-    overlaps: []
+    overlaps: [],
+    run_health: makeRunHealth()
+  };
+}
+
+function makeRunHealth(): PortfolioRunHealth {
+  return {
+    total_latest_runs: 0,
+    running: 0,
+    awaiting_confirmation: 0,
+    completed: 0,
+    failed: 0,
+    completed_without_thesis: 0,
+    degraded_runs: 0,
+    failed_runs: [],
+    degraded_reasons: []
   };
 }

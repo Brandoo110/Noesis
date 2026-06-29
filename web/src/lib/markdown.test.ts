@@ -1,6 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { makeEdge, makeEntity, makeEvidence, makeOverlapGroup, makeRunDetail } from "../test/m3-fixtures";
+import {
+  makeEdge,
+  makeEntity,
+  makeEvidence,
+  makeOverlapGroup,
+  makeRunDetail,
+  makeRunHealth
+} from "../test/m3-fixtures";
 import { REDLINE_PATTERN } from "../test/redline";
 import type { StockDetailData } from "../hooks/use-stock-detail";
 import type { PortfolioBrief } from "../types/api";
@@ -64,6 +71,8 @@ describe("portfolioBriefToMarkdown", () => {
     const markdown = portfolioBriefToMarkdown(makePortfolioBrief());
 
     expect(markdown).toContain("# 组合 Brief");
+    expect(markdown).toContain("## 运行健康");
+    expect(markdown).toContain("latest runs: 0");
     expect(markdown).toContain("- **AAPL**: Apple supplier pressure is easing.");
     expect(markdown).toContain("- **MSFT**: 尚未研究");
     expect(markdown).toContain("Consumer Electronics");
@@ -122,6 +131,7 @@ function makePortfolioBrief(): PortfolioBrief {
         thesis_status: null
       }
     ],
-    overlaps: [makeOverlapGroup()]
+    overlaps: [makeOverlapGroup()],
+    run_health: makeRunHealth()
   };
 }

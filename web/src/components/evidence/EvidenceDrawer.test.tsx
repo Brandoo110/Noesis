@@ -48,6 +48,41 @@ describe("EvidenceDrawer", () => {
     expect(link).toHaveAttribute("rel", "noreferrer");
   });
 
+  it("treats the drawer as a modal dialog and closes from keyboard or backdrop", async () => {
+    getEvidenceMock.mockResolvedValue(makeEvidence("evidence-1"));
+
+    const { container } = render(
+      <EvidenceDrawerProvider>
+        <OpenButton ids={["evidence-1"]} />
+        <EvidenceDrawer />
+      </EvidenceDrawerProvider>
+    );
+
+    const openButton = screen.getByRole("button", { name: "open drawer" });
+    openButton.focus();
+    fireEvent.click(openButton);
+
+    const dialog = await screen.findByRole("dialog", { name: "证据抽屉" });
+    expect(dialog).toHaveAttribute("aria-modal", "true");
+    await waitFor(() => expect(dialog).toHaveFocus());
+
+    fireEvent.keyDown(dialog, { key: "Escape" });
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog", { name: "证据抽屉" })).not.toBeInTheDocument()
+    );
+    expect(openButton).toHaveFocus();
+
+    fireEvent.click(openButton);
+    expect(await screen.findByRole("dialog", { name: "证据抽屉" })).toBeInTheDocument();
+    const backdrop = container.querySelector(".drawer-backdrop");
+    expect(backdrop).not.toBeNull();
+    fireEvent.click(backdrop as Element);
+
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog", { name: "证据抽屉" })).not.toBeInTheDocument()
+    );
+  });
+
   it("uses cached known evidence before fetching missing ids", async () => {
     getEvidenceMock.mockResolvedValue(makeEvidence("evidence-2"));
 
@@ -84,6 +119,35 @@ describe("EvidenceDrawer", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "missing:GET /evidences/missing failed: 404"
     );
+    expect(
+      screen.getByRole("button", { name: "重新加载证据 missing" })
+    ).toBeInTheDocument();
+  });
+
+  it("retries a failed evidence fetch from the drawer", async () => {
+    getEvidenceMock
+      .mockRejectedValueOnce(new Error("temporary failure"))
+      .mockResolvedValueOnce(makeEvidence("missing"));
+
+    render(
+      <EvidenceDrawerProvider>
+        <OpenButton ids={["missing"]} />
+        <EvidenceDrawer />
+      </EvidenceDrawerProvider>
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "open drawer" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "missing:temporary failure"
+    );
+    fireEvent.click(screen.getByRole("button", { name: "重新加载证据 missing" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Title missing")).toBeInTheDocument();
+      expect(screen.queryByText("missing:temporary failure")).not.toBeInTheDocument();
+    });
+    expect(getEvidenceMock).toHaveBeenCalledTimes(2);
   });
 });
 

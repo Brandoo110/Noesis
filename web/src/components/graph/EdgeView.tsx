@@ -1,4 +1,5 @@
 import type { EdgeProps } from "reactflow";
+import { getBezierPath } from "reactflow";
 
 import { useEvidenceDrawer } from "../../context/evidence-drawer";
 import { edgeClassName, edgeStyle } from "../../lib/visual";
@@ -20,9 +21,13 @@ export function EdgeView({
   const edge = data?.edge;
   const basis = edge?.basis ?? "inferred";
   const style = edgeStyle(basis);
-  const labelX = (sourceX + targetX) / 2;
-  const labelY = (sourceY + targetY) / 2;
   const hasEvidence = (edge?.evidence_ids.length ?? 0) > 0;
+  const [edgePath] = getBezierPath({
+    sourceX,
+    sourceY,
+    targetX,
+    targetY
+  });
 
   function openEvidence(): void {
     if (edge && hasEvidence) {
@@ -43,19 +48,23 @@ export function EdgeView({
       role={hasEvidence ? "button" : undefined}
       tabIndex={hasEvidence ? 0 : undefined}
     >
+      {edge ? (
+        <title>
+          {`${edge.relation} ${Math.round(edge.confidence * 100)}%`}
+        </title>
+      ) : null}
+      <path
+        className="edge-hit-area"
+        d={edgePath}
+        fill="none"
+      />
       <path
         className={edgeClassName(basis)}
-        d={`M ${sourceX} ${sourceY} L ${targetX} ${targetY}`}
+        d={edgePath}
         data-testid={`edge-path-${id}`}
         fill="none"
         style={style}
       />
-      {edge ? (
-        <text x={labelX} y={labelY}>
-          {edge.rationale ? <title>{edge.rationale}</title> : null}
-          {edge.relation} {Math.round(edge.confidence * 100)}%
-        </text>
-      ) : null}
     </g>
   );
 }

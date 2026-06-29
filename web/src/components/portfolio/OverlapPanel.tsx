@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { getOverlaps } from "../../api/client";
 import type { Basis, OverlapGroup } from "../../types/api";
@@ -14,42 +14,52 @@ export function OverlapPanel({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let isMounted = true;
+  const loadOverlaps = useCallback(async (): Promise<void> => {
     setIsLoading(true);
     setError(null);
-    getOverlaps()
-      .then((nextGroups) => {
-        if (isMounted) {
-          setGroups(nextGroups);
-        }
-      })
-      .catch((caught: unknown) => {
-        if (isMounted) {
-          setError(toErrorMessage(caught));
-        }
-      })
-      .finally(() => {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      });
-    return () => {
-      isMounted = false;
-    };
-  }, [refreshKey]);
+    try {
+      setGroups(await getOverlaps());
+    } catch (caught) {
+      setError(toErrorMessage(caught));
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadOverlaps();
+  }, [loadOverlaps, refreshKey]);
 
   return (
-    <small aria-label="组合重叠提示" data-testid="overlap-panel">
-      <strong>仅供参考</strong>
-      <span>这些持仓在同一产业段，可关注共同暴露。</span>
-      {isLoading ? <span>加载中...</span> : null}
-      {error ? <span role="alert">{error}</span> : null}
+    <small
+      aria-label="组合重叠提示"
+      className="surface overlap-surface"
+      data-testid="overlap-panel"
+    >
+      <div className="section-heading">
+        <div>
+          <p className="eyebrow">Overlap</p>
+          <h2>产业段重叠</h2>
+        </div>
+      </div>
+      <p className="muted">
+        <strong>仅供参考</strong>
+        <span>。这些持仓在同一产业段，可关注共同暴露。</span>
+      </p>
+      {isLoading ? <span className="muted">加载中...</span> : null}
+      {error ? (
+        <span className="inline-recovery" role="alert">
+          <span>{error}</span>
+          <button disabled={isLoading} onClick={() => void loadOverlaps()} type="button">
+            重新加载重叠
+          </button>
+        </span>
+      ) : null}
       {!isLoading && !error && groups.length === 0 ? (
-        <span>暂无产业段重叠</span>
+        <span className="empty-note">暂无产业段重叠</span>
       ) : null}
       {!isLoading && !error && groups.length > 0 ? (
-        <ul aria-label="产业段重叠列表">
+        <ul aria-label="产业段重叠列表" className="overlap-list">
           {groups.map((group) => (
             <li key={group.segment_id}>
               <strong>{group.segment_name}</strong>

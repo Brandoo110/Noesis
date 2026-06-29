@@ -20,7 +20,7 @@ export function PortfolioOverlap({
     );
 
   return (
-    <section aria-label="和其他持仓的关系">
+    <section aria-label="和其他持仓的关系" className="detail-section detail-overlap-section">
       <h2>和其他持仓的关系</h2>
       <small aria-label="组合重叠关系">
         <strong>仅供参考</strong>

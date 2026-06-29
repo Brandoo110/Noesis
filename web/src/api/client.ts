@@ -120,7 +120,33 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   });
   if (!response.ok) {
     const method = init.method ?? "GET";
-    throw new Error(`${method} ${path} failed: ${response.status}`);
+    throw new Error(
+      `${method} ${path} failed: ${response.status}${await errorDetail(response)}`
+    );
   }
   return (await response.json()) as T;
+}
+
+async function errorDetail(response: Response): Promise<string> {
+  const raw = await response.text().catch(() => "");
+  if (!raw.trim().startsWith("{")) {
+    return "";
+  }
+  try {
+    const payload = JSON.parse(raw) as {
+      message?: unknown;
+      reason?: unknown;
+    };
+    const reason = typeof payload.reason === "string" ? payload.reason : "";
+    const message = typeof payload.message === "string" ? payload.message : "";
+    if (reason && message) {
+      return ` (${reason}) ${message}`;
+    }
+    if (reason) {
+      return ` (${reason})`;
+    }
+    return message ? ` ${message}` : "";
+  } catch {
+    return "";
+  }
 }

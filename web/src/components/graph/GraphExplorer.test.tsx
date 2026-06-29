@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import * as client from "../../api/client";
+import { EvidenceDrawerProvider } from "../../context/evidence-drawer";
 import type { Edge, EntityNode, ExpandResult } from "../../types/api";
 import { GraphExplorer } from "./GraphExplorer";
 
@@ -10,9 +11,11 @@ vi.mock("reactflow", async () => {
   const React = await import("react");
   return {
     default: ({
+      edges,
       nodes,
       nodeTypes
     }: {
+      edges: Array<{ id: string; data: { edge?: Edge } }>;
       nodes: Array<{ id: string; type?: string; data: unknown }>;
       nodeTypes: Record<string, React.ComponentType<Record<string, unknown>>>;
     }) => (
@@ -34,6 +37,11 @@ vi.mock("reactflow", async () => {
             />
           );
         })}
+        {edges.map((edge) => (
+          <span data-testid={`flow-edge-${edge.id}`} key={edge.id}>
+            {edge.data.edge?.basis}
+          </span>
+        ))}
       </div>
     ),
     Background: () => null,
@@ -79,7 +87,7 @@ describe("GraphExplorer", () => {
       makeEdge("edge-aapl-tsm", neighbor)
     ]));
 
-    render(<GraphExplorer positionId="position-1" seedEntity={seed} />);
+    renderGraph(<GraphExplorer positionId="position-1" seedEntity={seed} />);
 
     expect(screen.getByText("AAPL")).toBeInTheDocument();
     expect(screen.queryByText("TSM")).not.toBeInTheDocument();
@@ -90,12 +98,46 @@ describe("GraphExplorer", () => {
       expect(expandEntityMock).toHaveBeenCalledWith("entity-aapl", "position-1")
     );
     expect(await screen.findByText("TSM")).toBeInTheDocument();
+    expect(screen.getByLabelText("关系清单")).toHaveTextContent("供应商");
+    expect(screen.getByLabelText("关系清单")).toHaveTextContent("82%");
+  });
+
+  it("filters visible edges by basis and resets expanded graph", async () => {
+    const seed = makeEntity({ id: "entity-aapl", name: "Apple Inc.", symbol: "AAPL" });
+    const sourceNeighbor = makeEntity({ id: "entity-tsm", name: "TSMC", symbol: "TSM" });
+    const inferredNeighbor = makeEntity({
+      id: "segment-consumer",
+      name: "Consumer Electronics",
+      node_type: "segment",
+      symbol: null
+    });
+    expandEntityMock.mockResolvedValue(makeExpandResult("entity-aapl", [
+      makeEdge("edge-source", sourceNeighbor, "source_backed"),
+      makeEdge("edge-inferred", inferredNeighbor, "inferred")
+    ]));
+
+    renderGraph(<GraphExplorer positionId="position-1" seedEntity={seed} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "展开" }));
+    expect(await screen.findByTestId("flow-edge-edge-source")).toBeInTheDocument();
+    expect(screen.getByTestId("flow-edge-edge-inferred")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("图谱边筛选"), {
+      target: { value: "source_backed" }
+    });
+
+    expect(screen.getByTestId("flow-edge-edge-source")).toBeInTheDocument();
+    expect(screen.queryByTestId("flow-edge-edge-inferred")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "刷新" }));
+    expect(screen.queryByText("TSM")).not.toBeInTheDocument();
+    expect(screen.queryByText("Consumer Electronics")).not.toBeInTheDocument();
   });
 
   it("opens stock detail from the seed node when run id is available", async () => {
     const seed = makeEntity({ id: "entity-aapl", name: "Apple Inc.", symbol: "AAPL" });
 
-    render(
+    renderGraph(
       <GraphExplorer positionId="position-1" runId="run-1" seedEntity={seed} />
     );
 
@@ -107,6 +149,10 @@ describe("GraphExplorer", () => {
   });
 });
 
+function renderGraph(graph: JSX.Element): ReturnType<typeof render> {
+  return render(<EvidenceDrawerProvider>{graph}</EvidenceDrawerProvider>);
+}
+
 function makeExpandResult(entityId: string, edges: Edge[]): ExpandResult {
   return {
     entity_id: entityId,
@@ -116,14 +162,18 @@ function makeExpandResult(entityId: string, edges: Edge[]): ExpandResult {
   };
 }
 
-function makeEdge(id: string, neighbor: EntityNode): Edge {
+function makeEdge(
+  id: string,
+  neighbor: EntityNode,
+  basis: Edge["basis"] = "source_backed"
+): Edge {
   return {
     id,
     to_entity_id: neighbor.id,
     to_name: neighbor.name,
     to_symbol: neighbor.symbol,
     relation: "supplier",
-    basis: "source_backed",
+    basis,
     confidence: 0.82,
     evidence_ids: ["evidence-1"],
     source_tier: 2,

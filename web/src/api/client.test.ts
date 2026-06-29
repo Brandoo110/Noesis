@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { getOverlaps, getPortfolioBrief, listPositions } from "./client";
+import { getOverlaps, getPortfolioBrief, listPositions, startRun } from "./client";
 
 describe("api client", () => {
   afterEach(() => {
@@ -49,6 +49,29 @@ describe("api client", () => {
     );
 
     await expect(listPositions()).rejects.toThrow("GET /positions failed: 404");
+  });
+
+  it("includes structured backend error reason when available", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            error: "ResearchNodeError",
+            message: "position not found",
+            reason: "position_not_found"
+          }),
+          {
+            status: 502,
+            headers: { "Content-Type": "application/json" }
+          }
+        )
+      )
+    );
+
+    await expect(startRun("position-missing")).rejects.toThrow(
+      "POST /runs failed: 502 (position_not_found) position not found"
+    );
   });
 
   it("parses getOverlaps response", async () => {
@@ -155,7 +178,18 @@ describe("api client", () => {
                 }
               ]
             }
-          ]
+          ],
+          run_health: {
+            total_latest_runs: 2,
+            running: 0,
+            awaiting_confirmation: 0,
+            completed: 2,
+            failed: 0,
+            completed_without_thesis: 0,
+            degraded_runs: 0,
+            failed_runs: [],
+            degraded_reasons: []
+          }
         }),
         { status: 200 }
       )
@@ -195,7 +229,18 @@ describe("api client", () => {
             }
           ]
         }
-      ]
+      ],
+      run_health: {
+        total_latest_runs: 2,
+        running: 0,
+        awaiting_confirmation: 0,
+        completed: 2,
+        failed: 0,
+        completed_without_thesis: 0,
+        degraded_runs: 0,
+        failed_runs: [],
+        degraded_reasons: []
+      }
     });
     expect(fetchMock).toHaveBeenCalledWith("/portfolio/brief", {
       headers: { "Content-Type": "application/json" }

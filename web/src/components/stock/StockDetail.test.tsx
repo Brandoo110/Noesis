@@ -147,6 +147,45 @@ describe("StockDetail", () => {
     expect(onConfirmed).toHaveBeenCalledTimes(1);
   });
 
+  it("shows a retry action when a completed run has no thesis", async () => {
+    const onRetryResearch = vi.fn().mockResolvedValue(undefined);
+    const detail = makeDetail();
+    useStockDetailMock.mockReturnValue(
+      makeHookResult({
+        detail: {
+          ...detail,
+          run: detail.run
+            ? {
+                ...detail.run,
+                status: "completed",
+                thesis_id: null,
+                thesis: null
+              }
+            : null,
+          thesis: null
+        }
+      })
+    );
+
+    render(
+      <EvidenceDrawerProvider>
+        <StockDetail
+          entityId="entity-aapl"
+          onRetryResearch={onRetryResearch}
+          positionId="position-1"
+          runId="run-1"
+        />
+      </EvidenceDrawerProvider>
+    );
+
+    expect(
+      screen.getByText("本次研究已完成，但没有生成 thesis")
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "重新研究" }));
+
+    await waitFor(() => expect(onRetryResearch).toHaveBeenCalledTimes(1));
+  });
+
   it("keeps investment-related wording only as small attention notes", () => {
     useStockDetailMock.mockReturnValue(makeHookResult());
 

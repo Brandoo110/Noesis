@@ -1,8 +1,12 @@
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
 
+const env = (globalThis as typeof globalThis & {
+  process?: { env?: Record<string, string | undefined> };
+}).process?.env;
+
 const backendProxy = {
-  target: "http://localhost:8000",
+  target: env?.NOESIS_API_PROXY_TARGET ?? "http://localhost:8000",
   changeOrigin: true
 };
 

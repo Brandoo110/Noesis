@@ -9,7 +9,8 @@ import {
   makeEvidence,
   makeOverlapGroup,
   makePosition,
-  makeRunDetail
+  makeRunDetail,
+  makeRunHealth
 } from "./test/m3-fixtures";
 import { REDLINE_PATTERN } from "./test/redline";
 import type { Position } from "./types/api";
@@ -181,7 +182,8 @@ function setupResearchMocks(): void {
       thesis_summary: "Apple supplier pressure is easing.",
       thesis_status: "confirmed"
     })),
-    overlaps: [overlap]
+    overlaps: [overlap],
+    run_health: makeRunHealth({ total_latest_runs: positions.length })
   }));
   getRelevanceMock.mockResolvedValue({
     entity_id: entity.id,

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { getEvidence } from "../api/client";
 import type { Evidence } from "../types/api";
@@ -7,6 +7,7 @@ export interface UseEvidenceResult {
   evidences: Evidence[];
   isLoading: boolean;
   errors: Record<string, string>;
+  retry: (id: string) => void;
 }
 
 type EvidenceFetchResult =
@@ -106,7 +107,18 @@ export function useEvidence(
     return next;
   }, [errors, uniqueIds]);
 
-  return { errors: activeErrors, evidences, isLoading };
+  const retry = useCallback((id: string): void => {
+    setErrors((previous) => {
+      if (!previous[id]) {
+        return previous;
+      }
+      const next = { ...previous };
+      delete next[id];
+      return next;
+    });
+  }, []);
+
+  return { errors: activeErrors, evidences, isLoading, retry };
 }
 
 function errorMessage(error: unknown): string {

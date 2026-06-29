@@ -11,7 +11,7 @@ export function AttentionNotes({
 }: AttentionNotesProps): JSX.Element {
   const risks = thesis?.assumptions.filter((item) => item.kind === "risk") ?? [];
   return (
-    <section aria-label="关注点">
+    <section aria-label="关注点" className="detail-section attention-section">
       <h2>关注点</h2>
       <small aria-label="关注点列表">
         <strong>仅供参考</strong>

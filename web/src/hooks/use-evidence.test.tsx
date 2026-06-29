@@ -1,5 +1,5 @@
-import { render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import * as client from "../api/client";
 import type { Evidence } from "../types/api";
@@ -12,6 +12,10 @@ vi.mock("../api/client", () => ({
 const getEvidenceMock = vi.mocked(client.getEvidence);
 
 describe("useEvidence", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it("uses known evidences and fetches only missing ids", async () => {
     getEvidenceMock.mockResolvedValue(makeEvidence("evidence-2"));
 
@@ -41,8 +45,26 @@ describe("useEvidence", () => {
 
     await waitFor(() => {
       expect(screen.getByText("evidence-1")).toBeInTheDocument();
-      expect(screen.getByText("missing:missing evidence")).toBeInTheDocument();
+      expect(screen.getByText(/missing:missing evidence/)).toBeInTheDocument();
     });
+  });
+
+  it("retries a failed evidence id", async () => {
+    getEvidenceMock
+      .mockRejectedValueOnce(new Error("temporary evidence failure"))
+      .mockResolvedValueOnce(makeEvidence("missing"));
+
+    render(<Probe evidenceIds={["missing"]} knownEvidences={[]} />);
+
+    expect(await screen.findByText(/missing:temporary evidence failure/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "retry missing" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("missing")).toBeInTheDocument();
+      expect(screen.queryByText(/missing:temporary evidence failure/)).not.toBeInTheDocument();
+    });
+    expect(getEvidenceMock).toHaveBeenCalledTimes(2);
   });
 });
 
@@ -60,6 +82,9 @@ function Probe({ evidenceIds, knownEvidences }: ProbeProps): JSX.Element {
       {Object.entries(result.errors).map(([id, message]) => (
         <p key={id}>
           {id}:{message}
+          <button onClick={() => result.retry(id)} type="button">
+            retry {id}
+          </button>
         </p>
       ))}
     </div>

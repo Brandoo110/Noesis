@@ -5,7 +5,7 @@ import { EvidenceDrawerProvider } from "./context/evidence-drawer";
 export function App(): JSX.Element {
   return (
     <EvidenceDrawerProvider>
-      <main>
+      <main className="app-shell">
         <PortfolioHome />
       </main>
       <EvidenceDrawer />

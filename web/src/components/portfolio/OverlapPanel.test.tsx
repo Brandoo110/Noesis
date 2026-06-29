@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import * as client from "../../api/client";
@@ -92,6 +92,23 @@ describe("OverlapPanel", () => {
     await waitFor(() =>
       expect(screen.getByText("有出处")).toBeInTheDocument()
     );
+  });
+
+  it("retries loading overlaps after an API failure", async () => {
+    getOverlapsMock.mockRejectedValueOnce(
+      new Error("GET /portfolio/overlaps failed: 503")
+    );
+    getOverlapsMock.mockResolvedValueOnce([makeOverlapGroup()]);
+
+    render(<OverlapPanel />);
+
+    expect(
+      await screen.findByText("GET /portfolio/overlaps failed: 503")
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "重新加载重叠" }));
+
+    expect(await screen.findByText("Consumer Electronics")).toBeInTheDocument();
+    expect(getOverlapsMock).toHaveBeenCalledTimes(2);
   });
 
   it("reloads overlaps when refreshKey changes", async () => {
