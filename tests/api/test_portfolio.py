@@ -537,6 +537,7 @@ def _edge(
     from_entity_id: str,
     to_entity_id: str,
     *,
+    relation: str = "belongs_to",
     basis: str,
     confidence: float,
 ) -> GraphEdgeRow:
@@ -544,7 +545,7 @@ def _edge(
         id=id,
         from_entity_id=from_entity_id,
         to_entity_id=to_entity_id,
-        relation="belongs_to",
+        relation=relation,
         basis=basis,
         confidence=confidence,
         evidence_ids_json=json.dumps([]),

@@ -115,6 +115,39 @@ class OverlapGroupResponse(BaseModel):
     positions: list[OverlapPositionResponse]
 
 
+class SharedPositionResponse(BaseModel):
+    position_id: str
+    symbol: str | None
+    entity_id: str
+    confidence: float
+
+
+class SharedSupplierGroupResponse(BaseModel):
+    supplier_id: str
+    supplier_name: str
+    node_type: Literal["company"]
+    basis: Literal["inferred", "source_backed"]
+    positions: list[SharedPositionResponse]
+
+
+class MatrixAxisResponse(BaseModel):
+    position_id: str
+    symbol: str | None
+    label: str
+
+
+class CorrelationCellResponse(BaseModel):
+    a_position_id: str
+    b_position_id: str
+    shared_count: int
+    shared_suppliers: list[str]
+
+
+class CorrelationMatrixResponse(BaseModel):
+    positions: list[MatrixAxisResponse]
+    cells: list[CorrelationCellResponse]
+
+
 class BriefPositionResponse(BaseModel):
     position_id: str
     symbol: str
