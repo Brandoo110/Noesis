@@ -9,7 +9,7 @@ import type {
   RunDetail
 } from "../types/api";
 
-export function makePosition(): Position {
+export function makePosition(overrides: Partial<Position> = {}): Position {
   return {
     id: "position-1",
     symbol: "AAPL",
@@ -17,7 +17,8 @@ export function makePosition(): Position {
     name: "Apple",
     kind: "owned",
     qty: null,
-    cost_basis: null
+    cost_basis: null,
+    ...overrides
   };
 }
 

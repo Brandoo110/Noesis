@@ -5,6 +5,7 @@ import { REDLINE_PATTERN } from "./redline";
 describe("REDLINE_PATTERN", () => {
   it("matches Chinese and English investment redline wording", () => {
     expect("这里出现目标价").toMatch(REDLINE_PATTERN);
+    expect("这里出现对冲和调整").toMatch(REDLINE_PATTERN);
     expect("This includes a strong buy rating").toMatch(REDLINE_PATTERN);
     expect("The report repeats a buy rating").toMatch(REDLINE_PATTERN);
     expect("The note repeats a sell rating").toMatch(REDLINE_PATTERN);

@@ -14,9 +14,11 @@ import { PortfolioHome } from "./PortfolioHome";
 
 vi.mock("../../api/client", () => ({
   createPosition: vi.fn(),
+  expandEntity: vi.fn(),
   getOverlaps: vi.fn(),
   getPortfolioBrief: vi.fn(),
   getRun: vi.fn(),
+  getSharedSuppliers: vi.fn(),
   listPositions: vi.fn(),
   startRun: vi.fn()
 }));
@@ -30,6 +32,7 @@ vi.mock("../graph/GraphExplorer", () => ({
 const listPositionsMock = vi.mocked(client.listPositions);
 const getOverlapsMock = vi.mocked(client.getOverlaps);
 const getPortfolioBriefMock = vi.mocked(client.getPortfolioBrief);
+const getSharedSuppliersMock = vi.mocked(client.getSharedSuppliers);
 const startRunMock = vi.mocked(client.startRun);
 const getRunMock = vi.mocked(client.getRun);
 
@@ -42,6 +45,7 @@ describe("PortfolioHome run isolation", () => {
     ]);
     getOverlapsMock.mockResolvedValue([]);
     getPortfolioBriefMock.mockResolvedValue(makeBrief());
+    getSharedSuppliersMock.mockResolvedValue([]);
     startRunMock.mockResolvedValueOnce({
       run_id: "run-a",
       status: "awaiting_confirmation",

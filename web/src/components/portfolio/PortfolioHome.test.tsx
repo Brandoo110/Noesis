@@ -8,9 +8,11 @@ import { PortfolioHome } from "./PortfolioHome";
 
 vi.mock("../../api/client", () => ({
   createPosition: vi.fn(),
+  expandEntity: vi.fn(),
   getOverlaps: vi.fn(),
   getPortfolioBrief: vi.fn(),
   getRun: vi.fn(),
+  getSharedSuppliers: vi.fn(),
   listPositions: vi.fn(),
   startRun: vi.fn()
 }));
@@ -40,6 +42,7 @@ const listPositionsMock = vi.mocked(client.listPositions);
 const createPositionMock = vi.mocked(client.createPosition);
 const getOverlapsMock = vi.mocked(client.getOverlaps);
 const getPortfolioBriefMock = vi.mocked(client.getPortfolioBrief);
+const getSharedSuppliersMock = vi.mocked(client.getSharedSuppliers);
 const startRunMock = vi.mocked(client.startRun);
 const getRunMock = vi.mocked(client.getRun);
 
@@ -48,6 +51,7 @@ describe("PortfolioHome", () => {
     vi.clearAllMocks();
     getOverlapsMock.mockResolvedValue([]);
     getPortfolioBriefMock.mockResolvedValue(makeBrief());
+    getSharedSuppliersMock.mockResolvedValue([]);
   });
 
   afterEach(() => {

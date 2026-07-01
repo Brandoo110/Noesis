@@ -113,6 +113,39 @@ export interface OverlapGroup {
   positions: OverlapPosition[];
 }
 
+export interface SharedPosition {
+  position_id: string;
+  symbol: string | null;
+  entity_id: string;
+  confidence: number;
+}
+
+export interface SharedSupplierGroup {
+  supplier_id: string;
+  supplier_name: string;
+  node_type: "company";
+  basis: Basis;
+  positions: SharedPosition[];
+}
+
+export interface MatrixAxis {
+  position_id: string;
+  symbol: string | null;
+  label: string;
+}
+
+export interface CorrelationCell {
+  a_position_id: string;
+  b_position_id: string;
+  shared_count: number;
+  shared_suppliers: string[];
+}
+
+export interface CorrelationMatrix {
+  positions: MatrixAxis[];
+  cells: CorrelationCell[];
+}
+
 export interface BriefPosition {
   position_id: string;
   symbol: string;

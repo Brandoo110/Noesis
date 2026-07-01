@@ -57,6 +57,7 @@ vi.mock("./api/client", () => ({
   getRelevance: vi.fn(),
   getRepresentatives: vi.fn(),
   getRun: vi.fn(),
+  getSharedSuppliers: vi.fn(),
   listPositions: vi.fn(),
   startRun: vi.fn()
 }));
@@ -82,6 +83,7 @@ const getNeighborsMock = vi.mocked(client.getNeighbors);
 const getOverlapsMock = vi.mocked(client.getOverlaps);
 const getPortfolioBriefMock = vi.mocked(client.getPortfolioBrief);
 const getRelevanceMock = vi.mocked(client.getRelevance);
+const getSharedSuppliersMock = vi.mocked(client.getSharedSuppliers);
 const getRunMock = vi.mocked(client.getRun);
 const listPositionsMock = vi.mocked(client.listPositions);
 const startRunMock = vi.mocked(client.startRun);
@@ -173,6 +175,7 @@ function setupResearchMocks(): void {
   getRunMock.mockResolvedValue(makeRunDetail(entity, evidence));
   getNeighborsMock.mockResolvedValue({ entity_id: entity.id, edges: [] });
   getOverlapsMock.mockResolvedValue([overlap]);
+  getSharedSuppliersMock.mockResolvedValue([]);
   getPortfolioBriefMock.mockImplementation(async () => ({
     generated_at: "2026-06-28T00:00:00Z",
     positions: positions.map((item) => ({

@@ -1,36 +1,15 @@
-import {
-  type FormEvent,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState
-} from "react";
+import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { createPosition, listPositions } from "../../api/client";
 import { GraphExplorer } from "../graph/GraphExplorer";
 import { useRun } from "../../hooks/use-run";
-import type {
-  CreatePositionInput,
-  EntityNode,
-  Position,
-  PositionKind
-} from "../../types/api";
-import { OverlapPanel } from "./OverlapPanel";
-import { PortfolioBrief } from "./PortfolioBrief";
+import type { EntityNode, Position } from "../../types/api";
+import { PortfolioInsights } from "./PortfolioInsights";
+import { PortfolioMobileTabbar } from "./PortfolioMobileTabbar";
+import { PositionInput, type PositionFormState } from "./PositionInput";
 import { PositionList } from "./PositionList";
-
-interface PositionFormState {
-  symbol: string;
-  market: string;
-  name: string;
-  kind: PositionKind;
-}
-
-interface PortfolioFilters {
-  kind: "all" | PositionKind;
-  research: "all" | "researched" | "unresearched";
-}
+import { PortfolioTopbar, type PortfolioFilters } from "./PortfolioTopbar";
+import { buildInput, matchesKind, matchesResearch, matchesSearch, prefersReducedMotion, toErrorMessage } from "./portfolio-home-utils";
 
 const EMPTY_FORM: PositionFormState = {
   symbol: "",
@@ -154,167 +133,27 @@ export function PortfolioHome(): JSX.Element {
 
   return (
     <section aria-labelledby="portfolio-title" className="portfolio-page">
-      <header className="app-topbar">
-        <div className="brand-lockup">
-          <span aria-hidden="true" className="brand-mark">N</span>
-          <div>
-            <h1 id="portfolio-title">Noesis Portfolio</h1>
-            <p>local intelligence workspace</p>
-          </div>
-        </div>
-        <label className="command-search">
-          <span>搜索</span>
-          <input
-            aria-label="全局搜索"
-            placeholder="搜索标的、主题、证据或 thesis..."
-            onChange={(event) => setSearchQuery(event.target.value)}
-            type="search"
-            value={searchQuery}
-          />
-        </label>
-        <div className="topbar-actions" aria-label="工作台工具">
-          <button
-            aria-expanded={isFilterOpen}
-            aria-label="筛选"
-            onClick={() => {
-              setIsFilterOpen((current) => !current);
-              setIsReadinessOpen(false);
-            }}
-            type="button"
-          >
-            <span aria-hidden="true" className="tool-glyph">F</span>
-            <span>Filter</span>
-          </button>
-          <button
-            aria-expanded={isReadinessOpen}
-            aria-label="产品状态"
-            onClick={() => {
-              setIsReadinessOpen((current) => !current);
-              setIsFilterOpen(false);
-            }}
-            type="button"
-          >
-            <span aria-hidden="true" className="tool-glyph">H</span>
-            <span>Health</span>
-          </button>
-          <span className="user-badge" aria-label="local user">U</span>
-        </div>
-        {isFilterOpen ? (
-          <section aria-label="筛选面板" className="topbar-popover filter-panel">
-            <label>
-              持仓类型
-              <select
-                aria-label="持仓类型筛选"
-                onChange={(event) =>
-                  setFilters((current) => ({
-                    ...current,
-                    kind: event.target.value as PortfolioFilters["kind"]
-                  }))
-                }
-                value={filters.kind}
-              >
-                <option value="all">全部</option>
-                <option value="owned">owned</option>
-                <option value="watching">watching</option>
-              </select>
-            </label>
-            <label>
-              研究状态
-              <select
-                aria-label="研究状态筛选"
-                onChange={(event) =>
-                  setFilters((current) => ({
-                    ...current,
-                    research: event.target.value as PortfolioFilters["research"]
-                  }))
-                }
-                value={filters.research}
-              >
-                <option value="all">全部</option>
-                <option value="researched">已研究</option>
-                <option value="unresearched">未研究</option>
-              </select>
-            </label>
-            <button onClick={() => setFilters(EMPTY_FILTERS)} type="button">
-              重置筛选
-            </button>
-          </section>
-        ) : null}
-        {isReadinessOpen ? (
-          <section aria-label="产品状态面板" className="topbar-popover readiness-panel">
-            <p className="eyebrow">Launch readiness</p>
-            <h2>产品状态</h2>
-            <ul>
-              <li><strong>本地优先</strong><span>SQLite + 本地 Web，无交易通道。</span></li>
-              <li><strong>非荐股</strong><span>只输出研究关注点和证据化情报。</span></li>
-              <li><strong>证据化</strong><span>结论保留 evidence / source tier / basis 标记。</span></li>
-              <li><strong>门禁</strong><span>前端测试和 production build 作为上线检查。</span></li>
-            </ul>
-          </section>
-        ) : null}
-      </header>
+      <PortfolioTopbar
+        filters={filters}
+        isFilterOpen={isFilterOpen}
+        isReadinessOpen={isReadinessOpen}
+        searchQuery={searchQuery}
+        setFilters={setFilters}
+        setIsFilterOpen={setIsFilterOpen}
+        setIsReadinessOpen={setIsReadinessOpen}
+        setSearchQuery={setSearchQuery}
+      />
 
       {error ? <p className="alert" role="alert">{error}</p> : null}
 
       <div className="portfolio-grid">
         <aside className="left-rail" aria-label="持仓控制台" id="positions">
-          <section className="surface compact-surface">
-            <div className="section-heading">
-              <div>
-                <p className="eyebrow">Position input</p>
-                <h2>Position Input</h2>
-              </div>
-            </div>
-            <form
-              aria-label="新增持仓表单"
-              className="position-form"
-              onSubmit={(event) => void handleSubmit(event)}
-            >
-              <label>
-                Symbol
-                <input
-                  name="symbol"
-                  onChange={(event) => setFormField("symbol", event.target.value, setForm)}
-                  placeholder="可选：TSLA"
-                  value={form.symbol}
-                />
-              </label>
-              <label>
-                Market
-                <input
-                  name="market"
-                  onChange={(event) => setFormField("market", event.target.value, setForm)}
-                  required
-                  value={form.market}
-                />
-              </label>
-              <label>
-                Name
-                <input
-                  name="name"
-                  onChange={(event) => setFormField("name", event.target.value, setForm)}
-                  placeholder="公司名：SpaceX"
-                  value={form.name}
-                />
-              </label>
-              <label>
-                Kind
-                <select
-                  name="kind"
-                  onChange={(event) =>
-                    setFormField("kind", event.target.value as PositionKind, setForm)
-                  }
-                  value={form.kind}
-                >
-                  <option value="owned">owned</option>
-                  <option value="watching">watching</option>
-                </select>
-              </label>
-              <button className="primary-action" disabled={isSaving} type="submit">
-                新增持仓
-              </button>
-            </form>
-          </section>
+          <PositionInput
+            form={form}
+            isSaving={isSaving}
+            onSubmit={(event) => void handleSubmit(event)}
+            setForm={setForm}
+          />
 
           <section className="surface positions-surface">
             <div className="section-heading">
@@ -379,41 +218,20 @@ export function PortfolioHome(): JSX.Element {
 
         <aside className="right-rail" aria-label="组合洞察">
           {!isLoading ? (
-            <>
-              <PortfolioBrief
-                activeRun={{
-                  positionId: run.positionId,
-                  status: run.status
-                }}
-                refreshKey={overlapRefreshKey}
-              />
-              <OverlapPanel refreshKey={overlapRefreshKey} />
-            </>
+            <PortfolioInsights
+              activeRun={{
+                entity: run.entity,
+                positionId: run.positionId,
+                status: run.status
+              }}
+              onAnalyzed={refreshOverlaps}
+              positions={positions}
+              refreshKey={overlapRefreshKey}
+            />
           ) : null}
         </aside>
       </div>
-      <nav aria-label="移动端导航" className="mobile-tabbar">
-        <a href="#portfolio-title">
-          <span aria-hidden="true">I</span>
-          <strong>Intelligence</strong>
-        </a>
-        <a aria-current="page" href="#portfolio-title">
-          <span aria-hidden="true">P</span>
-          <strong>Portfolio</strong>
-        </a>
-        <a href="#positions">
-          <span aria-hidden="true">W</span>
-          <strong>Positions</strong>
-        </a>
-        <a href="#research-workspace">
-          <span aria-hidden="true">R</span>
-          <strong>Research</strong>
-        </a>
-        <a href="#portfolio-brief">
-          <span aria-hidden="true">A</span>
-          <strong>Analytics</strong>
-        </a>
-      </nav>
+      <PortfolioMobileTabbar />
     </section>
   );
 }
@@ -422,64 +240,4 @@ interface GraphSeed {
   positionId: string;
   runId: string;
   seedEntity: EntityNode;
-}
-
-function buildInput(form: PositionFormState): CreatePositionInput {
-  const symbol = form.symbol.trim();
-  const name = form.name.trim();
-  return {
-    symbol: symbol.length > 0 ? symbol : null,
-    market: form.market.trim(),
-    name: name.length > 0 ? name : null,
-    kind: form.kind
-  };
-}
-
-function setFormField<Key extends keyof PositionFormState>(
-  key: Key,
-  value: PositionFormState[Key],
-  setForm: React.Dispatch<React.SetStateAction<PositionFormState>>
-): void {
-  setForm((current) => ({ ...current, [key]: value }));
-}
-
-function toErrorMessage(caught: unknown): string {
-  return caught instanceof Error ? caught.message : "请求失败";
-}
-
-function prefersReducedMotion(): boolean {
-  return (
-    typeof window.matchMedia === "function" &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches
-  );
-}
-
-function matchesSearch(position: Position, searchQuery: string): boolean {
-  const query = searchQuery.trim().toLowerCase();
-  if (query.length === 0) {
-    return true;
-  }
-
-  return [position.symbol, position.name, position.market, position.kind]
-    .filter(Boolean)
-    .some((value) => value?.toLowerCase().includes(query));
-}
-
-function matchesKind(position: Position, filter: PortfolioFilters["kind"]): boolean {
-  return filter === "all" || position.kind === filter;
-}
-
-function matchesResearch(
-  position: Position,
-  filter: PortfolioFilters["research"],
-  activeRun: { activeRunId: string | null; activeRunPositionId: string | null }
-): boolean {
-  if (filter === "all") {
-    return true;
-  }
-
-  const hasResearch =
-    typeof position.latest_run_id === "string" ||
-    (activeRun.activeRunPositionId === position.id && activeRun.activeRunId !== null);
-  return filter === "researched" ? hasResearch : !hasResearch;
 }

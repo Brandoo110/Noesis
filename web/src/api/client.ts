@@ -1,5 +1,6 @@
 import type {
   ConfirmationInput,
+  CorrelationMatrix,
   CreatePositionInput,
   Edge,
   EntityNode,
@@ -10,7 +11,8 @@ import type {
   Position,
   Relevance,
   RunDetail,
-  RunSummary
+  RunSummary,
+  SharedSupplierGroup
 } from "../types/api";
 
 interface NeighborsResponse {
@@ -104,6 +106,14 @@ export function getEvidence(id: string): Promise<Evidence> {
 
 export function getOverlaps(): Promise<OverlapGroup[]> {
   return request<OverlapGroup[]>("/portfolio/overlaps");
+}
+
+export function getSharedSuppliers(): Promise<SharedSupplierGroup[]> {
+  return request<SharedSupplierGroup[]>("/portfolio/shared-suppliers");
+}
+
+export function getCorrelationMatrix(): Promise<CorrelationMatrix> {
+  return request<CorrelationMatrix>("/portfolio/correlation");
 }
 
 export function getPortfolioBrief(): Promise<PortfolioBrief> {
