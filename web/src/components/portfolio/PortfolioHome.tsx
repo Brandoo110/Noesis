@@ -2,6 +2,7 @@ import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } fro
 
 import { createPosition, listPositions } from "../../api/client";
 import { GraphExplorer } from "../graph/GraphExplorer";
+import { usePortfolioRunSeeds } from "../../hooks/use-portfolio-run-seeds";
 import { useRun } from "../../hooks/use-run";
 import type { EntityNode, Position } from "../../types/api";
 import { PortfolioInsights } from "./PortfolioInsights";
@@ -39,6 +40,12 @@ export function PortfolioHome(): JSX.Element {
   const [isReadinessOpen, setIsReadinessOpen] = useState(false);
   const run = useRun();
   const workspaceRef = useRef<HTMLElement | null>(null);
+  const insightPositions = usePortfolioRunSeeds(positions, {
+    entity: run.entity,
+    positionId: run.positionId,
+    runId: run.runId,
+    status: run.status
+  });
 
   const filteredPositions = useMemo(
     () =>
@@ -225,7 +232,7 @@ export function PortfolioHome(): JSX.Element {
                 status: run.status
               }}
               onAnalyzed={refreshOverlaps}
-              positions={positions}
+              positions={insightPositions}
               refreshKey={overlapRefreshKey}
             />
           ) : null}
