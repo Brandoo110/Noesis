@@ -50,6 +50,7 @@ vi.mock("./api/client", () => ({
   confirmThesis: vi.fn(),
   createPosition: vi.fn(),
   expandEntity: vi.fn(),
+  getCorrelationMatrix: vi.fn(),
   getEvidence: vi.fn(),
   getNeighbors: vi.fn(),
   getOverlaps: vi.fn(),
@@ -79,6 +80,7 @@ interface DownloadCapture {
 }
 
 const createPositionMock = vi.mocked(client.createPosition);
+const getCorrelationMatrixMock = vi.mocked(client.getCorrelationMatrix);
 const getNeighborsMock = vi.mocked(client.getNeighbors);
 const getOverlapsMock = vi.mocked(client.getOverlaps);
 const getPortfolioBriefMock = vi.mocked(client.getPortfolioBrief);
@@ -175,6 +177,7 @@ function setupResearchMocks(): void {
   getRunMock.mockResolvedValue(makeRunDetail(entity, evidence));
   getNeighborsMock.mockResolvedValue({ entity_id: entity.id, edges: [] });
   getOverlapsMock.mockResolvedValue([overlap]);
+  getCorrelationMatrixMock.mockResolvedValue({ positions: [], cells: [] });
   getSharedSuppliersMock.mockResolvedValue([]);
   getPortfolioBriefMock.mockImplementation(async () => ({
     generated_at: "2026-06-28T00:00:00Z",

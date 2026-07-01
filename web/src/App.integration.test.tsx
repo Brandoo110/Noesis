@@ -90,6 +90,7 @@ vi.mock("./api/client", () => ({
   confirmThesis: vi.fn(),
   createPosition: vi.fn(),
   expandEntity: vi.fn(),
+  getCorrelationMatrix: vi.fn(),
   getEvidence: vi.fn(),
   getNeighbors: vi.fn(),
   getOverlaps: vi.fn(),
@@ -105,6 +106,7 @@ vi.mock("./api/client", () => ({
 const confirmThesisMock = vi.mocked(client.confirmThesis);
 const createPositionMock = vi.mocked(client.createPosition);
 const expandEntityMock = vi.mocked(client.expandEntity);
+const getCorrelationMatrixMock = vi.mocked(client.getCorrelationMatrix);
 const getEvidenceMock = vi.mocked(client.getEvidence);
 const getNeighborsMock = vi.mocked(client.getNeighbors);
 const getOverlapsMock = vi.mocked(client.getOverlaps);
@@ -155,6 +157,7 @@ describe("App M3 integration path", () => {
     expandEntityMock.mockResolvedValue(makeExpandResult([sourceBacked, inferred]));
     getNeighborsMock.mockResolvedValue({ entity_id: "entity-aapl", edges: [sourceBacked] });
     getOverlapsMock.mockResolvedValue([makeOverlapGroup()]);
+    getCorrelationMatrixMock.mockResolvedValue({ positions: [], cells: [] });
     getSharedSuppliersMock.mockResolvedValue([]);
     getPortfolioBriefMock.mockResolvedValue({
       generated_at: "2026-06-28T00:00:00Z",

@@ -15,6 +15,7 @@ import { PortfolioHome } from "./PortfolioHome";
 vi.mock("../../api/client", () => ({
   createPosition: vi.fn(),
   expandEntity: vi.fn(),
+  getCorrelationMatrix: vi.fn(),
   getOverlaps: vi.fn(),
   getPortfolioBrief: vi.fn(),
   getRun: vi.fn(),
@@ -30,6 +31,7 @@ vi.mock("../graph/GraphExplorer", () => ({
 }));
 
 const listPositionsMock = vi.mocked(client.listPositions);
+const getCorrelationMatrixMock = vi.mocked(client.getCorrelationMatrix);
 const getOverlapsMock = vi.mocked(client.getOverlaps);
 const getPortfolioBriefMock = vi.mocked(client.getPortfolioBrief);
 const getSharedSuppliersMock = vi.mocked(client.getSharedSuppliers);
@@ -44,6 +46,7 @@ describe("PortfolioHome run isolation", () => {
       makePosition("position-b", "MSFT", "Microsoft")
     ]);
     getOverlapsMock.mockResolvedValue([]);
+    getCorrelationMatrixMock.mockResolvedValue({ positions: [], cells: [] });
     getPortfolioBriefMock.mockResolvedValue(makeBrief());
     getSharedSuppliersMock.mockResolvedValue([]);
     startRunMock.mockResolvedValueOnce({

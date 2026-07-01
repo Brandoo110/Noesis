@@ -1,4 +1,5 @@
 import type { EntityNode, Position } from "../../types/api";
+import { CorrelationMatrix } from "./CorrelationMatrix";
 import { OverlapPanel } from "./OverlapPanel";
 import { PortfolioBrief } from "./PortfolioBrief";
 import { SharedSuppliers } from "./SharedSuppliers";
@@ -39,6 +40,7 @@ export function PortfolioInsights({
         positions={positions}
         refreshKey={refreshKey}
       />
+      <CorrelationMatrix refreshKey={refreshKey} />
     </>
   );
 }

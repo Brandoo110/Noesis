@@ -49,6 +49,7 @@ vi.mock("./api/client", () => ({
   confirmThesis: vi.fn(),
   createPosition: vi.fn(),
   expandEntity: vi.fn(),
+  getCorrelationMatrix: vi.fn(),
   getEvidence: vi.fn(),
   getNeighbors: vi.fn(),
   getOverlaps: vi.fn(),
@@ -73,6 +74,7 @@ interface HandleProps {
 
 const confirmThesisMock = vi.mocked(client.confirmThesis);
 const createPositionMock = vi.mocked(client.createPosition);
+const getCorrelationMatrixMock = vi.mocked(client.getCorrelationMatrix);
 const getNeighborsMock = vi.mocked(client.getNeighbors);
 const getOverlapsMock = vi.mocked(client.getOverlaps);
 const getPortfolioBriefMock = vi.mocked(client.getPortfolioBrief);
@@ -122,6 +124,7 @@ describe("App M4 overlap path", () => {
       statusByRun.size >= 2 ? [overlap] : []
     );
     getSharedSuppliersMock.mockResolvedValue([]);
+    getCorrelationMatrixMock.mockResolvedValue({ positions: [], cells: [] });
     getPortfolioBriefMock.mockImplementation(async () => ({
       generated_at: "2026-06-28T00:00:00Z",
       positions: positions.map((position) => ({
