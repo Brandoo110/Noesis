@@ -1,0 +1,229 @@
+.thesis-group article {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  border-radius: 10px;
+  background: var(--surface);
+  padding: 10px;
+}
+.confirm-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.confirm-row p {
+  flex-basis: 100%;
+  color: var(--brand-700);
+  font-weight: 600;
+}
+.intel-list {
+  display: grid;
+  gap: 10px;
+}
+.intel-card {
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--line-2);
+  border-radius: 12px;
+  background: var(--surface-2);
+  padding: 12px;
+}
+.intel-card h3 {
+  margin: 0;
+  font-size: 13.5px;
+}
+.intel-card header span,
+.intel-card header small {
+  border-radius: 999px;
+  background: #F0F3EF;
+  color: var(--ink-3);
+  padding: 3px 7px;
+  font-size: 10.5px;
+  font-weight: 600;
+}
+.intel-card b {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+}
+.intel-card b.pos { color: var(--brand-700); }
+.intel-card b.neg { color: var(--red-700); }
+.intel-card b.neu { color: #6B756F; }
+.watch-card {
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--warn-line);
+  border-radius: 12px;
+  background: var(--warn-bg);
+  color: var(--warn-ink);
+  padding: 12px;
+}
+.watch-card div {
+  display: flex;
+  justify-content: space-between;
+}
+.watch-card span {
+  border-radius: 999px;
+  background: var(--amber-100);
+  padding: 3px 8px;
+  font-size: 10.5px;
+  font-weight: 700;
+}
+.watch-card small {
+  color: var(--warn-ink);
+}
+.export-report {
+  margin-bottom: 24px;
+}
+.evidence-title-row {
+  align-items: center;
+}
+.evidence-card {
+  display: grid;
+  gap: 9px;
+  margin: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  padding: 14px;
+}
+.evidence-card header {
+  display: flex;
+  justify-content: space-between;
+}
+.evidence-card h3 {
+  margin: 0;
+  font-size: 14px;
+}
+.evidence-meta {
+  color: var(--muted);
+  font-size: 11.5px;
+}
+.evidence-card blockquote {
+  margin: 0;
+  border-left: 2px solid var(--brand-700);
+  color: var(--ink-2);
+  padding-left: 10px;
+  line-height: 1.55;
+}
+.evidence-card a {
+  color: var(--brand-600);
+  font-weight: 600;
+  text-decoration: none;
+}
+.tier-badge {
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 10.5px;
+  font-weight: 600;
+}
+.tier-1 {
+  background: var(--brand-100);
+  color: var(--brand-700);
+}
+.tier-2 {
+  background: var(--blue-100);
+  color: var(--blue-700);
+}
+.tier-3 {
+  background: #F0F3EF;
+  color: #6B756F;
+}
+.ops-metrics {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+}
+.ops-grid {
+  display: grid;
+  grid-template-columns: 340px minmax(0, 1fr);
+  gap: 16px;
+}
+.ops-runs,
+.run-trace {
+  padding: 16px 18px;
+}
+.ops-runs {
+  display: grid;
+  gap: 10px;
+}
+.run-card {
+  display: grid;
+  width: 100%;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  padding: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+.run-card[aria-pressed="true"] {
+  border-color: var(--brand-700);
+  background: var(--brand-50);
+}
+.run-card strong {
+  font-family: "IBM Plex Mono", monospace;
+}
+.run-card span,
+.trace-header span {
+  justify-self: start;
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 10.5px;
+  font-weight: 600;
+}
+.run-card small {
+  color: var(--ink-3);
+}
+.run-trace ol {
+  display: grid;
+  gap: 0;
+  margin: 16px 0 0;
+  padding: 0;
+}
+.trace-step {
+  position: relative;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 10px;
+  list-style: none;
+  padding-bottom: 16px;
+}
+.trace-step > i {
+  z-index: 1;
+  width: 10px;
+  height: 10px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: var(--brand-700);
+}
+.trace-step.retry > i {
+  background: var(--amber-600);
+}
+.trace-step.failed > i {
+  background: var(--red-700);
+}
+.trace-step > b {
+  position: absolute;
+  top: 17px;
+  left: 4px;
+  width: 1px;
+  height: calc(100% - 17px);
+  background: #E8EDE7;
+}
+.trace-step div {
+  display: grid;
+  gap: 6px;
+}
+.trace-step header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.trace-step strong {
+  font-family: "IBM Plex Mono", monospace;
+}

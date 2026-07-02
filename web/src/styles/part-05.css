@@ -1,0 +1,223 @@
+.seed-node.selected {
+  outline: 2px solid var(--brand-900);
+}
+.company-node {
+  border: 1px solid var(--border-strong);
+}
+.segment-node {
+  border: 1px solid #BFCDC1;
+  border-radius: 21px;
+  background: #EEF3EC;
+  color: var(--ink-2);
+  font-weight: 600;
+}
+.inferred-node {
+  border: 1.5px dashed var(--amber-600);
+}
+.graph-node.selected {
+  outline: 2px solid var(--brand-700);
+  box-shadow: 0 0 0 4px rgba(10, 92, 87, 0.12);
+}
+.graph-node i {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  display: grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--brand-700);
+  color: var(--surface);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+  font-style: normal;
+}
+.relationships-card,
+.graph-summary {
+  padding: 16px 18px;
+}
+.relationship-head {
+  margin-bottom: 12px;
+}
+.relationship-table-head,
+.relationship-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) 84px 96px 72px 88px minmax(0, 1.5fr);
+  gap: 10px;
+  align-items: center;
+}
+.relationship-table-head {
+  border-top: 1px solid var(--line-2);
+  border-bottom: 1px solid var(--line-2);
+  background: var(--surface-2);
+  color: var(--muted);
+  padding: 8px 0;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+.relationship-row {
+  border-bottom: 1px solid #F0F3EF;
+  padding: 10px 0;
+  color: var(--ink-3);
+  font-size: 12px;
+}
+.relationship-row strong {
+  min-width: 0;
+  color: var(--ink);
+}
+.relationship-row p {
+  color: var(--ink-3);
+  line-height: 1.45;
+}
+.evidence-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.evidence-cell button,
+
+.graph-summary button,
+.intel-card button,
+.thesis-group button {
+  background: transparent;
+  color: var(--brand-600);
+  padding: 0;
+  font-weight: 600;
+  cursor: pointer;
+}
+.graph-summary {
+  display: grid;
+  gap: 8px;
+}
+.graph-summary p:not(.eyebrow) {
+  color: var(--ink-3);
+  line-height: 1.55;
+}
+.detail-layer,
+.evidence-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+}
+.evidence-layer {
+  z-index: 60;
+}
+.drawer-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(18, 28, 26, 0.34);
+  animation: fadeIn 0.18s ease;
+  cursor: pointer;
+}
+.detail-panel,
+.evidence-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  overflow: auto;
+  width: min(620px, 100vw);
+  height: 100%;
+  background: var(--surface);
+  box-shadow: -24px 0 56px rgba(18, 28, 26, 0.2);
+  animation: slideInR 0.24s ease;
+}
+.evidence-panel {
+  width: min(460px, 100vw);
+}
+.drawer-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.96);
+  padding: 18px 20px;
+}
+.drawer-header h2 {
+  margin: 2px 0 0;
+  font-size: 18px;
+  font-weight: 650;
+}
+.drawer-header h2 span {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 20px;
+}
+.drawer-header > button {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--field);
+  color: var(--ink-2);
+  cursor: pointer;
+  font-size: 18px;
+}
+.detail-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.detail-chips span {
+  border-radius: 999px;
+  background: #F0F3EF;
+  color: var(--ink-3);
+  padding: 3px 8px;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10.5px;
+  font-weight: 600;
+}
+.degraded-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 16px 20px 0;
+  border: 1px solid var(--warn-line);
+  border-radius: 12px;
+  background: var(--warn-bg);
+  color: var(--warn-ink);
+  padding: 12px;
+}
+.summary-card,
+.thesis-groups,
+.confirm-row,
+.intel-list,
+.watch-card,
+.export-report {
+  margin: 16px 20px 0;
+}
+.summary-card {
+  display: grid;
+  gap: 6px;
+  border-radius: 12px;
+  background: var(--brand-50);
+  padding: 14px;
+}
+.summary-card p:not(.eyebrow),
+.watch-card p,
+.intel-card p {
+  color: var(--ink-3);
+  line-height: 1.55;
+}
+.thesis-groups {
+  display: grid;
+  gap: 10px;
+}
+.thesis-group {
+  display: grid;
+  gap: 8px;
+  border-radius: 12px;
+  padding: 12px;
+}
+.thesis-group.green { background: var(--brand-100); color: var(--brand-700); }
+.thesis-group.blue { background: var(--blue-100); color: var(--blue-700); }
+.thesis-group.amber { background: var(--amber-100); color: var(--amber-700); }
+.thesis-group h3 {
+  margin: 0;
+  font-size: 13px;
+}

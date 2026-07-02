@@ -1,10 +1,10 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import * as client from "../../api/client";
-import { makeOverlapGroup, makeRunHealth } from "../../test/m3-fixtures";
-import type { PortfolioBrief, Position, RunDetail } from "../../types/api";
+import { makeOverlapGroup } from "../../test/m3-fixtures";
 import { PortfolioHome } from "./PortfolioHome";
+import { makeBrief, makePosition, makeRunDetail } from "./PortfolioHome.test-fixtures";
 
 vi.mock("../../api/client", () => ({
   createPosition: vi.fn(),
@@ -16,27 +16,6 @@ vi.mock("../../api/client", () => ({
   getSharedSuppliers: vi.fn(),
   listPositions: vi.fn(),
   startRun: vi.fn()
-}));
-
-vi.mock("../graph/GraphExplorer", () => ({
-  GraphExplorer: ({
-    onThesisConfirmed,
-    positionId,
-    runId,
-    seedEntity
-  }: {
-    onThesisConfirmed?: () => void;
-    positionId: string;
-    runId?: string;
-    seedEntity: { id: string };
-  }) => (
-    <div data-testid="graph-explorer">
-      <span>{`${positionId}:${seedEntity.id}:${runId ?? "no-run"}`}</span>
-      <button onClick={onThesisConfirmed} type="button">
-        mock confirm thesis
-      </button>
-    </div>
-  )
 }));
 
 const listPositionsMock = vi.mocked(client.listPositions);
@@ -55,10 +34,6 @@ describe("PortfolioHome", () => {
     getOverlapsMock.mockResolvedValue([]);
     getPortfolioBriefMock.mockResolvedValue(makeBrief());
     getSharedSuppliersMock.mockResolvedValue([]);
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
   });
 
   it("renders positions from the API", async () => {
@@ -126,9 +101,7 @@ describe("PortfolioHome", () => {
   });
 
   it("retries loading positions after an API failure", async () => {
-    listPositionsMock.mockRejectedValueOnce(
-      new Error("GET /positions failed: 503")
-    );
+    listPositionsMock.mockRejectedValueOnce(new Error("GET /positions failed: 503"));
     listPositionsMock.mockResolvedValueOnce([
       makePosition({ id: "position-1", symbol: "AAPL", name: "Apple" })
     ]);
@@ -147,9 +120,7 @@ describe("PortfolioHome", () => {
     listPositionsMock.mockResolvedValue([
       makePosition({ id: "position-1", symbol: "AAPL", name: "Apple" })
     ]);
-    getOverlapsMock.mockResolvedValue([
-      makeOverlapGroup({ basis: "source_backed" })
-    ]);
+    getOverlapsMock.mockResolvedValue([makeOverlapGroup({ basis: "source_backed" })]);
 
     render(<PortfolioHome />);
 
@@ -162,11 +133,7 @@ describe("PortfolioHome", () => {
   });
 
   it("creates a position and refreshes the list", async () => {
-    const firstPosition = makePosition({
-      id: "position-1",
-      symbol: "AAPL",
-      name: "Apple"
-    });
+    const firstPosition = makePosition({ id: "position-1", symbol: "AAPL", name: "Apple" });
     const createdPosition = makePosition({
       id: "position-2",
       symbol: "MSFT",
@@ -180,18 +147,10 @@ describe("PortfolioHome", () => {
     render(<PortfolioHome />);
 
     await screen.findByText("AAPL");
-    fireEvent.change(screen.getByLabelText("Symbol"), {
-      target: { value: "MSFT" }
-    });
-    fireEvent.change(screen.getByLabelText("Market"), {
-      target: { value: "US" }
-    });
-    fireEvent.change(screen.getByLabelText("Name"), {
-      target: { value: "Microsoft" }
-    });
-    fireEvent.change(screen.getByLabelText("Kind"), {
-      target: { value: "watching" }
-    });
+    fireEvent.change(screen.getByLabelText("Symbol"), { target: { value: "MSFT" } });
+    fireEvent.change(screen.getByLabelText("Market"), { target: { value: "US" } });
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Microsoft" } });
+    fireEvent.change(screen.getByLabelText("Kind"), { target: { value: "watching" } });
     fireEvent.click(screen.getByRole("button", { name: "新增持仓" }));
 
     await waitFor(() =>
@@ -208,10 +167,7 @@ describe("PortfolioHome", () => {
 
   it("creates a company-name-only position when the ticker is unknown", async () => {
     const createdPosition = makePosition({
-      id: "position-spacex",
-      symbol: "SpaceX",
-      name: "SpaceX",
-      kind: "watching"
+      id: "position-spacex", symbol: "SpaceX", name: "SpaceX", kind: "watching"
     });
     listPositionsMock.mockResolvedValueOnce([]);
     listPositionsMock.mockResolvedValueOnce([createdPosition]);
@@ -220,12 +176,8 @@ describe("PortfolioHome", () => {
     render(<PortfolioHome />);
 
     await screen.findByText("暂无持仓");
-    fireEvent.change(screen.getByLabelText("Name"), {
-      target: { value: "SpaceX" }
-    });
-    fireEvent.change(screen.getByLabelText("Kind"), {
-      target: { value: "watching" }
-    });
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "SpaceX" } });
+    fireEvent.change(screen.getByLabelText("Kind"), { target: { value: "watching" } });
     fireEvent.click(screen.getByRole("button", { name: "新增持仓" }));
 
     await waitFor(() =>
@@ -279,255 +231,4 @@ describe("PortfolioHome", () => {
     expect(getPortfolioBriefMock).toHaveBeenCalledTimes(2);
   });
 
-  it("opens GraphExplorer when a run has a seed entity", async () => {
-    listPositionsMock.mockResolvedValue([
-      makePosition({ id: "position-1", symbol: "AAPL", name: "Apple" })
-    ]);
-    startRunMock.mockResolvedValue({
-      run_id: "run-1",
-      status: "awaiting_confirmation",
-      thesis_id: "thesis-1"
-    });
-    getRunMock.mockResolvedValue(makeRunDetail());
-
-    render(<PortfolioHome />);
-
-    await screen.findByText("AAPL");
-    fireEvent.click(screen.getByRole("button", { name: "开始研究 AAPL" }));
-    const graphButton = await screen.findByRole("button", {
-      name: "查看图谱 AAPL"
-    });
-    fireEvent.click(graphButton);
-
-    expect(await screen.findByTestId("graph-explorer")).toHaveTextContent(
-      "position-1:entity-aapl:run-1"
-    );
-  });
-
-  it("moves focus to the research workspace after opening a graph", async () => {
-    const scrollIntoViewMock = vi.mocked(Element.prototype.scrollIntoView);
-    scrollIntoViewMock.mockClear();
-    listPositionsMock.mockResolvedValue([
-      makePosition({
-        id: "position-1",
-        symbol: "AAPL",
-        name: "Apple",
-        latest_run_id: "run-latest",
-        latest_run_status: "awaiting_confirmation",
-        latest_run_entity: {
-          id: "entity-aapl",
-          name: "Apple Inc.",
-          node_type: "company",
-          symbol: "AAPL",
-          market: "US"
-        }
-      })
-    ]);
-
-    render(<PortfolioHome />);
-
-    fireEvent.click(await screen.findByRole("button", { name: "查看图谱 AAPL" }));
-
-    await waitFor(() =>
-      expect(scrollIntoViewMock).toHaveBeenCalledWith({
-        block: "start",
-        behavior: "smooth"
-      })
-    );
-    expect(screen.getByLabelText("研究工作区")).toHaveFocus();
-  });
-
-  it("keeps an opened graph locked to the run id captured at click time", async () => {
-    listPositionsMock.mockResolvedValue([
-      makePosition({ id: "position-a", symbol: "AAPL", name: "Apple" }),
-      makePosition({ id: "position-b", symbol: "MSFT", name: "Microsoft" })
-    ]);
-    startRunMock.mockResolvedValueOnce({
-      run_id: "run-a",
-      status: "awaiting_confirmation",
-      thesis_id: "thesis-a"
-    });
-    startRunMock.mockResolvedValueOnce({
-      run_id: "run-b",
-      status: "awaiting_confirmation",
-      thesis_id: "thesis-b"
-    });
-    getRunMock.mockResolvedValueOnce(makeRunDetail({ run_id: "run-a" }));
-    getRunMock.mockResolvedValueOnce(
-      makeRunDetail({
-        run_id: "run-b",
-        entity: {
-          id: "entity-msft",
-          name: "Microsoft",
-          node_type: "company",
-          symbol: "MSFT",
-          market: "US"
-        }
-      })
-    );
-
-    render(<PortfolioHome />);
-
-    await screen.findByText("AAPL");
-    fireEvent.click(screen.getByRole("button", { name: "开始研究 AAPL" }));
-    const graphButton = await screen.findByRole("button", {
-      name: "查看图谱 AAPL"
-    });
-    fireEvent.click(graphButton);
-
-    expect(await screen.findByTestId("graph-explorer")).toHaveTextContent(
-      "position-a:entity-aapl:run-a"
-    );
-
-    fireEvent.click(screen.getByRole("button", { name: "开始研究 MSFT" }));
-
-    await waitFor(() => expect(screen.getByText("run-b")).toBeInTheDocument());
-    expect(screen.getByTestId("graph-explorer")).toHaveTextContent(
-      "position-a:entity-aapl:run-a"
-    );
-  });
-
-  it("restores a view graph action from the latest persisted run", async () => {
-    listPositionsMock.mockResolvedValue([
-      makePosition({
-        id: "position-1",
-        symbol: "AAPL",
-        name: "Apple",
-        latest_run_id: "run-latest",
-        latest_run_status: "awaiting_confirmation",
-        latest_run_entity: {
-          id: "entity-aapl",
-          name: "Apple Inc.",
-          node_type: "company",
-          symbol: "AAPL",
-          market: "US"
-        }
-      })
-    ]);
-
-    render(<PortfolioHome />);
-
-    const graphButton = await screen.findByRole("button", {
-      name: "查看图谱 AAPL"
-    });
-    fireEvent.click(graphButton);
-
-    expect(await screen.findByTestId("graph-explorer")).toHaveTextContent(
-      "position-1:entity-aapl:run-latest"
-    );
-  });
-
-  it("keeps the previous graph available while a refreshed run is running", async () => {
-    listPositionsMock.mockResolvedValue([
-      makePosition({
-        id: "position-1",
-        symbol: "AAPL",
-        name: "Apple",
-        latest_run_id: "run-old",
-        latest_run_status: "awaiting_confirmation",
-        latest_run_entity: {
-          id: "entity-aapl-old",
-          name: "Apple Inc.",
-          node_type: "company",
-          symbol: "AAPL",
-          market: "US"
-        }
-      })
-    ]);
-    startRunMock.mockResolvedValue({
-      run_id: "run-new",
-      status: "running",
-      thesis_id: null
-    });
-
-    render(<PortfolioHome />);
-
-    await screen.findByRole("button", { name: "查看图谱 AAPL" });
-    fireEvent.click(screen.getByRole("button", { name: "重新研究 AAPL" }));
-
-    await waitFor(() => expect(startRunMock).toHaveBeenCalledWith("position-1"));
-    expect(screen.getByRole("button", { name: "研究中 AAPL" })).toBeDisabled();
-    expect(screen.getByText("run-new")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "查看旧图谱 AAPL" }));
-
-    expect(await screen.findByTestId("graph-explorer")).toHaveTextContent(
-      "position-1:entity-aapl-old:run-old"
-    );
-  });
-
-  it("refreshes portfolio row status after thesis confirmation", async () => {
-    listPositionsMock.mockResolvedValue([
-      makePosition({ id: "position-1", symbol: "AAPL", name: "Apple" })
-    ]);
-    startRunMock.mockResolvedValue({
-      run_id: "run-1",
-      status: "awaiting_confirmation",
-      thesis_id: "thesis-1"
-    });
-    getRunMock.mockResolvedValueOnce(makeRunDetail());
-    getRunMock.mockResolvedValueOnce(makeRunDetail({ status: "completed" }));
-
-    render(<PortfolioHome />);
-
-    await screen.findByText("AAPL");
-    fireEvent.click(screen.getByRole("button", { name: "开始研究 AAPL" }));
-    const graphButton = await screen.findByRole("button", {
-      name: "查看图谱 AAPL"
-    });
-    fireEvent.click(graphButton);
-    fireEvent.click(screen.getByRole("button", { name: "mock confirm thesis" }));
-
-    await waitFor(() => expect(screen.getByText("completed")).toBeInTheDocument());
-    expect(getRunMock).toHaveBeenCalledTimes(2);
-  });
 });
-
-function makePosition(overrides: Partial<Position> = {}): Position {
-  return {
-    id: "position-1",
-    symbol: "AAPL",
-    market: "US",
-    name: "Apple",
-    kind: "owned",
-    qty: null,
-    cost_basis: null,
-    ...overrides
-  };
-}
-
-function makeRunDetail(overrides: Partial<RunDetail> = {}): RunDetail {
-  return {
-    run_id: "run-1",
-    status: "awaiting_confirmation",
-    thesis_id: "thesis-1",
-    entity: {
-      id: "entity-aapl",
-      name: "Apple Inc.",
-      node_type: "company",
-      symbol: "AAPL",
-      market: "US"
-    },
-    evidences: [],
-    intel_items: [],
-    thesis: null,
-    ...overrides
-  };
-}
-
-function makeBrief(): PortfolioBrief {
-  return {
-    generated_at: "2026-06-28T00:00:00Z",
-    positions: [
-      {
-        position_id: "position-1",
-        symbol: "AAPL",
-        name: "Apple",
-        thesis_summary: "Apple supplier pressure is easing.",
-        thesis_status: "confirmed"
-      }
-    ],
-    overlaps: [makeOverlapGroup()],
-    run_health: makeRunHealth({ total_latest_runs: 1, completed: 1 })
-  };
-}

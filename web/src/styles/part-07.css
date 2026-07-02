@@ -1,0 +1,166 @@
+.trace-step span {
+  border-radius: 999px;
+  background: var(--brand-100);
+  color: var(--brand-700);
+  padding: 3px 7px;
+  font-size: 10.5px;
+  font-weight: 600;
+}
+.trace-step em,
+.trace-step small {
+  color: var(--ink-3);
+  font-family: "IBM Plex Mono", monospace;
+  font-style: normal;
+  font-size: 11px;
+}
+.trace-step p {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.trace-step p small {
+  border-radius: 7px;
+  background: var(--field);
+  padding: 3px 7px;
+}
+.mobile-nav {
+  display: none;
+}
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 22px;
+  z-index: 80;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--surface);
+  box-shadow: 0 16px 40px rgba(23, 34, 32, 0.18);
+  padding: 10px 16px;
+  font-size: 12.5px;
+  animation: toastUp 0.22s ease;
+}
+@media (max-width: 900px) {
+  html,
+  body,
+  #root {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .noesis-app {
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .main-column {
+    min-height: 0;
+    overflow: auto;
+  }
+
+  .rail {
+    display: none;
+  }
+
+  .mobile-nav {
+    display: flex;
+    justify-content: space-around;
+    margin: 0 12px 12px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--surface);
+    box-shadow: 0 16px 40px rgba(23, 34, 32, 0.14);
+    padding: 8px;
+  }
+
+  .mobile-nav button {
+    flex: 1;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--muted);
+    padding: 9px 8px;
+    font-weight: 650;
+  }
+
+  .mobile-nav button[aria-pressed="true"] {
+    background: var(--brand-100);
+    color: var(--brand-700);
+  }
+
+  .topbar {
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 10px 14px;
+  }
+
+  .topbar-search {
+    order: 3;
+    max-width: none;
+    flex-basis: 100%;
+  }
+
+  .page-body {
+    padding: 14px 14px 20px;
+  }
+
+  .home-grid,
+  .ops-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ops-metrics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .pos-head {
+    display: none;
+  }
+
+  .pos-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "symbol status"
+      "symbol actions";
+    gap: 8px 10px;
+    align-items: center;
+  }
+
+  .symbol-cell {
+    grid-area: symbol;
+  }
+
+  .status-pill {
+    grid-area: status;
+    justify-self: end;
+  }
+
+  .row-actions {
+    grid-area: actions;
+    flex-wrap: wrap;
+  }
+
+  .pos-cell-market,
+  .pos-cell-kind {
+    display: none;
+  }
+
+  .add-form {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .relationship-table-head,
+  .relationship-row {
+    grid-template-columns: minmax(0, 1fr) 76px 86px;
+  }
+
+  .relationship-table-head span:nth-child(n+4),
+  .relationship-row > *:nth-child(n+4) {
+    display: none;
+  }
+
+  .detail-panel,
+  .evidence-panel {
+    width: 100vw;
+  }
+}

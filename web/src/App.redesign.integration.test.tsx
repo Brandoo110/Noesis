@@ -66,6 +66,7 @@ describe("App workstation shell", () => {
 
     fireEvent.click(within(nav).getByRole("button", { name: "AgentOps" }));
     expect(screen.getByLabelText("AgentOps视图")).toBeInTheDocument();
+    expect(await screen.findByText("No runs yet")).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(REDLINE_PATTERN);
   });
 });

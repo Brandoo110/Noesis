@@ -40,6 +40,10 @@ vi.mock("../views/GraphView", () => ({
   )
 }));
 
+vi.mock("../views/AgentOpsView", () => ({
+  AgentOpsView: () => <section aria-label="AgentOps视图">mock agentops</section>
+}));
+
 describe("WorkspaceShell", () => {
   it("renders three view entries and switches the active workspace", () => {
     render(<WorkspaceShell />);
@@ -58,11 +62,7 @@ describe("WorkspaceShell", () => {
     ).toBeInTheDocument();
 
     fireEvent.click(within(nav).getByRole("button", { name: "AgentOps" }));
-    expect(
-      within(screen.getByLabelText("AgentOps视图")).getByRole("heading", {
-        name: "AgentOps"
-      })
-    ).toBeInTheDocument();
+    expect(screen.getByLabelText("AgentOps视图")).toHaveTextContent("mock agentops");
   });
 
   it("captures graph seed from the portfolio view and opens graph workspace", () => {

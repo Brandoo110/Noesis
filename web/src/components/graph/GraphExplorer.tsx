@@ -4,8 +4,8 @@ import ReactFlow, {
   Controls,
   ReactFlowProvider,
   type EdgeTypes,
-  type ReactFlowInstance,
-  type NodeTypes
+  type NodeTypes,
+  type ReactFlowInstance
 } from "reactflow";
 import "reactflow/dist/style.css";
 
@@ -24,13 +24,9 @@ export interface GraphExplorerProps {
   seedEntity: EntityNode;
 }
 
-const NODE_TYPES: NodeTypes = {
-  entity: EntityNodeView
-};
+const NODE_TYPES: NodeTypes = { entity: EntityNodeView };
 
-const EDGE_TYPES: EdgeTypes = {
-  edge: EdgeView
-};
+const EDGE_TYPES: EdgeTypes = { edge: EdgeView };
 
 const RELATION_LABELS: Record<Edge["relation"], string> = {
   belongs_to: "归属",
@@ -49,17 +45,15 @@ export function GraphExplorer({
   const evidenceDrawer = useEvidenceDrawer();
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [basisFilter, setBasisFilter] = useState<"all" | Basis>("all");
-  const [flowInstance, setFlowInstance] =
-    useState<ReactFlowInstance | null>(null);
+  const [flowInstance, setFlowInstance] = useState<ReactFlowInstance | null>(null);
   const graph = useExpand({
     onViewDetail: runId ? () => setIsDetailOpen(true) : undefined,
     positionId,
     seedEntity
   });
-  const visibleEdges =
-    basisFilter === "all"
-      ? graph.edges
-      : graph.edges.filter((edge) => edge.data?.edge.basis === basisFilter);
+  const visibleEdges = basisFilter === "all"
+    ? graph.edges
+    : graph.edges.filter((edge) => edge.data?.edge.basis === basisFilter);
   const nodeById = useMemo(
     () => new Map(graph.nodes.map((node) => [node.id, node.data.entity])),
     [graph.nodes]
@@ -119,9 +113,7 @@ export function GraphExplorer({
             证据边
             <select
               aria-label="图谱边筛选"
-              onChange={(event) =>
-                setBasisFilter(event.target.value as "all" | Basis)
-              }
+              onChange={(event) => setBasisFilter(event.target.value as "all" | Basis)}
               value={basisFilter}
             >
               <option value="all">全部</option>
@@ -248,8 +240,6 @@ interface RelationRow {
 }
 
 function entityLabel(entity: EntityNode | undefined): string {
-  if (!entity) {
-    return "未知实体";
-  }
+  if (!entity) return "未知实体";
   return [entity.symbol, entity.name].filter(Boolean).join(" · ");
 }
