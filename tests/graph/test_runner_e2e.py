@@ -202,6 +202,10 @@ def test_runner_start_resume_happy_path_persists_outputs_and_traces(
         intel = deps.repos.intel.list_by_entity("entity-aapl", conn=conn)
         traces = deps.repos.traces.list_by_run(completed.run_id, conn=conn)
         tool_calls = deps.repos.tool_invocations.list_by_run(completed.run_id, conn=conn)
+        source_documents = deps.repos.source_documents.list_by_run(
+            completed.run_id,
+            conn=conn,
+        )
     finally:
         conn.close()
 
@@ -226,6 +230,9 @@ def test_runner_start_resume_happy_path_persists_outputs_and_traces(
         {call.tool_name for call in tool_calls}
     )
     assert all(call.run_id == completed.run_id for call in tool_calls)
+    assert source_documents
+    assert source_documents[0].publisher == "example.com"
+    assert source_documents[0].content_hash
 
 
 def test_runner_completes_when_synth_unavailable_with_degraded_trace(
