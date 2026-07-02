@@ -20,7 +20,9 @@ export default defineConfig({
       "/evidences": backendProxy,
       "/theses": backendProxy,
       "/segments": backendProxy,
-      "/portfolio": backendProxy
+      "/portfolio": backendProxy,
+      "/metrics": backendProxy,
+      "/eval": backendProxy
     }
   },
   test: {

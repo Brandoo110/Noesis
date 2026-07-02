@@ -28,9 +28,18 @@ describe("AgentOpsDashboard", () => {
     render(<AgentOpsDashboard />);
 
     const dashboard = await screen.findByLabelText("AgentOps Dashboard");
-    expect(within(dashboard).getByText("2")).toBeInTheDocument();
-    expect(within(dashboard).getByText("50%")).toBeInTheDocument();
-    expect(within(dashboard).getByText("3.0s")).toBeInTheDocument();
+    expect(within(dashboard).getByText("runs")).toBeInTheDocument();
+    expect(within(dashboard).getAllByText("50%").length).toBeGreaterThanOrEqual(1);
+    expect(within(dashboard).getAllByText("3.0s").length).toBeGreaterThanOrEqual(1);
+    expect(within(dashboard).getByText("P95 latency")).toBeInTheDocument();
+    expect(within(dashboard).getByText("5.0s")).toBeInTheDocument();
+    expect(within(dashboard).getByText("tool success")).toBeInTheDocument();
+    expect(within(dashboard).getByText("tool failure")).toBeInTheDocument();
+    expect(within(dashboard).getByText("cache hit")).toBeInTheDocument();
+    expect(within(dashboard).getByText("tokens/run")).toBeInTheDocument();
+    expect(within(dashboard).getByText("$0.001200")).toBeInTheDocument();
+    expect(within(dashboard).getByText("evidence coverage")).toBeInTheDocument();
+    expect(within(dashboard).getByText("RAG retrievals")).toBeInTheDocument();
     expect(within(dashboard).getByLabelText("AgentOps run list")).toHaveTextContent(
       "run-agentops"
     );
@@ -40,6 +49,15 @@ describe("AgentOpsDashboard", () => {
     );
     expect(within(dashboard).getByLabelText("Run trace timeline")).toHaveTextContent(
       "cache miss"
+    );
+    expect(within(dashboard).getByLabelText("Run trace timeline")).toHaveTextContent(
+      "query=AAPL"
+    );
+    expect(within(dashboard).getByLabelText("Run trace timeline")).toHaveTextContent(
+      "1 docs"
+    );
+    expect(within(dashboard).getByLabelText("Run trace timeline")).toHaveTextContent(
+      "retry 0"
     );
   });
 
@@ -115,7 +133,7 @@ function makeMetrics(): MetricsSummary {
     estimated_cost_per_run: 0.0012,
     evidence_coverage: 0.5,
     unsupported_claim_count: 1,
-    rag_retrieval_count: 0
+    rag_retrieval_count: 2
   };
 }
 

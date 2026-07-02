@@ -35,8 +35,8 @@ npm --prefix web run dev
 ```
 
 Vite serves the app at `http://localhost:5173` and proxies these API prefixes to
-the backend: `/positions`, `/runs`, `/entities`, `/evidences`, `/theses`, and
-`/segments`.
+the backend: `/positions`, `/runs`, `/entities`, `/evidences`, `/theses`,
+`/segments`, `/portfolio`, `/metrics`, and `/eval`.
 
 ## Verification
 

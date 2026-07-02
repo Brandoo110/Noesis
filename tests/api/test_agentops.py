@@ -16,6 +16,7 @@ from noesis.db.repos.tool_invocations_repo import ToolInvocationsRepo
 
 from tests.api.conftest import ApiTestContext
 from tests.api.conftest import NOW
+from tests.scripts.eval_fixture_helpers import seed_completed_run
 
 END = "2026-06-26T00:00:03Z"
 
@@ -85,6 +86,23 @@ def test_get_metrics_summary_handles_empty_db(api_context: ApiTestContext) -> No
     assert payload["total_runs"] == 0
     assert payload["task_completion_rate"] == 0
     assert payload["cache_hit_rate"] == 0
+
+
+def test_post_eval_runs_returns_eval_report(api_context: ApiTestContext) -> None:
+    with connect(api_context.db_path) as conn:
+        migrate(conn)
+        seed_completed_run(conn)
+
+    response = api_context.client.post("/eval/runs")
+    payload = response.json()
+
+    assert response.status_code == 200
+    assert payload["mode"] == "from_db"
+    assert payload["agentops"]["total_runs"] == 1
+    assert payload["averages"]["grounding_rate"] == 1.0
+    assert payload["cases"][0]["symbol"] == "AAPL"
+    assert payload["cases"][0]["status"] == "evaluated"
+    assert payload["cases"][0]["trace_summary"]["degraded"] == 1
 
 
 def _seed_agentops_run(db_path: Path) -> None:

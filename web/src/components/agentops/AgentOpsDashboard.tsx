@@ -136,24 +136,30 @@ export function AgentOpsDashboard(): JSX.Element {
 }
 
 function MetricsStrip({ metrics }: { metrics: MetricsSummary }): JSX.Element {
+  const items = [
+    ["runs", String(metrics.total_runs)],
+    ["complete", formatPercent(metrics.task_completion_rate)],
+    ["avg latency", formatMs(metrics.avg_latency_ms)],
+    ["P95 latency", formatMs(metrics.p95_latency_ms)],
+    ["tool success", formatPercent(metrics.tool_success_rate)],
+    ["tool failure", formatPercent(metrics.tool_failure_rate)],
+    ["retry count", String(metrics.retry_count)],
+    ["cache hit", formatPercent(metrics.cache_hit_rate)],
+    ["tokens/run", String(metrics.average_token_usage)],
+    ["cost/run", formatUsd(metrics.estimated_cost_per_run)],
+    ["evidence coverage", formatPercent(metrics.evidence_coverage)],
+    ["unsupported", String(metrics.unsupported_claim_count)],
+    ["RAG retrievals", String(metrics.rag_retrieval_count)]
+  ];
+
   return (
     <div aria-label="AgentOps 指标" className="agentops-metrics">
-      <span>
-        <strong>{metrics.total_runs}</strong>
-        <small>runs</small>
-      </span>
-      <span>
-        <strong>{formatPercent(metrics.task_completion_rate)}</strong>
-        <small>complete</small>
-      </span>
-      <span>
-        <strong>{formatMs(metrics.avg_latency_ms)}</strong>
-        <small>avg latency</small>
-      </span>
-      <span>
-        <strong>{metrics.unsupported_claim_count}</strong>
-        <small>unsupported</small>
-      </span>
+      {items.map(([label, value]) => (
+        <span key={label}>
+          <strong>{value}</strong>
+          <small>{label}</small>
+        </span>
+      ))}
     </div>
   );
 }
@@ -166,9 +172,14 @@ function TraceStep({ step }: { step: RunTraceStep }): JSX.Element {
         <span>{step.kind}</span>
       </div>
       <p>{step.status} · {formatMs(step.latency_ms)}</p>
-      {step.cache_hit !== null ? (
-        <small>{step.cache_hit ? "cache hit" : "cache miss"}</small>
-      ) : null}
+      <div className="agentops-step-meta">
+        {step.cache_hit !== null ? (
+          <small>{step.cache_hit ? "cache hit" : "cache miss"}</small>
+        ) : null}
+        {step.retry_count !== null ? <small>{`retry ${step.retry_count}`}</small> : null}
+        {step.input_summary ? <small>{step.input_summary}</small> : null}
+        {step.output_summary ? <small>{step.output_summary}</small> : null}
+      </div>
       {step.evidence_ids.length > 0 ? (
         <small>{step.evidence_ids.join(", ")}</small>
       ) : null}
@@ -188,6 +199,10 @@ function formatMs(value: number | null): string {
     return `${(value / 1000).toFixed(1)}s`;
   }
   return `${value}ms`;
+}
+
+function formatUsd(value: number): string {
+  return `$${value.toFixed(6)}`;
 }
 
 function toErrorMessage(caught: unknown): string {

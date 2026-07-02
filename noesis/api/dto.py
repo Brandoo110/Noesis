@@ -96,6 +96,36 @@ class MetricsSummaryResponse(BaseModel):
     rag_retrieval_count: int
 
 
+class EvalMetricsResponse(BaseModel):
+    grounding_rate: float
+    redline_compliance: float
+    basis_honesty: float
+    anchor_rate: float
+
+
+class EvalTraceSummaryResponse(BaseModel):
+    total: int
+    started: int
+    success: int
+    degraded: int
+    failed: int
+
+
+class EvalCaseResultResponse(BaseModel):
+    symbol: str
+    run_id: str | None
+    status: str
+    metrics: EvalMetricsResponse | None
+    trace_summary: EvalTraceSummaryResponse
+
+
+class EvalReportResponse(BaseModel):
+    mode: Literal["from_db"]
+    averages: EvalMetricsResponse
+    agentops: MetricsSummaryResponse
+    cases: list[EvalCaseResultResponse]
+
+
 class ExpandRequest(BaseModel):
     position_id: str
 

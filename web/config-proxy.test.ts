@@ -15,7 +15,9 @@ describe("vite config", () => {
       "/evidences",
       "/theses",
       "/segments",
-      "/portfolio"
+      "/portfolio",
+      "/metrics",
+      "/eval"
     ]) {
       expect(proxy?.[route]).toMatchObject({
         target: "http://localhost:8000",

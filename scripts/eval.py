@@ -38,6 +38,7 @@ from noesis.eval.report import (
     format_report,
     trace_summary,
 )
+from noesis.eval.runner import evaluate_existing_runs as evaluate_existing_runs_from_db
 from noesis.graph.runner import build_graph_deps, get_run_snapshot, start_run
 from noesis.graph.schemas import EvidenceRecord, GraphEdgeDraft, PositionInput, ResolvedEntity
 from noesis.graph.state import GraphDeps
@@ -97,26 +98,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 def evaluate_existing_runs(
     cases: Sequence[EvalCase], deps: GraphDeps
 ) -> EvalReport:
-    results: list[EvalCaseResult] = []
-    for case in cases:
-        run = _latest_seed_run(case, deps)
-        if run is None:
-            results.append(
-                EvalCaseResult(
-                    symbol=case.symbol,
-                    run_id=None,
-                    status="missing",
-                    metrics=None,
-                    trace_summary=empty_trace_summary(),
-                )
-            )
-            continue
-        results.append(_evaluate_run_row(case, run, deps))
-    return EvalReport(
-        results=tuple(results),
-        averages=_average_metrics(results),
-        agentops=build_metrics_summary(deps.repos.conn),
-    )
+    return evaluate_existing_runs_from_db(cases, deps)
 
 
 def evaluate_live_runs(cases: Sequence[EvalCase], deps: GraphDeps) -> EvalReport:
@@ -184,25 +166,6 @@ def _evaluate_run_row(case: EvalCase, run: RunRow, deps: GraphDeps) -> EvalCaseR
         metrics=metrics,
         trace_summary=trace_summary(run.id, deps),
     )
-
-
-def _latest_seed_run(case: EvalCase, deps: GraphDeps) -> RunRow | None:
-    row = deps.repos.conn.execute(
-        """
-        SELECT run_registry.* FROM run_registry
-        JOIN positions ON positions.id = run_registry.position_id
-        WHERE upper(positions.symbol) = ?
-          AND positions.market = ?
-          AND run_registry.node_kind = 'seed'
-        ORDER BY run_registry.started_at DESC, run_registry.created_at DESC,
-                 run_registry.id DESC
-        LIMIT 1
-        """,
-        (case.symbol.upper(), case.market),
-    ).fetchone()
-    if row is None:
-        return None
-    return deps.repos.runs.get(str(row["id"]))
 
 
 def _ensure_position(case: EvalCase, deps: GraphDeps) -> str:
