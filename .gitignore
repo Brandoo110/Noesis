@@ -33,6 +33,7 @@ chroma/
 # Agent local state
 .claude/
 .codex/
+.playwright-cli/
 
 # OS / editor
 .DS_Store
