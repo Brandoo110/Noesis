@@ -1,72 +1,71 @@
-import { act, fireEvent, render, screen, within } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen, within } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import * as client from "./api/client";
 import { App } from "./App";
+import {
+  makeAgentOpsRunList,
+  makeMetricsSummary,
+  makeRunTrace
+} from "./test/agentops-fixtures";
+import { makeRunHealth } from "./test/m3-fixtures";
 import { REDLINE_PATTERN } from "./test/redline";
 
-describe("Noesis redesign shell", () => {
+vi.mock("./api/client", () => ({
+  createPosition: vi.fn(),
+  expandEntity: vi.fn(),
+  getCorrelationMatrix: vi.fn(),
+  getMetricsSummary: vi.fn(),
+  getOverlaps: vi.fn(),
+  getPortfolioBrief: vi.fn(),
+  getRun: vi.fn(),
+  getRunTrace: vi.fn(),
+  getSharedSuppliers: vi.fn(),
+  listPositions: vi.fn(),
+  listRuns: vi.fn(),
+  startRun: vi.fn()
+}));
+
+const getCorrelationMatrixMock = vi.mocked(client.getCorrelationMatrix);
+const getMetricsSummaryMock = vi.mocked(client.getMetricsSummary);
+const getOverlapsMock = vi.mocked(client.getOverlaps);
+const getPortfolioBriefMock = vi.mocked(client.getPortfolioBrief);
+const getRunTraceMock = vi.mocked(client.getRunTrace);
+const getSharedSuppliersMock = vi.mocked(client.getSharedSuppliers);
+const listPositionsMock = vi.mocked(client.listPositions);
+const listRunsMock = vi.mocked(client.listRuns);
+
+describe("App workstation shell", () => {
   beforeEach(() => {
-    vi.useFakeTimers();
-  });
-
-  afterEach(() => {
-    act(() => {
-      vi.runOnlyPendingTimers();
+    vi.clearAllMocks();
+    listPositionsMock.mockResolvedValue([]);
+    listRunsMock.mockResolvedValue(makeAgentOpsRunList());
+    getMetricsSummaryMock.mockResolvedValue(makeMetricsSummary());
+    getRunTraceMock.mockResolvedValue(makeRunTrace());
+    getOverlapsMock.mockResolvedValue([]);
+    getSharedSuppliersMock.mockResolvedValue([]);
+    getCorrelationMatrixMock.mockResolvedValue({ positions: [], cells: [] });
+    getPortfolioBriefMock.mockResolvedValue({
+      generated_at: "2026-07-03T00:00:00Z",
+      positions: [],
+      overlaps: [],
+      run_health: makeRunHealth()
     });
-    vi.useRealTimers();
   });
 
-  it("walks the redesigned portfolio, graph, drawers, AgentOps, and redline copy", async () => {
+  it("renders the shell around the real portfolio view and switches workspaces", async () => {
     render(<App />);
 
-    expect(screen.getByRole("navigation", { name: "主导航" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "持仓" })).toBeInTheDocument();
-    expect(screen.getByLabelText("组合 Brief")).toBeInTheDocument();
-    expect(screen.getByLabelText("相关性矩阵")).toBeInTheDocument();
+    const nav = screen.getByRole("navigation", { name: "主导航" });
+    expect(within(nav).getByRole("button", { name: "组合工作台" })).toBeInTheDocument();
+    expect(await screen.findByText("暂无持仓")).toBeInTheDocument();
+    expect(getPortfolioBriefMock).toHaveBeenCalled();
 
-    fireEvent.click(screen.getByRole("button", { name: "+ 添加持仓" }));
-    fireEvent.change(screen.getByLabelText("Symbol"), { target: { value: "AAPL" } });
-    fireEvent.change(screen.getByLabelText("公司名称"), { target: { value: "苹果" } });
-    fireEvent.click(screen.getByRole("button", { name: "添加" }));
+    fireEvent.click(within(nav).getByRole("button", { name: "图谱探索" }));
+    expect(screen.getByLabelText("图谱探索视图")).toBeInTheDocument();
 
-    expect(screen.getAllByText("AAPL").length).toBeGreaterThan(0);
-    expect(screen.getByText("苹果")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "开始研究 0700" }));
-    expect(screen.getByText("研究中 · intake_resolve")).toBeInTheDocument();
-    act(() => {
-      vi.advanceTimersByTime(4400);
-    });
-    expect(screen.getByText("完成 · 无 thesis")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "查看图谱 0700" }));
-    expect(screen.getByRole("heading", { name: "Research Graph — 0700" })).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "inferred" }));
-    const relationships = screen.getByLabelText("关系清单");
-    expect(within(relationships).getAllByText("inferred").length).toBeGreaterThan(0);
-    expect(within(relationships).queryByText("source")).not.toBeInTheDocument();
-
-    fireEvent.click(within(relationships).getAllByRole("button", { name: "查看证据" })[0]);
-    const evidenceDrawer = screen.getByRole("dialog", { name: "证据抽屉" });
-    expect(within(evidenceDrawer).getByText("EVIDENCE VIEWER")).toBeInTheDocument();
-    fireEvent.keyDown(evidenceDrawer, { key: "Escape" });
-    expect(screen.queryByRole("dialog", { name: "证据抽屉" })).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "个股详情" }));
-    const detailDrawer = screen.getByRole("dialog", { name: "个股详情" });
-    expect(within(detailDrawer).getByText("STOCK DETAIL / THESIS")).toBeInTheDocument();
-    fireEvent.click(within(detailDrawer).getByRole("button", { name: "重新研究" }));
-    expect(screen.getByRole("heading", { name: "持仓" })).toBeInTheDocument();
-
-    fireEvent.click(
-      within(screen.getByRole("navigation", { name: "主导航" })).getByRole("button", {
-        name: "AgentOps"
-      })
-    );
-    expect(screen.getByRole("heading", { name: "Run Trace" })).toBeInTheDocument();
-    expect(screen.getByText("24")).toBeInTheDocument();
-
+    fireEvent.click(within(nav).getByRole("button", { name: "AgentOps" }));
+    expect(screen.getByLabelText("AgentOps视图")).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(REDLINE_PATTERN);
   });
 });
