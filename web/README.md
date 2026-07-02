@@ -34,7 +34,8 @@ From the repository root:
 npm --prefix web run dev
 ```
 
-Vite serves the app at `http://localhost:5173` and proxies these API prefixes to
+Vite serves the app at `http://127.0.0.1:5173` and fails fast if that port is
+already in use. It proxies these API prefixes to
 the backend: `/positions`, `/runs`, `/entities`, `/evidences`, `/theses`,
 `/segments`, `/portfolio`, `/metrics`, and `/eval`.
 
