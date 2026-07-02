@@ -84,6 +84,32 @@ describe("StockDetail", () => {
     ).toBeInTheDocument();
   });
 
+  it("uses the redesign drawer semantics and close interactions", async () => {
+    const onClose = vi.fn();
+    useStockDetailMock.mockReturnValue(makeHookResult());
+
+    render(
+      <EvidenceDrawerProvider>
+        <StockDetail
+          entityId="entity-aapl"
+          onClose={onClose}
+          positionId="position-1"
+          runId="run-1"
+        />
+      </EvidenceDrawerProvider>
+    );
+
+    const dialog = screen.getByRole("dialog", { name: "个股详情" });
+    expect(dialog).toHaveClass("detail-panel");
+    expect(within(dialog).getByText("STOCK DETAIL / THESIS")).toBeInTheDocument();
+
+    fireEvent.keyDown(dialog, { key: "Escape" });
+    expect(onClose).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "关闭详情" }));
+    expect(onClose).toHaveBeenCalledTimes(2);
+  });
+
   it("opens evidence drawer from thesis and attention notes", async () => {
     useStockDetailMock.mockReturnValue(makeHookResult());
 

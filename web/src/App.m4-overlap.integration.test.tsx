@@ -84,7 +84,7 @@ describe("App M4 overlap path", () => {
     expect(await within(panel).findByText("AAPL / MSFT")).toBeInTheDocument();
 
     fireEvent.click(await screen.findByRole("button", { name: "查看图谱 MSFT" }));
-    fireEvent.click(await screen.findByRole("button", { name: "详情 MSFT" }));
+    fireEvent.click(await screen.findByRole("button", { name: "个股详情" }));
     const detailOverlap = await screen.findByLabelText("组合重叠关系");
     expect(within(detailOverlap).getByText("AAPL")).toBeInTheDocument();
     expect(within(detailOverlap).getByText("Consumer Electronics")).toBeInTheDocument();

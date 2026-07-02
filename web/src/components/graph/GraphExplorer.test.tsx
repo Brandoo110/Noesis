@@ -72,15 +72,20 @@ vi.mock("../stock/StockDetail", () => ({
     runId
   }: {
     entityId: string;
+    onClose?: () => void;
     positionId: string;
     runId: string;
-  }) => <div data-testid="stock-detail">{`${entityId}:${positionId}:${runId}`}</div>
+  }) => (
+    <aside aria-label="个股详情" role="dialog">
+      {`${entityId}:${positionId}:${runId}`}
+    </aside>
+  )
 }));
 
 const expandEntityMock = vi.mocked(client.expandEntity);
 
 describe("GraphExplorer", () => {
-  it("starts with the seed node and lazily expands clicked node", async () => {
+  it("renders the design graph stage and lazily expands clicked node", async () => {
     const seed = makeEntity({ id: "entity-aapl", name: "Apple Inc.", symbol: "AAPL" });
     const neighbor = makeEntity({ id: "entity-tsm", name: "TSMC", symbol: "TSM" });
     expandEntityMock.mockResolvedValue(makeExpandResult("entity-aapl", [
@@ -89,10 +94,13 @@ describe("GraphExplorer", () => {
 
     renderGraph(<GraphExplorer positionId="position-1" seedEntity={seed} />);
 
+    expect(screen.getByTestId("graph-stage")).toBeInTheDocument();
+    expect(screen.queryByTestId("react-flow")).not.toBeInTheDocument();
+    expect(screen.getByTestId("graph-node-entity-aapl")).toHaveClass("seed-node");
     expect(screen.getByText("AAPL")).toBeInTheDocument();
     expect(screen.queryByText("TSM")).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "展开" }));
+    fireEvent.click(screen.getByTestId("graph-node-entity-aapl"));
 
     await waitFor(() =>
       expect(expandEntityMock).toHaveBeenCalledWith("entity-aapl", "position-1")
@@ -118,31 +126,37 @@ describe("GraphExplorer", () => {
 
     renderGraph(<GraphExplorer positionId="position-1" seedEntity={seed} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "展开" }));
-    expect(await screen.findByTestId("flow-edge-edge-source")).toBeInTheDocument();
-    expect(screen.getByTestId("flow-edge-edge-inferred")).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("graph-node-entity-aapl"));
+    expect(await screen.findByTestId("edge-path-edge-source")).toBeInTheDocument();
+    expect(screen.getByTestId("edge-path-edge-inferred")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "source_backed" }));
 
-    expect(screen.getByTestId("flow-edge-edge-source")).toBeInTheDocument();
-    expect(screen.queryByTestId("flow-edge-edge-inferred")).not.toBeInTheDocument();
+    expect(screen.getByTestId("edge-path-edge-source")).toBeInTheDocument();
+    expect(screen.queryByTestId("edge-path-edge-inferred")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "重置图谱" }));
     expect(screen.queryByText("TSM")).not.toBeInTheDocument();
     expect(screen.queryByText("Consumer Electronics")).not.toBeInTheDocument();
   });
 
-  it("opens stock detail from the seed node when run id is available", async () => {
+  it("opens stock detail in an overlay and closes it from the backdrop", async () => {
     const seed = makeEntity({ id: "entity-aapl", name: "Apple Inc.", symbol: "AAPL" });
 
-    renderGraph(
+    const { container } = renderGraph(
       <GraphExplorer positionId="position-1" runId="run-1" seedEntity={seed} />
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "详情 AAPL" }));
+    fireEvent.click(screen.getByRole("button", { name: "个股详情" }));
 
-    expect(screen.getByTestId("stock-detail")).toHaveTextContent(
+    expect(screen.getByRole("dialog", { name: "个股详情" })).toHaveTextContent(
       "entity-aapl:position-1:run-1"
+    );
+    const backdrop = container.querySelector(".detail-layer .drawer-backdrop");
+    expect(backdrop).not.toBeNull();
+    fireEvent.click(backdrop as Element);
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog", { name: "个股详情" })).not.toBeInTheDocument()
     );
   });
 });

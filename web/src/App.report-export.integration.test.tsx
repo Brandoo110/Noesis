@@ -90,7 +90,7 @@ describe("App report export integration", () => {
     render(<App />);
 
     fireEvent.click(await screen.findByRole("button", { name: "查看图谱 AAPL" }));
-    fireEvent.click(await screen.findByRole("button", { name: "详情 AAPL" }));
+    fireEvent.click(await screen.findByRole("button", { name: "个股详情" }));
     fireEvent.click(await screen.findByRole("button", { name: "查看报告" }));
 
     const stockCapture = installDownloadCapture();

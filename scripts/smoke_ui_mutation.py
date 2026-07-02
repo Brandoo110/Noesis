@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
-"""Run an isolated mutating UI smoke for Noesis.
-
-The script starts a fixture FastAPI backend and a Vite dev server against a
-temporary SQLite database, then uses a real browser to create a holding, start
-research, open the graph, and verify the persisted API state.
-"""
+"""Run isolated fixture UI smoke: create holding, research, graph, detail."""
 
 from __future__ import annotations
 
@@ -45,7 +40,6 @@ except ModuleNotFoundError:
 CheckStatus = Literal["passed", "failed"]
 CommandRunner = Callable[[Sequence[str], float], str]
 
-
 @dataclass(frozen=True)
 class MutationSmokeArgs:
     web_port: int
@@ -59,7 +53,6 @@ class MutationSmokeArgs:
     session: str
     keep_tmp: bool
 
-
 @dataclass(frozen=True)
 class MutationFlowArgs:
     web: str
@@ -71,23 +64,17 @@ class MutationFlowArgs:
     pwcli: str
     session: str
 
-
 @dataclass(frozen=True)
 class MutationCheck:
     name: str
     status: CheckStatus
     detail: str
 
-
 def parse_args(argv: Iterable[str] | None = None) -> MutationSmokeArgs:
     parser = argparse.ArgumentParser(description="Run isolated Noesis mutating UI smoke")
     parser.add_argument("--web-port", type=int, default=0)
     parser.add_argument("--api-port", type=int, default=0)
-    parser.add_argument(
-        "--out-dir",
-        type=Path,
-        default=Path("output/playwright/ui-mutation"),
-    )
+    parser.add_argument("--out-dir", type=Path, default=Path("output/playwright/ui-mutation"))
     parser.add_argument("--timeout", type=float, default=75.0)
     parser.add_argument("--symbol", default="NOEUI")
     parser.add_argument("--market", default="US")
@@ -109,7 +96,6 @@ def parse_args(argv: Iterable[str] | None = None) -> MutationSmokeArgs:
         keep_tmp=parsed.keep_tmp,
     )
 
-
 def main(argv: Iterable[str] | None = None) -> int:
     args = parse_args(argv)
     args.out_dir.mkdir(parents=True, exist_ok=True)
@@ -124,11 +110,7 @@ def main(argv: Iterable[str] | None = None) -> int:
         print(f"[{check.status.upper()}] {check.name}: {check.detail}")
     return 0 if all(check.status == "passed" for check in checks) else 1
 
-
-def run_isolated_mutation(
-    args: MutationSmokeArgs,
-    tmp_path: Path,
-) -> list[MutationCheck]:
+def run_isolated_mutation(args: MutationSmokeArgs, tmp_path: Path) -> list[MutationCheck]:
     api_port = args.api_port or free_port()
     web_port = args.web_port or free_port()
     api = f"http://127.0.0.1:{api_port}"
@@ -169,60 +151,67 @@ def run_isolated_mutation(
         web_log.close()
     return checks
 
-
 def run_mutation_flow(
     args: MutationFlowArgs, *, runner: CommandRunner | None = None
 ) -> list[MutationCheck]:
     command_runner = runner or _run_command
     args.out_dir.mkdir(parents=True, exist_ok=True)
     script_path = args.out_dir / "ui-mutation.js"
+    graph_screenshot_path = args.out_dir / "ui-mutation-graph.png"
+    detail_screenshot_path = args.out_dir / "ui-mutation-detail.png"
     screenshot_path = args.out_dir / "ui-mutation.png"
-    script_path.write_text(_flow_script(args), encoding="utf-8")
+    script_path.write_text(
+        _flow_script(args, graph_screenshot_path, detail_screenshot_path),
+        encoding="utf-8",
+    )
     checks: list[MutationCheck] = []
     try:
         command_runner(_pw(args, "open", args.web), args.timeout)
         command_runner(_pw(args, "resize", "1280", "900"), args.timeout)
         snapshot = command_runner(_pw(args, "snapshot"), args.timeout)
-        _require_text(snapshot, ("Noesis", "新增持仓", "持仓"))
+        _require_text(snapshot, ("组合工作台", "添加持仓", "持仓"))
         checks.append(MutationCheck("initial_snapshot", "passed", "workspace loaded"))
-        command_runner(
+        run_output = command_runner(
             (*_pw(args, "run-code"), "--filename", str(script_path)),
             args.timeout,
         )
+        _raise_on_pwcli_error(run_output)
         checks.append(MutationCheck("write_flow", "passed", f"symbol={args.symbol}"))
+        checks.append(MutationCheck("graph_screenshot", "passed", str(graph_screenshot_path)))
+        checks.append(MutationCheck("detail_screenshot", "passed", str(detail_screenshot_path)))
         requests = command_runner(_pw(args, "requests"), args.timeout)
         _require_text(requests, ("POST", "/positions", "/runs"))
         checks.append(MutationCheck("network", "passed", "write API requests observed"))
-        command_runner(
-            (
-                *_pw(args, "screenshot"),
-                "--filename",
-                str(screenshot_path),
-                "--full-page",
-            ),
-            args.timeout,
-        )
+        command_runner((*_pw(args, "screenshot"), "--filename", str(screenshot_path), "--full-page"), args.timeout)
         checks.append(MutationCheck("screenshot", "passed", str(screenshot_path)))
     except Exception as exc:
         checks.append(MutationCheck("write_flow", "failed", str(exc)))
     _try_close(args, command_runner)
     return checks
 
-
-def _flow_script(args: MutationFlowArgs) -> str:
+def _flow_script(
+    args: MutationFlowArgs,
+    graph_screenshot_path: Path,
+    detail_screenshot_path: Path,
+) -> str:
     symbol = json.dumps(args.symbol)
     market = json.dumps(args.market)
     name = json.dumps(args.name)
+    graph_screenshot = json.dumps(str(graph_screenshot_path.resolve()))
+    detail_screenshot = json.dumps(str(detail_screenshot_path.resolve()))
     return f"""
 async (page) => {{
   const symbol = {symbol};
   const market = {market};
   const name = {name};
+  const graphScreenshot = {graph_screenshot};
+  const detailScreenshot = {detail_screenshot};
   const expectText = async (text, timeout = 20000) => {{
     await page.getByText(text, {{ exact: false }}).first().waitFor({{ timeout }});
   }};
-  await expectText('Noesis');
-  await expectText('新增持仓');
+  await expectText('组合工作台');
+  await expectText('添加持仓');
+  await page.getByRole('button', {{ name: '+ 添加持仓' }}).click();
 
   const form = page.getByRole('form', {{ name: '新增持仓表单' }});
   await form.getByLabel('Symbol').fill(symbol);
@@ -236,13 +225,22 @@ async (page) => {{
   await page.getByLabel(`研究状态 ${{symbol}}`).waitFor({{ timeout: 30000 }});
   await page.getByRole('button', {{ name: `查看图谱 ${{symbol}}` }}).waitFor({{ timeout: 45000 }});
   await page.getByRole('button', {{ name: `查看图谱 ${{symbol}}` }}).click();
-  await expectText(`研究图谱（以 ${{symbol}} 为种子）`, 30000);
-  await page.getByRole('button', {{ name: `详情 ${{symbol}}` }}).click();
-  await expectText('Stock detail / Thesis view', 30000);
+  await expectText(`Research Graph — ${{symbol}}`, 30000);
+  await page.getByTestId(`graph-node-entity-${{symbol.toLowerCase()}}`).click();
+  await page.getByText('Fixture Supplier', {{ exact: true }}).waitFor({{ timeout: 30000 }});
+  await page.screenshot({{ path: graphScreenshot, fullPage: true }});
+  await page.getByRole('button', {{ name: '个股详情' }}).click();
+  await expectText('STOCK DETAIL / THESIS', 30000);
   await expectText('证据', 30000);
+  await page.waitForTimeout(350);
+  await page.screenshot({{ path: detailScreenshot, fullPage: true }});
+  await page.mouse.click(180, 220);
+  await page.getByRole('dialog', {{ name: '个股详情' }}).waitFor({{
+    state: 'hidden',
+    timeout: 5000
+  }});
 }}
 """
-
 
 def _check_api_state(api: str, symbol: str, timeout: float) -> list[MutationCheck]:
     deadline = time.monotonic() + timeout
@@ -274,7 +272,6 @@ def _check_api_state(api: str, symbol: str, timeout: float) -> list[MutationChec
         time.sleep(0.5)
     return [MutationCheck("api_state", "failed", last_error)]
 
-
 def _find_position(payload: Any, symbol: str) -> dict[str, Any] | None:
     if not isinstance(payload, list):
         return None
@@ -283,12 +280,17 @@ def _find_position(payload: Any, symbol: str) -> dict[str, Any] | None:
             return item
     return None
 
-
 def _require_text(haystack: str, needles: tuple[str, ...]) -> None:
     missing = [needle for needle in needles if needle not in haystack]
     if missing:
         raise RuntimeError(f"missing text: {', '.join(missing)}")
 
+def _raise_on_pwcli_error(output: str) -> None:
+    if "### Error" not in output:
+        return
+    detail_lines = output.split("### Error", maxsplit=1)[1].strip().splitlines()[:8]
+    detail = " ".join(line.strip() for line in detail_lines if line.strip())
+    raise RuntimeError(detail)
 
 def _run_command(command: Sequence[str], timeout: float) -> str:
     result = subprocess.run(
@@ -304,10 +306,8 @@ def _run_command(command: Sequence[str], timeout: float) -> str:
         )
     return result.stdout
 
-
 def _pw(args: MutationFlowArgs, command: str, *values: str) -> tuple[str, ...]:
     return (args.pwcli, f"-s={args.session}", command, *values)
-
 
 def _try_close(args: MutationFlowArgs, runner: CommandRunner) -> None:
     try:
@@ -315,14 +315,12 @@ def _try_close(args: MutationFlowArgs, runner: CommandRunner) -> None:
     except Exception:
         return
 
-
 def _default_pwcli() -> str:
     codex_home = Path(os.environ.get("CODEX_HOME", str(Path.home() / ".codex")))
     return os.environ.get(
         "PWCLI",
         str(codex_home / "skills" / "playwright" / "scripts" / "playwright_cli.sh"),
     )
-
 
 if __name__ == "__main__":
     if shutil.which("npm") is None:

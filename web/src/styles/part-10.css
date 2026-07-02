@@ -1,0 +1,146 @@
+.edge-source-backed {
+  stroke: var(--brand-600);
+  stroke-linecap: round;
+  stroke-width: 1.8;
+}
+.edge-inferred {
+  stroke: var(--amber-600);
+  stroke-linecap: round;
+  stroke-width: 1.8;
+}
+.relationship-row > span:last-child {
+  overflow: hidden;
+  color: var(--ink-3);
+  line-height: 1.45;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.drawer-header-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+  align-items: center;
+}
+.drawer-header-actions > button[aria-label="关闭详情"] {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--field);
+  color: var(--ink-2);
+  font-size: 18px;
+  cursor: pointer;
+}
+.detail-drawer-header {
+  padding: 18px 22px 14px;
+  backdrop-filter: blur(8px);
+}
+.detail-panel,
+.evidence-panel {
+  z-index: 1;
+}
+.detail-content {
+  display: grid;
+  gap: 18px;
+  padding: 18px 22px 32px;
+}
+.detail-content .degraded-banner,
+.detail-content .summary-card,
+.detail-content .thesis-groups,
+.detail-content .confirm-row,
+.detail-content .intel-list,
+.detail-content .watch-card,
+.detail-content .export-report {
+  margin: 0;
+}
+.detail-content .summary-card {
+  border: 1px solid #D8E7E1;
+  background: linear-gradient(180deg, #F6FBF8, #EEF8F4);
+}
+.detail-content .summary-card h2,
+.detail-content .intel-list h2,
+.detail-content .thesis-groups > h2,
+.detail-content .watch-card h2,
+.detail-content .export-report h2 {
+  margin: 0 0 8px;
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 700;
+}
+.detail-content .intel-list {
+  display: grid;
+  gap: 10px;
+}
+.detail-content .intel-list ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+}
+.detail-content .intel-list li {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+  border: 1px solid var(--line-2);
+  border-radius: 12px;
+  background: var(--surface);
+  padding: 12px;
+}
+.detail-content .intel-list li > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.detail-content .intel-list button,
+.detail-content .watch-card button,
+.detail-content .export-report button {
+  background: transparent;
+  color: var(--brand-600);
+  padding: 0;
+  font-weight: 700;
+  cursor: pointer;
+}
+.detail-content .watch-card {
+  border: 1px solid var(--line-2);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  padding: 14px;
+}
+.detail-content .watch-card small {
+  color: var(--ink-3);
+}
+.detail-content .watch-card[aria-label="关注点"] {
+  border-color: var(--warn-line);
+  background: var(--warn-bg);
+  color: var(--warn-ink);
+}
+.detail-content .watch-card[aria-label="关注点"] small,
+.detail-content .watch-card[aria-label="关注点"] p {
+  color: var(--warn-ink);
+}
+.detail-content .watch-card ul {
+  display: grid;
+  gap: 8px;
+  margin: 8px 0 0;
+  padding-left: 18px;
+}
+.detail-content .watch-card li {
+  line-height: 1.55;
+}
+.detail-content .thesis-group p,
+.detail-content .summary-card p,
+.detail-content .intel-list p {
+  margin: 0;
+  line-height: 1.55;
+}
+.detail-content .export-report {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--line-2);
+  border-radius: 12px;
+  background: var(--surface);
+  padding: 14px;
+}

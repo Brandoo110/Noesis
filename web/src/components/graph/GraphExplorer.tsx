@@ -1,19 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
-import ReactFlow, {
-  Background,
-  Controls,
-  ReactFlowProvider,
-  type EdgeTypes,
-  type NodeTypes,
-  type ReactFlowInstance
-} from "reactflow";
-import "reactflow/dist/style.css";
+import { useEffect, useState } from "react";
 
 import { useExpand } from "../../hooks/use-expand";
 import { useEvidenceDrawer } from "../../context/evidence-drawer";
-import type { Basis, Edge, EntityNode } from "../../types/api";
-import { EdgeView } from "./EdgeView";
-import { EntityNodeView } from "./EntityNodeView";
+import type { Basis, EntityNode } from "../../types/api";
+import { GraphStage } from "./GraphStage";
 import { StockDetail } from "../stock/StockDetail";
 
 export interface GraphExplorerProps {
@@ -23,17 +13,6 @@ export interface GraphExplorerProps {
   runId?: string;
   seedEntity: EntityNode;
 }
-
-const NODE_TYPES: NodeTypes = { entity: EntityNodeView };
-
-const EDGE_TYPES: EdgeTypes = { edge: EdgeView };
-
-const RELATION_LABELS: Record<Edge["relation"], string> = {
-  belongs_to: "归属",
-  competitor: "竞争对手",
-  customer: "客户",
-  supplier: "供应商"
-};
 
 export function GraphExplorer({
   onThesisConfirmed,
@@ -45,7 +24,6 @@ export function GraphExplorer({
   const evidenceDrawer = useEvidenceDrawer();
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [basisFilter, setBasisFilter] = useState<"all" | Basis>("all");
-  const [flowInstance, setFlowInstance] = useState<ReactFlowInstance | null>(null);
   const graph = useExpand({
     onViewDetail: runId ? () => setIsDetailOpen(true) : undefined,
     positionId,
@@ -54,56 +32,35 @@ export function GraphExplorer({
   const visibleEdges = basisFilter === "all"
     ? graph.edges
     : graph.edges.filter((edge) => edge.data?.edge.basis === basisFilter);
-  const nodeById = useMemo(
-    () => new Map(graph.nodes.map((node) => [node.id, node.data.entity])),
-    [graph.nodes]
-  );
-  const relationRows = useMemo(
-    () =>
-      visibleEdges
-        .map((flowEdge) => {
-          const edge = flowEdge.data?.edge;
-          if (!edge) {
-            return null;
-          }
-          return {
-            edge,
-            source: nodeById.get(flowEdge.source),
-            target: nodeById.get(flowEdge.target) ?? edge.neighbor
-          };
-        })
-        .filter((row): row is RelationRow => row !== null),
-    [nodeById, visibleEdges]
-  );
 
   useEffect(() => {
-    if (!flowInstance) {
-      return;
+    function onKeyDown(event: KeyboardEvent): void {
+      if (event.key === "Escape") {
+        setIsDetailOpen(false);
+      }
     }
-    const fitGraph = (): void => {
-      flowInstance.fitView({ maxZoom: 0.95, padding: 0.24 });
-    };
-    window.requestAnimationFrame(fitGraph);
-    window.addEventListener("resize", fitGraph);
-    return () => window.removeEventListener("resize", fitGraph);
-  }, [flowInstance, graph.nodes.length, visibleEdges.length]);
+    if (!isDetailOpen) return undefined;
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isDetailOpen]);
 
   function handleRefresh(): void {
     graph.reset();
     setIsDetailOpen(false);
-    window.requestAnimationFrame(() => {
-      flowInstance?.fitView({ maxZoom: 0.95, padding: 0.24 });
-    });
+  }
+
+  function handleNodeClick(entityId: string): void {
+    void graph.expand(entityId);
   }
 
   return (
     <section aria-label="图谱探索器" className="graph-card card">
       <header className="graph-header">
         <div>
-          <p className="eyebrow">Research Graph</p>
-          <h2>{`Research Graph - ${entityLabel(seedEntity)}`}</h2>
+          <p className="eyebrow">RESEARCH GRAPH · LAZY EXPAND</p>
+          <h2>{`Research Graph — ${seedEntity.symbol ?? seedEntity.name}`}</h2>
           <p className="empty-note">
-            {[seedEntity.symbol, seedEntity.name].filter(Boolean).join(" · ")}
+            {[seedEntity.symbol, seedEntity.name].filter(Boolean).join(" · ")} · 懒加载展开，节点点到才研究
           </p>
         </div>
         <div className="graph-controls">
@@ -141,88 +98,25 @@ export function GraphExplorer({
         <span><i className="legend-node segment" />产业 / 主题</span>
         <strong>lazy expand · {runId ?? "no run"}</strong>
       </div>
-      <ReactFlowProvider>
-        <div className="graph-canvas">
-          <ReactFlow
-            edgeTypes={EDGE_TYPES}
-            edges={visibleEdges}
-            fitView
-            fitViewOptions={{ maxZoom: 0.95, padding: 0.24 }}
-            minZoom={0.25}
-            nodeTypes={NODE_TYPES}
-            nodes={graph.nodes}
-            onInit={setFlowInstance}
-          >
-            <Background />
-            <Controls />
-          </ReactFlow>
-        </div>
-      </ReactFlowProvider>
-      <section aria-label="关系清单" className="card relationships-card">
-        <div className="relationship-head">
-          <div>
-            <p className="eyebrow">Relationship Evidence</p>
-            <h3>Active Relationships</h3>
-          </div>
-          <span className="count-pill">{relationRows.length}</span>
-        </div>
-        {relationRows.length > 0 ? (
-          <>
-          <div className="relationship-table-head" aria-hidden="true">
-            <span>From → To</span>
-            <span>Relation</span>
-            <span>Basis</span>
-            <span>Conf %</span>
-            <span>Evid</span>
-            <span>Rationale</span>
-          </div>
-          <ul>
-            {relationRows.map(({ edge, source, target }) => (
-              <li className="relationship-row" key={edge.id}>
-                <div>
-                  <strong>{`${entityLabel(source)} → ${entityLabel(target)}`}</strong>
-                </div>
-                <span>{RELATION_LABELS[edge.relation]}</span>
-                <span
-                  className={
-                    edge.basis === "source_backed"
-                      ? "basis-badge source_backed"
-                      : "basis-badge inferred"
-                  }
-                >
-                  {edge.basis === "source_backed" ? "Source" : "Inferred"}
-                </span>
-                <span className="mono">
-                  {`${Math.round(edge.confidence * 100)}%`}
-                </span>
-                <span className="evidence-cell">
-                  <span>{edge.evidence_ids.length}</span>
-                  {edge.evidence_ids.length > 0 ? (
-                    <button
-                      onClick={() => evidenceDrawer.open(edge.evidence_ids)}
-                      type="button"
-                    >
-                      查看证据
-                    </button>
-                  ) : null}
-                </span>
-                <p>
-                  {edge.rationale ?? (edge.source_tier ? `source tier ${edge.source_tier}` : "暂无说明")}
-                </p>
-              </li>
-            ))}
-          </ul>
-          </>
-        ) : (
-          <p className="empty-note">
-            展开一个节点后，这里会显示完整关系、basis、confidence 和证据数量。
-          </p>
-        )}
-      </section>
+      <GraphStage
+        basisFilter={basisFilter}
+        edges={visibleEdges}
+        nodes={graph.nodes}
+        onNodeClick={handleNodeClick}
+        onOpenEvidence={evidenceDrawer.open}
+        seedEntity={seedEntity}
+      />
       {isDetailOpen && runId ? (
         <div className="detail-layer">
+          <button
+            aria-label="关闭个股详情遮罩"
+            className="drawer-backdrop"
+            onClick={() => setIsDetailOpen(false)}
+            type="button"
+          />
           <StockDetail
             entityId={seedEntity.id}
+            onClose={() => setIsDetailOpen(false)}
             onConfirmed={onThesisConfirmed}
             onRetryResearch={
               onRetryResearch ? () => onRetryResearch(positionId) : undefined
@@ -234,15 +128,4 @@ export function GraphExplorer({
       ) : null}
     </section>
   );
-}
-
-interface RelationRow {
-  edge: Edge;
-  source: EntityNode | undefined;
-  target: EntityNode;
-}
-
-function entityLabel(entity: EntityNode | undefined): string {
-  if (!entity) return "未知实体";
-  return [entity.symbol, entity.name].filter(Boolean).join(" · ");
 }

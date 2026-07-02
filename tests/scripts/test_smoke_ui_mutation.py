@@ -64,6 +64,9 @@ def test_smoke_ui_mutation_runs_write_flow_commands(tmp_path: Path) -> None:
     script = (tmp_path / "out" / "ui-mutation.js").read_text(encoding="utf-8")
     assert "新增持仓表单" in script
     assert "开始研究 ${symbol}" in script
+    assert "个股详情" in script
+    assert "graphScreenshot" in script
+    assert "state: 'hidden'" in script
     assert (tmp_path / "out" / "ui-mutation.js").exists()
 
 
@@ -86,7 +89,7 @@ class FakeRunner:
         self.commands.append(command)
         action = _action(command)
         if action == "snapshot":
-            return "Noesis\n新增持仓\n持仓\n"
+            return "组合工作台\n添加持仓\n持仓\n"
         if action == "requests":
             return "\n".join(
                 [

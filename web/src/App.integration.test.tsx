@@ -119,18 +119,18 @@ describe("App portfolio integration path", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "开始研究 AAPL" }));
     fireEvent.click(await screen.findByRole("button", { name: "查看图谱 AAPL" }));
-    expect(screen.getByTestId("entity-node-entity-aapl")).toBeInTheDocument();
+    expect(screen.getByTestId("graph-node-entity-aapl")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "展开" }));
+    fireEvent.click(screen.getByTestId("graph-node-entity-aapl"));
     await waitFor(() =>
       expect(expandEntityMock).toHaveBeenCalledWith("entity-aapl", "position-1")
     );
     expect(screen.getByTestId("edge-path-edge-source")).toHaveClass("edge-source-backed");
     expect(screen.getByTestId("edge-path-edge-inferred")).toHaveClass("edge-inferred");
-    fireEvent.click(screen.getByRole("button", { name: "已展开" }));
+    fireEvent.click(screen.getByTestId("graph-node-entity-aapl"));
     expect(expandEntityMock).toHaveBeenCalledTimes(1);
 
-    fireEvent.click(screen.getByRole("button", { name: "详情 AAPL" }));
+    fireEvent.click(screen.getByRole("button", { name: "个股详情" }));
     expect(await screen.findByRole("heading", { name: "分类情报流" })).toBeInTheDocument();
     fireEvent.click(
       within(screen.getByLabelText("情报 Supplier update")).getByRole("button", {

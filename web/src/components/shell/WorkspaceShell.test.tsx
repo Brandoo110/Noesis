@@ -74,4 +74,14 @@ describe("WorkspaceShell", () => {
     expect(within(graph).getByText("run-1")).toBeInTheDocument();
     expect(within(graph).getByText("AAPL")).toBeInTheDocument();
   });
+
+  it("opens topbar health popover and closes it from an outside click", () => {
+    render(<WorkspaceShell />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Health" }));
+    expect(screen.getByLabelText("产品状态")).toBeInTheDocument();
+
+    fireEvent.mouseDown(screen.getByLabelText("组合首页"));
+    expect(screen.queryByLabelText("产品状态")).not.toBeInTheDocument();
+  });
 });
