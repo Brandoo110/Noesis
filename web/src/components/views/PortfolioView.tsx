@@ -9,7 +9,7 @@ export function PortfolioView({
   onGraphSeedSelected
 }: PortfolioViewProps): JSX.Element {
   return (
-    <section aria-label="组合首页" className="page-body">
+    <section aria-label="组合首页">
       <PortfolioHome onGraphSeedSelected={onGraphSeedSelected} />
     </section>
   );

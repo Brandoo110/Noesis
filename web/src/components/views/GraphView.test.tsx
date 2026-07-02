@@ -106,9 +106,7 @@ describe("GraphView", () => {
     expect(screen.getByTestId("edge-path-edge-source")).toHaveClass("edge-source-backed");
     expect(screen.getByTestId("edge-path-edge-inferred")).toHaveClass("edge-inferred");
 
-    fireEvent.change(screen.getByLabelText("图谱边筛选"), {
-      target: { value: "source_backed" }
-    });
+    fireEvent.click(screen.getByRole("button", { name: "source_backed" }));
     expect(screen.getByTestId("edge-path-edge-source")).toBeInTheDocument();
     expect(screen.queryByTestId("edge-path-edge-inferred")).not.toBeInTheDocument();
     expect(expandEntityMock).toHaveBeenCalledTimes(1);

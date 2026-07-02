@@ -80,14 +80,13 @@ export function GraphExplorer({
     if (!flowInstance) {
       return;
     }
-    window.requestAnimationFrame(() => {
+    const fitGraph = (): void => {
       flowInstance.fitView({ maxZoom: 0.95, padding: 0.24 });
-    });
+    };
+    window.requestAnimationFrame(fitGraph);
+    window.addEventListener("resize", fitGraph);
+    return () => window.removeEventListener("resize", fitGraph);
   }, [flowInstance, graph.nodes.length, visibleEdges.length]);
-
-  function handleFitView(): void {
-    flowInstance?.fitView({ maxZoom: 0.95, padding: 0.24 });
-  }
 
   function handleRefresh(): void {
     graph.reset();
@@ -108,34 +107,39 @@ export function GraphExplorer({
           </p>
         </div>
         <div className="graph-controls">
-          <button className="secondary-button" onClick={handleFitView} type="button">Fit View</button>
-          <label className="segmented">
-            证据边
-            <select
-              aria-label="图谱边筛选"
-              onChange={(event) => setBasisFilter(event.target.value as "all" | Basis)}
-              value={basisFilter}
+          <div aria-label="basis 筛选" className="segmented" role="group">
+            {(["all", "source_backed", "inferred"] as const).map((basis) => (
+              <button
+                aria-pressed={basisFilter === basis}
+                key={basis}
+                onClick={() => setBasisFilter(basis)}
+                type="button"
+              >
+                {basis === "all" ? "全部" : basis}
+              </button>
+            ))}
+          </div>
+          {runId ? (
+            <button
+              className="primary-button"
+              onClick={() => setIsDetailOpen(true)}
+              type="button"
             >
-              <option value="all">全部</option>
-              <option value="source_backed">source_backed</option>
-              <option value="inferred">inferred</option>
-            </select>
-          </label>
-          <button aria-label="刷新" className="secondary-button" onClick={handleRefresh} type="button">Focus Mode</button>
+              个股详情
+            </button>
+          ) : null}
+          <button className="secondary-button" onClick={handleRefresh} type="button">
+            重置图谱
+          </button>
         </div>
       </header>
-      <div>
-        <div className="graph-legend" aria-label="图谱图例">
-          <span><i className="legend-line source" />source_backed</span>
-          <span><i className="legend-line inferred" />inferred</span>
-          <span><i className="legend-node seed" />持仓（种子）</span>
-          <span><i className="legend-node company" />公司</span>
-          <span><i className="legend-node segment" />产业 / 主题</span>
-        </div>
-        <div className="count-pill">
-          <span>lazy expand</span>
-          <strong>{runId ?? "no run"}</strong>
-        </div>
+      <div className="graph-legend" aria-label="图谱图例">
+        <span><i className="legend-line source" />source_backed</span>
+        <span><i className="legend-line inferred" />inferred</span>
+        <span><i className="legend-node seed" />持仓（种子）</span>
+        <span><i className="legend-node company" />公司</span>
+        <span><i className="legend-node segment" />产业 / 主题</span>
+        <strong>lazy expand · {runId ?? "no run"}</strong>
       </div>
       <ReactFlowProvider>
         <div className="graph-canvas">

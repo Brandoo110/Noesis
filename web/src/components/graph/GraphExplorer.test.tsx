@@ -122,14 +122,12 @@ describe("GraphExplorer", () => {
     expect(await screen.findByTestId("flow-edge-edge-source")).toBeInTheDocument();
     expect(screen.getByTestId("flow-edge-edge-inferred")).toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText("图谱边筛选"), {
-      target: { value: "source_backed" }
-    });
+    fireEvent.click(screen.getByRole("button", { name: "source_backed" }));
 
     expect(screen.getByTestId("flow-edge-edge-source")).toBeInTheDocument();
     expect(screen.queryByTestId("flow-edge-edge-inferred")).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "刷新" }));
+    fireEvent.click(screen.getByRole("button", { name: "重置图谱" }));
     expect(screen.queryByText("TSM")).not.toBeInTheDocument();
     expect(screen.queryByText("Consumer Electronics")).not.toBeInTheDocument();
   });

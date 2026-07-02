@@ -147,6 +147,7 @@ describe("PortfolioHome", () => {
     render(<PortfolioHome />);
 
     await screen.findByText("AAPL");
+    fireEvent.click(screen.getByRole("button", { name: "+ 添加持仓" }));
     fireEvent.change(screen.getByLabelText("Symbol"), { target: { value: "MSFT" } });
     fireEvent.change(screen.getByLabelText("Market"), { target: { value: "US" } });
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Microsoft" } });
@@ -176,6 +177,7 @@ describe("PortfolioHome", () => {
     render(<PortfolioHome />);
 
     await screen.findByText("暂无持仓");
+    fireEvent.click(screen.getByRole("button", { name: "+ 添加持仓" }));
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "SpaceX" } });
     fireEvent.change(screen.getByLabelText("Kind"), { target: { value: "watching" } });
     fireEvent.click(screen.getByRole("button", { name: "新增持仓" }));
@@ -197,6 +199,7 @@ describe("PortfolioHome", () => {
     render(<PortfolioHome />);
 
     await screen.findByText("暂无持仓");
+    fireEvent.click(screen.getByRole("button", { name: "+ 添加持仓" }));
     fireEvent.click(screen.getByRole("button", { name: "新增持仓" }));
 
     expect(await screen.findByText("请输入 Symbol 或公司名称")).toBeInTheDocument();

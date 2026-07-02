@@ -111,6 +111,7 @@ describe("App portfolio integration path", () => {
     render(<App />);
 
     expect(await screen.findByText("暂无持仓")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "+ 添加持仓" }));
     fireEvent.change(screen.getByLabelText("Symbol"), { target: { value: "AAPL" } });
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Apple" } });
     fireEvent.click(screen.getByRole("button", { name: "新增持仓" }));

@@ -25,7 +25,11 @@ export function WorkspaceShell(): JSX.Element {
     <div className="noesis-app">
       <SideRail activeView={view} onViewChange={setView} />
       <div className="main-column">
-        <TopBar subtitle={meta.subtitle} title={meta.title} />
+        <TopBar
+          showFilter={view === "home"}
+          subtitle={meta.subtitle}
+          title={meta.title}
+        />
         <main className="page-body">
           {view === "home" ? <PortfolioView onGraphSeedSelected={openGraph} /> : null}
           {view === "graph" ? <GraphView seed={graphSeed} /> : null}

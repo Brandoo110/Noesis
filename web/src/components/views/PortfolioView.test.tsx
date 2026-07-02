@@ -98,6 +98,7 @@ describe("PortfolioView", () => {
     expect(getSharedSuppliersMock).toHaveBeenCalled();
     expect(getCorrelationMatrixMock).toHaveBeenCalled();
 
+    fireEvent.click(screen.getByRole("button", { name: "+ 添加持仓" }));
     fireEvent.change(screen.getByLabelText("Symbol"), { target: { value: "MSFT" } });
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Microsoft" } });
     fireEvent.click(screen.getByRole("button", { name: "新增持仓" }));

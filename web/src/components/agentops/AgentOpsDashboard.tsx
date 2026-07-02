@@ -78,22 +78,18 @@ export function AgentOpsDashboard(): JSX.Element {
 
   return (
     <section aria-label="AgentOps Dashboard" className="ops-view">
-      <header className="card-header compact">
-        <div>
-          <p className="eyebrow">AgentOps</p>
-          <h2>Run Operations</h2>
+      {error ? (
+        <div className="compact-alert" role="alert">
+          <span>{error}</span>
+          <button
+            aria-label="刷新 AgentOps"
+            onClick={() => void loadDashboard()}
+            type="button"
+          >
+            刷新
+          </button>
         </div>
-        <button
-          aria-label="刷新 AgentOps"
-          className="secondary-button small"
-          onClick={() => void loadDashboard()}
-          type="button"
-        >
-          Refresh
-        </button>
-      </header>
-
-      {error ? <p className="compact-alert" role="alert">{error}</p> : null}
+      ) : null}
       {isLoading ? <p className="empty-note">加载中...</p> : null}
 
       {metrics ? <MetricsStrip metrics={metrics} /> : null}
@@ -101,32 +97,56 @@ export function AgentOpsDashboard(): JSX.Element {
       {runs.length > 0 ? (
         <div className="ops-grid">
           <section className="card ops-runs">
-          <ul aria-label="AgentOps run list">
-            {runs.map((run) => (
-              <li key={run.run_id}>
-                <button
-                  aria-pressed={run.run_id === selectedRunId}
-                  className="run-card"
-                  onClick={() => setSelectedRunId(run.run_id)}
-                  type="button"
-                >
-                  <span>{run.run_id}</span>
-                  <small>{run.status}</small>
-                  <small>{formatMs(run.latency_ms)} · {run.tool_count} tools</small>
-                  <small>cache {formatPercent(run.cache_hit_rate)}</small>
-                </button>
-              </li>
-            ))}
-          </ul>
+            <header className="card-header compact">
+              <div>
+                <p className="eyebrow">Recent Runs</p>
+                <h2>最近 Runs</h2>
+              </div>
+              <button
+                aria-label="刷新 AgentOps"
+                className="secondary-button small"
+                onClick={() => void loadDashboard()}
+                type="button"
+              >
+                刷新
+              </button>
+            </header>
+            <ul aria-label="AgentOps run list">
+              {runs.map((run) => (
+                <li key={run.run_id}>
+                  <button
+                    aria-pressed={run.run_id === selectedRunId}
+                    className="run-card"
+                    onClick={() => setSelectedRunId(run.run_id)}
+                    type="button"
+                  >
+                    <strong>{run.run_id}</strong>
+                    <span>{run.status}</span>
+                    <small>{formatMs(run.latency_ms)} · {run.tool_count} tools</small>
+                    <small>cache {formatPercent(run.cache_hit_rate)}</small>
+                  </button>
+                </li>
+              ))}
+            </ul>
           </section>
 
           <section aria-label="Run trace timeline" className="card run-trace">
-            <h3>{selectedRun?.run_id ?? "Run trace"}</h3>
+            <header className="trace-header">
+              <div>
+                <p className="eyebrow">Run Trace</p>
+                <h2>Run Trace</h2>
+              </div>
+              {selectedRun ? <span>{selectedRun.status}</span> : null}
+            </header>
             {isTraceLoading ? <p className="empty-note">加载中...</p> : null}
             {trace ? (
               <ol>
                 {trace.steps.map((step, index) => (
-                  <TraceStep key={`${step.kind}-${step.name}-${index}`} step={step} />
+                  <TraceStep
+                    hasLine={index < trace.steps.length - 1}
+                    key={`${step.kind}-${step.name}-${index}`}
+                    step={step}
+                  />
                 ))}
               </ol>
             ) : null}
@@ -159,30 +179,41 @@ function MetricsStrip({ metrics }: { metrics: MetricsSummary }): JSX.Element {
   return (
     <div aria-label="AgentOps 指标" className="ops-metrics">
       {items.map(([label, value]) => (
-        <span key={label}>
+        <article key={label}>
           <strong>{value}</strong>
-          <small>{label}</small>
-        </span>
+          <span>{label}</span>
+        </article>
       ))}
     </div>
   );
 }
 
-function TraceStep({ step }: { step: RunTraceStep }): JSX.Element {
+function TraceStep({
+  hasLine,
+  step
+}: {
+  hasLine: boolean;
+  step: RunTraceStep;
+}): JSX.Element {
   return (
     <li className={`trace-step ${step.status}`}>
+      <i />
+      {hasLine ? <b aria-hidden="true" /> : null}
       <div>
-        <strong>{step.name}</strong>
-        <span>{step.kind}</span>
-      </div>
-      <p>{step.status} · {formatMs(step.latency_ms)}</p>
-      <div>
-        {step.cache_hit !== null ? (
-          <small>{step.cache_hit ? "cache hit" : "cache miss"}</small>
-        ) : null}
-        {step.retry_count !== null ? <small>{`retry ${step.retry_count}`}</small> : null}
-        {step.input_summary ? <small>{step.input_summary}</small> : null}
-        {step.output_summary ? <small>{step.output_summary}</small> : null}
+        <header>
+          <strong>{step.name}</strong>
+          <span>{step.kind}</span>
+          <em>{step.status}</em>
+          <small>{formatMs(step.latency_ms)}</small>
+        </header>
+        <p>
+          {step.input_summary ? <small>{step.input_summary}</small> : null}
+          {step.output_summary ? <small>{step.output_summary}</small> : null}
+          {step.cache_hit !== null ? (
+            <small>{step.cache_hit ? "cache hit" : "cache miss"}</small>
+          ) : null}
+          {step.retry_count !== null ? <small>{`retry ${step.retry_count}`}</small> : null}
+        </p>
       </div>
       {step.evidence_ids.length > 0 ? (
         <small>{step.evidence_ids.join(", ")}</small>

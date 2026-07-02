@@ -1,10 +1,10 @@
 import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { createPosition, listPositions } from "../../api/client";
-import { GraphExplorer } from "../graph/GraphExplorer";
 import { usePortfolioRunSeeds } from "../../hooks/use-portfolio-run-seeds";
 import { useRun } from "../../hooks/use-run";
 import type { Position } from "../../types/api";
+import { PortfolioGraphWorkspace } from "./PortfolioGraphWorkspace";
 import { PortfolioInsights } from "./PortfolioInsights";
 import { PortfolioMobileTabbar } from "./PortfolioMobileTabbar";
 import { PositionInput, type PositionFormState } from "./PositionInput";
@@ -31,6 +31,7 @@ export function PortfolioHome({ onGraphSeedSelected }: PortfolioHomeProps): JSX.
   const [form, setForm] = useState<PositionFormState>(EMPTY_FORM);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isAddOpen, setIsAddOpen] = useState(false);
   const [activePositionId, setActivePositionId] = useState<string | null>(null);
   const [graphSeed, setGraphSeed] = useState<GraphSeed | null>(null);
   const [overlapRefreshKey, setOverlapRefreshKey] = useState(0);
@@ -42,6 +43,7 @@ export function PortfolioHome({ onGraphSeedSelected }: PortfolioHomeProps): JSX.
   const [isReadinessOpen, setIsReadinessOpen] = useState(false);
   const run = useRun();
   const workspaceRef = useRef<HTMLElement | null>(null);
+  const shouldRenderInlineGraph = onGraphSeedSelected === undefined;
   const insightPositions = usePortfolioRunSeeds(positions, {
     entity: run.entity,
     positionId: run.positionId,
@@ -82,7 +84,7 @@ export function PortfolioHome({ onGraphSeedSelected }: PortfolioHomeProps): JSX.
     void refreshPositions();
   }, [refreshPositions]);
   useEffect(() => {
-    if (graphSeed === null) {
+    if (graphSeed === null || !shouldRenderInlineGraph) {
       return;
     }
     const workspace = workspaceRef.current;
@@ -95,7 +97,7 @@ export function PortfolioHome({ onGraphSeedSelected }: PortfolioHomeProps): JSX.
       behavior: prefersReducedMotion() ? "auto" : "smooth"
     });
     workspace.focus({ preventScroll: true });
-  }, [graphSeed]);
+  }, [graphSeed, shouldRenderInlineGraph]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
@@ -139,91 +141,89 @@ export function PortfolioHome({ onGraphSeedSelected }: PortfolioHomeProps): JSX.
   }
 
   return (
-    <section aria-labelledby="portfolio-title" className="page-body">
-      <PortfolioTopbar
-        filters={filters}
-        isFilterOpen={isFilterOpen}
-        isReadinessOpen={isReadinessOpen}
-        searchQuery={searchQuery}
-        setFilters={setFilters}
-        setIsFilterOpen={setIsFilterOpen}
-        setIsReadinessOpen={setIsReadinessOpen}
-        setSearchQuery={setSearchQuery}
-      />
+    <section
+      aria-labelledby="portfolio-title"
+      className={shouldRenderInlineGraph ? "page-body" : "portfolio-home"}
+    >
+      {shouldRenderInlineGraph ? (
+        <PortfolioTopbar
+          filters={filters}
+          isFilterOpen={isFilterOpen}
+          isReadinessOpen={isReadinessOpen}
+          searchQuery={searchQuery}
+          setFilters={setFilters}
+          setIsFilterOpen={setIsFilterOpen}
+          setIsReadinessOpen={setIsReadinessOpen}
+          setSearchQuery={setSearchQuery}
+        />
+      ) : null}
 
       {error ? <p className="compact-alert" role="alert">{error}</p> : null}
 
       <div className="home-grid">
-        <aside className="card positions-card" aria-label="持仓控制台" id="positions">
-          <PositionInput
-            form={form}
-            isSaving={isSaving}
-            onSubmit={(event) => void handleSubmit(event)}
-            setForm={setForm}
-          />
-
-          <section className="positions-card">
-            <div className="card-header compact">
-              <div>
-                <p className="eyebrow">Portfolio</p>
-                <h2>Portfolio</h2>
-              </div>
-              <span className="count-pill">{filteredPositions.length} ITEMS</span>
+        <section className="card positions-card" aria-label="持仓控制台" id="positions">
+          <header className="card-header">
+            <div>
+              <p className="eyebrow">Portfolio</p>
+              <h2>持仓</h2>
             </div>
-            {isLoading ? (
-              <p className="empty-note">加载中...</p>
-            ) : positionsError ? (
-              <div className="compact-alert" role="alert">
-                <span>{positionsError}</span>
-                <button onClick={() => void refreshPositions()} type="button">
-                  重新加载持仓
-                </button>
-              </div>
-            ) : (
-              <PositionList
-                activePositionId={activePositionId}
-                onViewGraph={(positionId, runId, seedEntity) => {
-                  const nextSeed = { positionId, runId, seedEntity };
-                  setGraphSeed(nextSeed);
-                  onGraphSeedSelected?.(nextSeed);
-                }}
-                onStartRun={handleStartRun}
-                emptyMessage={positions.length === 0 ? "暂无持仓" : "没有匹配的持仓"}
-                positions={filteredPositions}
-                runEntity={run.entity}
-                runId={run.runId}
-                runPositionId={run.positionId}
-                runStatus={run.status}
-              />
-            )}
-          </section>
-        </aside>
+            <span className="count-pill">{filteredPositions.length} ITEMS</span>
+            <button
+              className="primary-button"
+              onClick={() => setIsAddOpen((current) => !current)}
+              type="button"
+            >
+              + 添加持仓
+            </button>
+          </header>
 
-        <section
-          aria-label="研究工作区"
-          className="card graph-summary"
-          id="research-workspace"
-          ref={workspaceRef}
-          tabIndex={-1}
-        >
-          {graphSeed ? (
-            <GraphExplorer
-              onThesisConfirmed={() => void handleThesisConfirmed()}
-              onRetryResearch={handleStartRun}
-              positionId={graphSeed.positionId}
-              runId={graphSeed.runId}
-              seedEntity={graphSeed.seedEntity}
+          {isAddOpen ? (
+            <PositionInput
+              form={form}
+              isSaving={isSaving}
+              onSubmit={(event) => void handleSubmit(event)}
+              setForm={setForm}
             />
-          ) : (
-            <div className="empty-box">
-              <p className="eyebrow">图谱探索器</p>
-              <h2>选择一个完成研究的持仓查看图谱</h2>
-              <p>
-                点击“开始研究”，等待 run 进入待确认或完成状态后，打开产业链图谱和个股详情。
-              </p>
+          ) : null}
+
+          {isLoading ? (
+            <p className="empty-note">加载中...</p>
+          ) : positionsError ? (
+            <div className="compact-alert" role="alert">
+              <span>{positionsError}</span>
+              <button onClick={() => void refreshPositions()} type="button">
+                重新加载持仓
+              </button>
             </div>
+          ) : (
+            <PositionList
+              activePositionId={activePositionId}
+              onViewGraph={(positionId, runId, seedEntity) => {
+                const nextSeed = { positionId, runId, seedEntity };
+                if (shouldRenderInlineGraph) {
+                  setGraphSeed(nextSeed);
+                }
+                onGraphSeedSelected?.(nextSeed);
+              }}
+              onStartRun={handleStartRun}
+              emptyMessage={positions.length === 0 ? "暂无持仓" : "没有匹配的持仓"}
+              positions={filteredPositions}
+              runEntity={run.entity}
+              runId={run.runId}
+              runPositionId={run.positionId}
+              runStatus={run.status}
+            />
           )}
         </section>
+
+        {shouldRenderInlineGraph ? (
+          <PortfolioGraphWorkspace
+            graphSeed={graphSeed}
+            onRetryResearch={handleStartRun}
+            onThesisConfirmed={handleThesisConfirmed}
+            workspaceRef={workspaceRef}
+          />
+        ) : null}
 
         <aside className="side-stack" aria-label="组合洞察">
           {!isLoading ? (
