@@ -38,6 +38,7 @@ from noesis.eval.report import (
     format_report,
     trace_summary,
 )
+from noesis.eval.fixtures import seed_eval_fixture_runs
 from noesis.eval.runner import evaluate_existing_runs as evaluate_existing_runs_from_db
 from noesis.graph.runner import build_graph_deps, get_run_snapshot, start_run
 from noesis.graph.schemas import EvidenceRecord, GraphEdgeDraft, PositionInput, ResolvedEntity
@@ -51,6 +52,7 @@ class EvalArgs:
     from_db: bool
     db_path: str | None
     format: ReportFormat
+    seed_fixtures: bool
 
 
 @dataclass(frozen=True)
@@ -67,6 +69,11 @@ def parse_args(argv: Sequence[str] | None = None) -> EvalArgs:
     mode.add_argument("--live", dest="from_db", action="store_false")
     parser.add_argument("--db-path", default=None)
     parser.add_argument(
+        "--seed-fixtures",
+        action="store_true",
+        help="Insert local fixture runs for missing eval cases before from-db eval.",
+    )
+    parser.add_argument(
         "--format",
         choices=("text", "json", "markdown"),
         default="text",
@@ -77,6 +84,7 @@ def parse_args(argv: Sequence[str] | None = None) -> EvalArgs:
         from_db=bool(parsed.from_db),
         db_path=parsed.db_path,
         format=cast(ReportFormat, parsed.format),
+        seed_fixtures=bool(parsed.seed_fixtures),
     )
 
 
@@ -85,6 +93,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     settings = Settings()
     db_path = args.db_path or settings.db_path
     with runtime(settings, db_path) as current:
+        if args.seed_fixtures:
+            seed_eval_fixture_runs(EVAL_CASES, current.deps)
         report = (
             evaluate_existing_runs(EVAL_CASES, current.deps)
             if args.from_db

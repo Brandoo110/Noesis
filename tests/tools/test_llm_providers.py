@@ -62,6 +62,39 @@ def test_http_provider_retries_timeout_then_succeeds() -> None:
     assert calls == 2
 
 
+def test_http_provider_extracts_usage_and_estimated_cost() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "choices": [{"message": {"content": "ok"}}],
+                "usage": {
+                    "prompt_tokens": 1000,
+                    "completion_tokens": 500,
+                },
+            },
+            request=request,
+        )
+
+    provider = HttpLLMProvider(
+        ChatProviderConfig(
+            api_key="key",
+            model_id="model",
+            endpoint="https://llm.example/chat",
+            input_cost_per_million=1.0,
+            output_cost_per_million=2.0,
+            transport=httpx.MockTransport(handler),
+        )
+    )
+
+    completion = provider.complete_text_with_usage("prompt")
+
+    assert completion.text == "ok"
+    assert completion.usage.token_input == 1000
+    assert completion.usage.token_output == 500
+    assert completion.usage.estimated_cost_usd == 0.002
+
+
 def test_http_provider_retries_5xx_then_succeeds() -> None:
     calls = 0
 

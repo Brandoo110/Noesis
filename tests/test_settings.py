@@ -11,6 +11,12 @@ LLM_ENV_KEYS = (
     "RISK_LLM_API_KEY",
     "RISK_ENDPOINT",
     "RISK_MODEL",
+    "LIGHT_INPUT_COST_PER_MILLION",
+    "LIGHT_OUTPUT_COST_PER_MILLION",
+    "DEEPSEEK_INPUT_COST_PER_MILLION",
+    "DEEPSEEK_OUTPUT_COST_PER_MILLION",
+    "RISK_INPUT_COST_PER_MILLION",
+    "RISK_OUTPUT_COST_PER_MILLION",
 )
 
 
@@ -59,6 +65,24 @@ def test_settings_llm_endpoint_and_model_env_overrides(
     assert settings.light_model == "glm-test"
     assert settings.risk_endpoint == "https://risk.example/chat"
     assert settings.risk_model == "gemini-test"
+
+
+def test_settings_llm_cost_env_overrides(monkeypatch) -> None:
+    monkeypatch.setenv("LIGHT_INPUT_COST_PER_MILLION", "0.1")
+    monkeypatch.setenv("LIGHT_OUTPUT_COST_PER_MILLION", "0.2")
+    monkeypatch.setenv("DEEPSEEK_INPUT_COST_PER_MILLION", "0.3")
+    monkeypatch.setenv("DEEPSEEK_OUTPUT_COST_PER_MILLION", "0.4")
+    monkeypatch.setenv("RISK_INPUT_COST_PER_MILLION", "0.5")
+    monkeypatch.setenv("RISK_OUTPUT_COST_PER_MILLION", "0.6")
+
+    settings = Settings(_env_file=None)
+
+    assert settings.light_input_cost_per_million == 0.1
+    assert settings.light_output_cost_per_million == 0.2
+    assert settings.deepseek_input_cost_per_million == 0.3
+    assert settings.deepseek_output_cost_per_million == 0.4
+    assert settings.risk_input_cost_per_million == 0.5
+    assert settings.risk_output_cost_per_million == 0.6
 
 
 def test_get_settings_returns_cached_instance(monkeypatch) -> None:

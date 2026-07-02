@@ -105,6 +105,16 @@ def test_post_eval_runs_returns_eval_report(api_context: ApiTestContext) -> None
     assert payload["cases"][0]["trace_summary"]["degraded"] == 1
 
 
+def test_post_eval_runs_can_seed_fixture_results(api_context: ApiTestContext) -> None:
+    response = api_context.client.post("/eval/runs", json={"seed_fixtures": True})
+    payload = response.json()
+
+    assert response.status_code == 200
+    assert len(payload["cases"]) >= 20
+    assert {case["status"] for case in payload["cases"]} == {"evaluated"}
+    assert payload["agentops"]["evidence_coverage"] == 1.0
+
+
 def _seed_agentops_run(db_path: Path) -> None:
     with connect(db_path) as conn:
         migrate(conn)

@@ -14,6 +14,14 @@ class Settings(BaseSettings):
         default="deepseek-v4-pro",
         validation_alias="DEEPSEEK_MODEL",
     )
+    deepseek_input_cost_per_million: float = Field(
+        default=0.0,
+        validation_alias="DEEPSEEK_INPUT_COST_PER_MILLION",
+    )
+    deepseek_output_cost_per_million: float = Field(
+        default=0.0,
+        validation_alias="DEEPSEEK_OUTPUT_COST_PER_MILLION",
+    )
     light_llm_api_key: str = Field(default="", validation_alias="LIGHT_LLM_API_KEY")
     light_endpoint: str = Field(
         default="https://open.bigmodel.cn/api/paas/v4/chat/completions",
@@ -23,6 +31,14 @@ class Settings(BaseSettings):
         default="glm-4.7-flash",
         validation_alias="LIGHT_MODEL",
     )
+    light_input_cost_per_million: float = Field(
+        default=0.0,
+        validation_alias="LIGHT_INPUT_COST_PER_MILLION",
+    )
+    light_output_cost_per_million: float = Field(
+        default=0.0,
+        validation_alias="LIGHT_OUTPUT_COST_PER_MILLION",
+    )
     risk_llm_api_key: str = Field(default="", validation_alias="RISK_LLM_API_KEY")
     risk_endpoint: str = Field(
         default="https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
@@ -31,6 +47,14 @@ class Settings(BaseSettings):
     risk_model: str = Field(
         default="gemini-3.1-flash-lite",
         validation_alias="RISK_MODEL",
+    )
+    risk_input_cost_per_million: float = Field(
+        default=0.0,
+        validation_alias="RISK_INPUT_COST_PER_MILLION",
+    )
+    risk_output_cost_per_million: float = Field(
+        default=0.0,
+        validation_alias="RISK_OUTPUT_COST_PER_MILLION",
     )
     tavily_api_key: str = Field(default="", validation_alias="TAVILY_API_KEY")
     db_path: str = Field(default="./noesis.db", validation_alias="NOESIS_DB_PATH")

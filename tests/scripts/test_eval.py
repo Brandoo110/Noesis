@@ -30,6 +30,15 @@ def test_eval_parse_args_supports_live_json_format() -> None:
     assert args.format == "json"
 
 
+def test_eval_parse_args_supports_fixture_seeding() -> None:
+    module = load_eval_module()
+
+    args = module.parse_args(("--from-db", "--seed-fixtures"))
+
+    assert args.from_db is True
+    assert args.seed_fixtures is True
+
+
 def test_eval_existing_runs_return_case_and_average_metrics(tmp_path: Path) -> None:
     module = load_eval_module()
     conn = connect(tmp_path / "noesis.db")
@@ -98,6 +107,44 @@ def test_eval_markdown_report_labels_mode_and_trace_summary(tmp_path: Path) -> N
     assert "## AgentOps" in markdown
     assert "- total_runs: 1" in markdown
     assert "| AAPL | evaluated | run-aapl | 1.00 | 1.00 | 1.00 | 1.00 | 2 / 1 / 0 |" in markdown
+
+
+def test_eval_seed_fixtures_completes_all_eval_cases(tmp_path: Path) -> None:
+    module = load_eval_module()
+    conn = connect(tmp_path / "noesis.db")
+    checkpoint_conn = sqlite3.connect(tmp_path / "checkpoints.db", check_same_thread=False)
+    try:
+        migrate(conn)
+        deps = build_graph_deps(
+            conn=conn,
+            checkpoint_conn=checkpoint_conn,
+            chroma_dir=str(tmp_path / "chroma"),
+            search=FakeSearchAdapter([]),
+            llm=FakeLLMRouter(),
+            now=lambda: NOW,
+        )
+
+        module.seed_eval_fixture_runs(module.EVAL_CASES, deps)
+        report = module.evaluate_existing_runs(module.EVAL_CASES, deps)
+
+        assert len(report.results) >= 20
+        assert {result.status for result in report.results} == {"evaluated"}
+        assert report.agentops.total_runs >= 20
+        assert report.agentops.evidence_coverage == 1.0
+        source_document_count = conn.execute(
+            "SELECT count(*) FROM source_documents"
+        ).fetchone()[0]
+        assert source_document_count >= 20
+        conn.execute("DELETE FROM source_documents")
+        conn.commit()
+        module.seed_eval_fixture_runs(module.EVAL_CASES, deps)
+        backfilled_count = conn.execute(
+            "SELECT count(*) FROM source_documents"
+        ).fetchone()[0]
+        assert backfilled_count >= 20
+    finally:
+        checkpoint_conn.close()
+        conn.close()
 
 
 def _evaluated_report(tmp_path: Path) -> tuple[object, object]:

@@ -8,6 +8,8 @@ from pydantic import BaseModel, ValidationError
 from noesis.config.settings import Settings
 from noesis.graph.errors import LLMUnavailableError, ResearchNodeError
 from noesis.tools.llm.providers import (
+    LLMCompletion,
+    LLMUsage,
     LLMProvider,
     make_deepseek_provider,
     make_light_provider,
@@ -36,16 +38,22 @@ class LLMRouter:
                     resolved.light_llm_api_key,
                     resolved.light_model,
                     resolved.light_endpoint,
+                    input_cost_per_million=resolved.light_input_cost_per_million,
+                    output_cost_per_million=resolved.light_output_cost_per_million,
                 ),
                 LLMRole.SYNTH: make_deepseek_provider(
                     resolved.deepseek_api_key,
                     resolved.deepseek_model,
                     resolved.deepseek_endpoint,
+                    input_cost_per_million=resolved.deepseek_input_cost_per_million,
+                    output_cost_per_million=resolved.deepseek_output_cost_per_million,
                 ),
                 LLMRole.RISK: make_risk_provider(
                     resolved.risk_llm_api_key,
                     resolved.risk_model,
                     resolved.risk_endpoint,
+                    input_cost_per_million=resolved.risk_input_cost_per_million,
+                    output_cost_per_million=resolved.risk_output_cost_per_million,
                 ),
             }
         )
@@ -53,13 +61,19 @@ class LLMRouter:
     def complete_json(
         self, role: LLMRole, prompt: str, schema: type[ModelT]
     ) -> ModelT:
-        text = self.complete_text(role, _json_prompt(prompt, schema))
+        result = self.complete_json_with_usage(role, prompt, schema)
+        return result[0]
+
+    def complete_json_with_usage(
+        self, role: LLMRole, prompt: str, schema: type[ModelT]
+    ) -> tuple[ModelT, LLMUsage]:
+        completion = self.complete_text_with_usage(role, _json_prompt(prompt, schema))
         try:
-            payload: object = json.loads(_strip_json_fence(text))
+            payload: object = json.loads(_strip_json_fence(completion.text))
         except json.JSONDecodeError as exc:
             raise ResearchNodeError("LLM returned invalid JSON", reason="invalid_json") from exc
         try:
-            return schema.model_validate(payload)
+            return schema.model_validate(payload), completion.usage
         except ValidationError as exc:
             raise ResearchNodeError(
                 "LLM JSON failed schema validation",
@@ -67,12 +81,18 @@ class LLMRouter:
             ) from exc
 
     def complete_text(self, role: LLMRole, prompt: str) -> str:
+        return self.complete_text_with_usage(role, prompt).text
+
+    def complete_text_with_usage(self, role: LLMRole, prompt: str) -> LLMCompletion:
         provider = self.providers.get(role)
         if provider is None:
             raise LLMUnavailableError("LLM provider is not configured", reason="missing_provider")
         if not provider.available():
             raise LLMUnavailableError("LLM provider is unavailable", reason="missing_key")
-        return provider.complete_text(prompt)
+        completion = getattr(provider, "complete_text_with_usage", None)
+        if callable(completion):
+            return completion(prompt)
+        return LLMCompletion(text=provider.complete_text(prompt))
 
     def available(self, role: LLMRole) -> bool:
         provider = self.providers.get(role)

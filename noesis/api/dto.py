@@ -126,6 +126,10 @@ class EvalReportResponse(BaseModel):
     cases: list[EvalCaseResultResponse]
 
 
+class EvalRunRequest(BaseModel):
+    seed_fixtures: bool = False
+
+
 class ExpandRequest(BaseModel):
     position_id: str
 

@@ -11,6 +11,7 @@ from noesis.db.repos.tool_cache_entries_repo import ToolCacheEntriesRepo
 from noesis.db.repos.tool_invocations_repo import ToolInvocationsRepo
 from noesis.graph.schemas import IngestedDoc
 from noesis.tools.llm.fake import FakeLLMRouter
+from noesis.tools.llm.providers import LLMCompletion, LLMUsage
 from noesis.tools.llm.router import LLMRole
 from noesis.tools.registry import (
     CachePolicy,
@@ -169,6 +170,20 @@ def test_tool_aware_llm_router_logs_text_calls(db: sqlite3.Connection) -> None:
     assert invocations[0].cache_hit is False
 
 
+def test_tool_aware_llm_router_logs_provider_usage(db: sqlite3.Connection) -> None:
+    executor = ToolExecutor(conn=db, registry=default_tool_registry(), now=lambda: NOW)
+    router = ToolAwareLLMRouter(UsageLLMRouter(), executor)
+
+    assert router.complete_text(LLMRole.SYNTH, "hello", run_id="run-1") == "ok"
+
+    invocations = ToolInvocationsRepo().list_by_run("run-1", conn=db)
+    assert len(invocations) == 1
+    assert invocations[0].tool_name == "llm.synth"
+    assert invocations[0].token_input == 11
+    assert invocations[0].token_output == 7
+    assert invocations[0].estimated_cost_usd == 0.003
+
+
 class CountingSearchAdapter:
     def __init__(self) -> None:
         self.calls = 0
@@ -185,3 +200,20 @@ class CountingSearchAdapter:
                 published_at=None,
             )
         ]
+
+
+class UsageLLMRouter:
+    def available(self, role: LLMRole) -> bool:
+        return True
+
+    def complete_text_with_usage(
+        self, role: LLMRole, prompt: str
+    ) -> LLMCompletion:
+        return LLMCompletion(
+            text="ok",
+            usage=LLMUsage(
+                token_input=11,
+                token_output=7,
+                estimated_cost_usd=0.003,
+            ),
+        )

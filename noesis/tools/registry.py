@@ -6,6 +6,7 @@ from noesis.tools.contracts import (
     ToolCallRequest,
     ToolDescriptor,
     ToolRegistry,
+    ToolUsage,
     default_tool_registry,
 )
 from noesis.tools.execution import ToolExecutionError, ToolExecutor
@@ -28,5 +29,6 @@ __all__ = [
     "ToolExecutionError",
     "ToolExecutor",
     "ToolRegistry",
+    "ToolUsage",
     "default_tool_registry",
 ]

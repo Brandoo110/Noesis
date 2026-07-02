@@ -40,6 +40,12 @@ class ToolCallRequest(BaseModel):
     estimated_cost_usd: float = Field(default=0, ge=0)
 
 
+class ToolUsage(BaseModel):
+    token_input: int = Field(default=0, ge=0)
+    token_output: int = Field(default=0, ge=0)
+    estimated_cost_usd: float = Field(default=0, ge=0)
+
+
 class ToolRegistry:
     def __init__(self, descriptors: Iterable[ToolDescriptor] | None = None) -> None:
         self._descriptors = {item.name: item for item in descriptors or []}
@@ -109,6 +115,36 @@ def default_tool_registry() -> ToolRegistry:
                 timeout_seconds=5,
                 retry_policy=RetryPolicy(max_attempts=1),
                 cache_policy=CachePolicy(mode="ttl", ttl_seconds=3_600),
+            ),
+            ToolDescriptor(
+                name="webpage.fetch",
+                description="Fetch and cache raw webpage content",
+                input_schema={"type": "object", "required": ["url"]},
+                output_schema={"type": "string"},
+                permission_level="network",
+                timeout_seconds=20,
+                retry_policy=RetryPolicy(max_attempts=2),
+                cache_policy=CachePolicy(mode="ttl", ttl_seconds=86_400),
+            ),
+            ToolDescriptor(
+                name="pdf.parse",
+                description="Parse and cache PDF text content",
+                input_schema={"type": "object", "required": ["source"]},
+                output_schema={"type": "string"},
+                permission_level="local",
+                timeout_seconds=20,
+                retry_policy=RetryPolicy(max_attempts=1),
+                cache_policy=CachePolicy(mode="ttl", ttl_seconds=604_800),
+            ),
+            ToolDescriptor(
+                name="embedding.vector",
+                description="Generate and cache embedding vectors",
+                input_schema={"type": "object", "required": ["text"]},
+                output_schema={"type": "array", "items": {"type": "number"}},
+                permission_level="local",
+                timeout_seconds=10,
+                retry_policy=RetryPolicy(max_attempts=1),
+                cache_policy=CachePolicy(mode="ttl", ttl_seconds=604_800),
             ),
         ]
     )

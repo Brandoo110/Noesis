@@ -8,6 +8,7 @@ from noesis.graph.errors import LLMUnavailableError, ResearchNodeError
 from noesis.graph.schemas import EvidenceRecord, IngestedDoc
 from noesis.tools.contracts import ToolCallRequest
 from noesis.tools.execution import ToolExecutionError, ToolExecutor
+from noesis.tools.llm.providers import LLMCompletion, LLMUsage
 from noesis.tools.llm.router import LLMRole, ModelT
 from noesis.tools.search.base import SearchAdapter
 
@@ -77,9 +78,10 @@ class ToolAwareLLMRouter:
             return self.executor.execute(
                 f"llm.{role.value}",
                 request,
-                lambda: self.router.complete_text(role, prompt),
-                summarize_result=lambda result: f"text_chars={len(result)}",
-            )
+                lambda: self._complete_text_with_usage(role, prompt),
+                summarize_result=lambda result: f"text_chars={len(result.text)}",
+                usage_result=lambda result: result.usage.to_tool_usage(),
+            ).text
         except ToolExecutionError as exc:
             _raise_original(exc)
 
@@ -99,11 +101,29 @@ class ToolAwareLLMRouter:
             return self.executor.execute(
                 f"llm.{role.value}",
                 request,
-                lambda: self.router.complete_json(role, prompt, schema),
-                summarize_result=lambda result: f"schema={result.__class__.__name__}",
-            )
+                lambda: self._complete_json_with_usage(role, prompt, schema),
+                summarize_result=lambda result: f"schema={result[0].__class__.__name__}",
+                usage_result=lambda result: result[1].to_tool_usage(),
+            )[0]
         except ToolExecutionError as exc:
             _raise_original(exc)
+
+    def _complete_text_with_usage(self, role: LLMRole, prompt: str) -> LLMCompletion:
+        complete = getattr(self.router, "complete_text_with_usage", None)
+        if callable(complete):
+            return complete(role, prompt)
+        return LLMCompletion(text=self.router.complete_text(role, prompt))
+
+    def _complete_json_with_usage(
+        self,
+        role: LLMRole,
+        prompt: str,
+        schema: type[ModelT],
+    ) -> tuple[ModelT, object]:
+        complete = getattr(self.router, "complete_json_with_usage", None)
+        if callable(complete):
+            return complete(role, prompt, schema)
+        return self.router.complete_json(role, prompt, schema), LLMUsage()
 
 
 class ToolAwareEvidenceRetriever:

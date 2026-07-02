@@ -10,7 +10,12 @@ from uuid import uuid4
 
 from noesis.db.connection import with_tx
 from noesis.db.models import ToolCacheEntryRow, ToolInvocationRow
-from noesis.tools.contracts import ToolCallRequest, ToolDescriptor, ToolRegistry
+from noesis.tools.contracts import (
+    ToolCallRequest,
+    ToolDescriptor,
+    ToolRegistry,
+    ToolUsage,
+)
 
 ResultT = TypeVar("ResultT")
 
@@ -42,6 +47,7 @@ class ToolExecutor:
         serialize_result: Callable[[ResultT], str] | None = None,
         deserialize_result: Callable[[str], ResultT] | None = None,
         summarize_result: Callable[[ResultT], str] | None = None,
+        usage_result: Callable[[ResultT], ToolUsage] | None = None,
     ) -> ResultT:
         descriptor = self.registry.get(tool_name)
         cached = self._read_cache(descriptor, request, deserialize_result)
@@ -75,6 +81,7 @@ class ToolExecutor:
                     retry_count=attempt,
                     latency_ms=_elapsed_ms(started),
                     error_message=None,
+                    usage=_usage(usage_result, result),
                 )
                 return result
             except Exception as exc:
@@ -192,6 +199,7 @@ class ToolExecutor:
         retry_count: int,
         latency_ms: int,
         error_message: str | None,
+        usage: ToolUsage | None = None,
     ) -> None:
         row = _invocation_row(
             descriptor,
@@ -202,6 +210,7 @@ class ToolExecutor:
             retry_count=retry_count,
             latency_ms=latency_ms,
             error_message=error_message,
+            usage=usage or ToolUsage(),
             now=self.now(),
         )
         with with_tx(self.conn):
@@ -270,6 +279,7 @@ def _invocation_row(
     retry_count: int,
     latency_ms: int,
     error_message: str | None,
+    usage: ToolUsage,
     now: str,
 ) -> ToolInvocationRow:
     return ToolInvocationRow(
@@ -286,9 +296,9 @@ def _invocation_row(
         cache_hit=cache_hit,
         retry_count=retry_count,
         latency_ms=latency_ms,
-        token_input=request.token_input,
-        token_output=request.token_output,
-        estimated_cost_usd=request.estimated_cost_usd,
+        token_input=request.token_input + usage.token_input,
+        token_output=request.token_output + usage.token_output,
+        estimated_cost_usd=request.estimated_cost_usd + usage.estimated_cost_usd,
         started_at=now,
         ended_at=now,
         created_at=now,
@@ -307,6 +317,13 @@ def _summary(
     result: ResultT,
 ) -> str | None:
     return summarize_result(result) if summarize_result is not None else None
+
+
+def _usage(
+    usage_result: Callable[[ResultT], ToolUsage] | None,
+    result: ResultT,
+) -> ToolUsage:
+    return usage_result(result) if usage_result is not None else ToolUsage()
 
 
 def _elapsed_ms(started: float) -> int:
