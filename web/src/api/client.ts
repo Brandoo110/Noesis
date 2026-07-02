@@ -1,4 +1,5 @@
 import type {
+  AgentOpsRunList,
   ConfirmationInput,
   CorrelationMatrix,
   CreatePositionInput,
@@ -6,12 +7,14 @@ import type {
   EntityNode,
   Evidence,
   ExpandResult,
+  MetricsSummary,
   OverlapGroup,
   PortfolioBrief,
   Position,
   Relevance,
   RunDetail,
   RunSummary,
+  RunTrace,
   SharedSupplierGroup
 } from "../types/api";
 
@@ -51,6 +54,18 @@ export function startRun(positionId: string): Promise<RunSummary> {
 
 export function getRun(runId: string): Promise<RunDetail> {
   return request<RunDetail>(`/runs/${encodeURIComponent(runId)}`);
+}
+
+export function listRuns(): Promise<AgentOpsRunList> {
+  return request<AgentOpsRunList>("/runs");
+}
+
+export function getRunTrace(runId: string): Promise<RunTrace> {
+  return request<RunTrace>(`/runs/${encodeURIComponent(runId)}/trace`);
+}
+
+export function getMetricsSummary(): Promise<MetricsSummary> {
+  return request<MetricsSummary>("/metrics/summary");
 }
 
 export function confirmThesis(

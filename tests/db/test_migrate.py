@@ -21,6 +21,9 @@ DOMAIN_TABLES = {
     "graph_edges",
     "node_expansions",
     "holding_relevances",
+    "source_documents",
+    "tool_invocations",
+    "tool_cache_entries",
 }
 
 
@@ -59,6 +62,10 @@ def test_migrate_creates_required_indexes(db: Connection) -> None:
         "idx_edges_to",
         "idx_node_expansions_researched",
         "idx_relevance_entity",
+        "idx_source_documents_run",
+        "idx_source_documents_hash",
+        "idx_tool_invocations_run",
+        "idx_tool_cache_entries_tool",
     }.issubset(names)
 
 

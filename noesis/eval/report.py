@@ -1,7 +1,8 @@
 import json
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from typing import Literal, TypedDict, cast
 
+from noesis.agentops.metrics import MetricsSummary
 from noesis.eval.metrics import EvalMetrics
 from noesis.graph.state import GraphDeps
 
@@ -31,6 +32,7 @@ class EvalCaseResult:
 class EvalReport:
     results: tuple[EvalCaseResult, ...]
     averages: EvalMetrics
+    agentops: MetricsSummary
 
 
 def format_report(
@@ -89,6 +91,14 @@ def _format_text_report(report: EvalReport, mode: EvalMode) -> str:
         f"basis_honesty={report.averages['basis_honesty']:.2f} "
         f"anchor_rate={report.averages['anchor_rate']:.2f}"
     )
+    lines.append(
+        "agentops "
+        f"total_runs={report.agentops.total_runs} "
+        f"task_completion_rate={report.agentops.task_completion_rate:.2f} "
+        f"avg_latency_ms={report.agentops.avg_latency_ms} "
+        f"cache_hit_rate={report.agentops.cache_hit_rate:.2f} "
+        f"evidence_coverage={report.agentops.evidence_coverage:.2f}"
+    )
     return "\n".join(lines)
 
 
@@ -96,6 +106,7 @@ def _format_json_report(report: EvalReport, mode: EvalMode) -> str:
     payload = {
         "mode": mode,
         "averages": dict(report.averages),
+        "agentops": asdict(report.agentops),
         "cases": [_case_payload(result) for result in report.results],
     }
     return json.dumps(payload, indent=2, sort_keys=True)
@@ -121,6 +132,22 @@ def _format_markdown_report(report: EvalReport, mode: EvalMode) -> str:
             f"- redline_compliance: {report.averages['redline_compliance']:.2f}",
             f"- basis_honesty: {report.averages['basis_honesty']:.2f}",
             f"- anchor_rate: {report.averages['anchor_rate']:.2f}",
+            "",
+            "## AgentOps",
+            "",
+            f"- total_runs: {report.agentops.total_runs}",
+            f"- task_completion_rate: {report.agentops.task_completion_rate:.2f}",
+            f"- avg_latency_ms: {report.agentops.avg_latency_ms}",
+            f"- p95_latency_ms: {report.agentops.p95_latency_ms}",
+            f"- tool_success_rate: {report.agentops.tool_success_rate:.2f}",
+            f"- tool_failure_rate: {report.agentops.tool_failure_rate:.2f}",
+            f"- retry_count: {report.agentops.retry_count}",
+            f"- cache_hit_rate: {report.agentops.cache_hit_rate:.2f}",
+            f"- average_token_usage: {report.agentops.average_token_usage}",
+            f"- estimated_cost_per_run: {report.agentops.estimated_cost_per_run:.6f}",
+            f"- evidence_coverage: {report.agentops.evidence_coverage:.2f}",
+            f"- unsupported_claim_count: {report.agentops.unsupported_claim_count}",
+            f"- rag_retrieval_count: {report.agentops.rag_retrieval_count}",
         ]
     )
     return "\n".join(lines)

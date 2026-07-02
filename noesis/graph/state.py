@@ -28,8 +28,11 @@ if TYPE_CHECKING:
     from noesis.db.repos.node_traces_repo import NodeTracesRepo
     from noesis.db.repos.positions_repo import PositionsRepo
     from noesis.db.repos.run_registry_repo import RunRegistryRepo
+    from noesis.db.repos.source_documents_repo import SourceDocumentsRepo
     from noesis.db.repos.theses_repo import ThesesRepo
     from noesis.db.repos.thesis_assumptions_repo import ThesisAssumptionsRepo
+    from noesis.db.repos.tool_cache_entries_repo import ToolCacheEntriesRepo
+    from noesis.db.repos.tool_invocations_repo import ToolInvocationsRepo
     from noesis.tools.llm.router import LLMRouter
     from noesis.tools.retrieval.store import EvidenceRetriever
     from noesis.tools.search.base import SearchAdapter
@@ -70,6 +73,9 @@ class RepoBundle:
     graph_edges: GraphEdgesRepo
     node_expansions: NodeExpansionsRepo
     holding_relevances: HoldingRelevancesRepo
+    source_documents: SourceDocumentsRepo
+    tool_invocations: ToolInvocationsRepo
+    tool_cache_entries: ToolCacheEntriesRepo
 
 
 @dataclass

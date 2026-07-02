@@ -45,6 +45,57 @@ class RunResponse(BaseModel):
     thesis_id: str | None = None
 
 
+class RunSummaryResponse(BaseModel):
+    run_id: str
+    status: str
+    started_at: str
+    ended_at: str | None
+    latency_ms: int | None
+    evidence_count: int
+    tool_count: int
+    cache_hit_rate: float
+
+
+class RunListResponse(BaseModel):
+    runs: list[RunSummaryResponse]
+
+
+class RunTraceStepResponse(BaseModel):
+    kind: Literal["node", "tool"]
+    name: str
+    status: str
+    started_at: str
+    ended_at: str | None
+    latency_ms: int | None
+    input_summary: str | None
+    output_summary: str | None
+    cache_hit: bool | None = None
+    retry_count: int | None = None
+    evidence_ids: list[str]
+
+
+class RunTraceResponse(BaseModel):
+    run_id: str
+    status: str
+    steps: list[RunTraceStepResponse]
+
+
+class MetricsSummaryResponse(BaseModel):
+    total_runs: int
+    task_completion_rate: float
+    avg_latency_ms: int
+    p95_latency_ms: int
+    tool_success_rate: float
+    tool_failure_rate: float
+    retry_count: int
+    cache_hit_rate: float
+    average_token_usage: int
+    estimated_cost_per_run: float
+    evidence_coverage: float
+    unsupported_claim_count: int
+    rag_retrieval_count: int
+
+
 class ExpandRequest(BaseModel):
     position_id: str
 

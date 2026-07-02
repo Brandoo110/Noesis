@@ -1,3 +1,5 @@
+from datetime import UTC, datetime
+
 from fastapi import APIRouter, BackgroundTasks, Depends
 
 from noesis.api.deps import get_graph_deps
@@ -7,7 +9,11 @@ from noesis.api.dto import (
     EvidenceResponse,
     IntelItemResponse,
     RunDetailResponse,
+    RunListResponse,
     RunResponse,
+    RunSummaryResponse,
+    RunTraceResponse,
+    RunTraceStepResponse,
     SentimentResponse,
     ThesisAssumptionResponse,
     ThesisResponse,
@@ -20,10 +26,45 @@ from noesis.graph.runner import (
     execute_seed_run,
     get_run_snapshot,
 )
+from noesis.graph.errors import ResearchNodeError
 from noesis.graph.schemas import EvidenceRecord, IntelItemDraft, ThesisDraft
 from noesis.graph.state import GraphDeps
 
 router = APIRouter(prefix="/runs", tags=["runs"])
+
+
+@router.get("", response_model=RunListResponse)
+def list_runs(deps: GraphDeps = Depends(get_graph_deps)) -> RunListResponse:
+    rows = deps.repos.conn.execute(
+        """
+        SELECT
+          r.id, r.status, r.started_at, r.ended_at,
+          COUNT(DISTINCT e.id) AS evidence_count,
+          COUNT(t.id) AS tool_count,
+          COALESCE(SUM(CASE WHEN t.cache_hit = 1 THEN 1 ELSE 0 END), 0)
+            AS cache_hits
+        FROM run_registry r
+        LEFT JOIN evidences e ON e.run_id = r.id
+        LEFT JOIN tool_invocations t ON t.run_id = r.id
+        GROUP BY r.id
+        ORDER BY r.started_at DESC, r.created_at DESC, r.id DESC
+        """
+    ).fetchall()
+    return RunListResponse(
+        runs=[
+            RunSummaryResponse(
+                run_id=str(row["id"]),
+                status=str(row["status"]),
+                started_at=str(row["started_at"]),
+                ended_at=row["ended_at"],
+                latency_ms=_latency_ms(row["started_at"], row["ended_at"]),
+                evidence_count=int(row["evidence_count"]),
+                tool_count=int(row["tool_count"]),
+                cache_hit_rate=_ratio(int(row["cache_hits"]), int(row["tool_count"])),
+            )
+            for row in rows
+        ]
+    )
 
 
 @router.post("", response_model=RunResponse)
@@ -44,6 +85,52 @@ def get_run(
     deps: GraphDeps = Depends(get_graph_deps),
 ) -> RunDetailResponse:
     return _detail_response(get_run_snapshot(run_id, deps), deps)
+
+
+@router.get("/{run_id}/trace", response_model=RunTraceResponse)
+def get_run_trace(
+    run_id: str,
+    deps: GraphDeps = Depends(get_graph_deps),
+) -> RunTraceResponse:
+    run = deps.repos.runs.get(run_id)
+    if run is None:
+        raise ResearchNodeError("run not found", reason="run_not_found")
+    steps = [
+        *[
+            RunTraceStepResponse(
+                kind="node",
+                name=trace.node_name,
+                status=trace.status,
+                started_at=trace.started_at,
+                ended_at=trace.ended_at,
+                latency_ms=_latency_ms(trace.started_at, trace.ended_at),
+                input_summary=trace.inputs_ref,
+                output_summary=trace.outputs_ref,
+                cache_hit=None,
+                retry_count=None,
+                evidence_ids=trace.evidence_ids(),
+            )
+            for trace in deps.repos.traces.list_by_run(run_id)
+        ],
+        *[
+            RunTraceStepResponse(
+                kind="tool",
+                name=tool.tool_name,
+                status=tool.status,
+                started_at=tool.started_at,
+                ended_at=tool.ended_at,
+                latency_ms=tool.latency_ms,
+                input_summary=tool.input_summary,
+                output_summary=tool.output_summary,
+                cache_hit=tool.cache_hit,
+                retry_count=tool.retry_count,
+                evidence_ids=[],
+            )
+            for tool in deps.repos.tool_invocations.list_by_run(run_id)
+        ],
+    ]
+    steps.sort(key=lambda item: (item.started_at, item.kind != "node", item.name))
+    return RunTraceResponse(run_id=run.id, status=run.status, steps=steps)
 
 
 def _run_response(handle: RunHandle) -> RunResponse:
@@ -128,3 +215,24 @@ def _draft_response(
             for item in draft.assumptions
         ],
     )
+
+
+def _latency_ms(started_at: str, ended_at: str | None) -> int | None:
+    if ended_at is None:
+        return None
+    started = _parse_iso(started_at)
+    ended = _parse_iso(ended_at)
+    return max(0, int((ended - started).total_seconds() * 1000))
+
+
+def _parse_iso(value: str) -> datetime:
+    parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=UTC)
+    return parsed
+
+
+def _ratio(numerator: int, denominator: int) -> float:
+    if denominator == 0:
+        return 0
+    return round(numerator / denominator, 4)

@@ -9,8 +9,11 @@ from noesis.db.models import (
     NodeTraceRow,
     PositionRow,
     RunRow,
+    SourceDocumentRow,
     ThesisAssumptionRow,
     ThesisRow,
+    ToolCacheEntryRow,
+    ToolInvocationRow,
 )
 from noesis.graph.schemas import SentimentTag
 
@@ -235,3 +238,79 @@ def test_holding_relevance_row_parses_path() -> None:
     )
 
     assert row.path() == ["entity-tsmc", "entity-aapl"]
+
+
+def test_source_document_row_validates_agentops_metadata() -> None:
+    row = SourceDocumentRow.model_validate(
+        {
+            "id": "source-doc-1",
+            "run_id": "run-1",
+            "entity_id": "entity-aapl",
+            "url": "https://example.com/apple",
+            "title": "Apple supplier update",
+            "publisher": "Example News",
+            "published_at": "2026-06-25T00:00:00Z",
+            "fetched_at": NOW,
+            "source_type": "news",
+            "reliability": 0.8,
+            "content_hash": "hash-1",
+            "source_tier": 2,
+            "created_at": NOW,
+        }
+    )
+
+    assert row.publisher == "Example News"
+    assert row.content_hash == "hash-1"
+
+
+def test_tool_invocation_row_validates_metrics_fields() -> None:
+    row = ToolInvocationRow.model_validate(
+        {
+            "id": "tool-call-1",
+            "run_id": "run-1",
+            "trace_id": "trace-1",
+            "tool_name": "search.web",
+            "status": "success",
+            "permission_level": "network",
+            "input_summary": "query=AAPL supplier",
+            "output_summary": "8 docs",
+            "error_message": None,
+            "cache_key": "search:AAPL",
+            "cache_hit": 0,
+            "retry_count": 1,
+            "latency_ms": 240,
+            "token_input": 100,
+            "token_output": 40,
+            "estimated_cost_usd": 0.0012,
+            "started_at": NOW,
+            "ended_at": NOW,
+            "created_at": NOW,
+        }
+    )
+
+    assert row.tool_name == "search.web"
+    assert row.cache_hit is False
+    assert row.total_tokens() == 140
+
+
+def test_tool_cache_entry_row_validates_cache_policy_fields() -> None:
+    row = ToolCacheEntryRow.model_validate(
+        {
+            "id": "cache-1",
+            "cache_key": "search:AAPL",
+            "tool_name": "search.web",
+            "cache_policy": "ttl",
+            "ttl_seconds": 86400,
+            "expires_at": "2026-06-27T00:00:00Z",
+            "hit_count": 2,
+            "last_hit_at": NOW,
+            "payload_hash": "payload-hash",
+            "payload_json": '{"ok": true}',
+            "created_at": NOW,
+            "updated_at": NOW,
+        }
+    )
+
+    assert row.hit_count == 2
+    assert row.cache_policy == "ttl"
+    assert row.payload_json == '{"ok": true}'

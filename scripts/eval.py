@@ -23,6 +23,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from noesis.config.settings import Settings
+from noesis.agentops.metrics import build_metrics_summary
 from noesis.db.connection import connect, with_tx
 from noesis.db.migrate import migrate
 from noesis.db.models import EntityRow, EvidenceRow, GraphEdgeRow, PositionRow, RunRow
@@ -111,7 +112,11 @@ def evaluate_existing_runs(
             )
             continue
         results.append(_evaluate_run_row(case, run, deps))
-    return EvalReport(results=tuple(results), averages=_average_metrics(results))
+    return EvalReport(
+        results=tuple(results),
+        averages=_average_metrics(results),
+        agentops=build_metrics_summary(deps.repos.conn),
+    )
 
 
 def evaluate_live_runs(cases: Sequence[EvalCase], deps: GraphDeps) -> EvalReport:
@@ -132,7 +137,11 @@ def evaluate_live_runs(cases: Sequence[EvalCase], deps: GraphDeps) -> EvalReport
             )
             continue
         results.append(_evaluate_run_row(case, run, deps))
-    return EvalReport(results=tuple(results), averages=_average_metrics(results))
+    return EvalReport(
+        results=tuple(results),
+        averages=_average_metrics(results),
+        agentops=build_metrics_summary(deps.repos.conn),
+    )
 
 
 @contextmanager

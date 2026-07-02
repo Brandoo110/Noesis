@@ -1,6 +1,7 @@
 import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { createPosition, listPositions } from "../../api/client";
+import { AgentOpsDashboard } from "../agentops/AgentOpsDashboard";
 import { GraphExplorer } from "../graph/GraphExplorer";
 import { usePortfolioRunSeeds } from "../../hooks/use-portfolio-run-seeds";
 import { useRun } from "../../hooks/use-run";
@@ -79,12 +80,10 @@ export function PortfolioHome(): JSX.Element {
   useEffect(() => {
     void refreshPositions();
   }, [refreshPositions]);
-
   useEffect(() => {
     if (graphSeed === null) {
       return;
     }
-
     const workspace = workspaceRef.current;
     if (!workspace || typeof workspace.scrollIntoView !== "function") {
       return;
@@ -224,6 +223,7 @@ export function PortfolioHome(): JSX.Element {
         </section>
 
         <aside className="right-rail" aria-label="组合洞察">
+          <AgentOpsDashboard />
           {!isLoading ? (
             <PortfolioInsights
               activeRun={{

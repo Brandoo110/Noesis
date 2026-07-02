@@ -1109,14 +1109,135 @@ a:hover {
 }
 
 .brief-surface,
-.overlap-surface {
+.overlap-surface,
+.agentops-surface {
   display: grid;
   gap: 12px;
 }
 
 .brief-surface .section-heading,
-.overlap-surface .section-heading {
+.overlap-surface .section-heading,
+.agentops-surface .section-heading {
   margin-bottom: 0;
+}
+
+.agentops-surface .section-heading button {
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #ffffff;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 8px;
+}
+
+.compact-alert {
+  margin: 0;
+}
+
+.agentops-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.agentops-metrics span {
+  display: grid;
+  gap: 2px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--panel-soft);
+  padding: 8px;
+}
+
+.agentops-metrics strong {
+  color: var(--teal-strong);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 17px;
+}
+
+.agentops-metrics small,
+.agentops-run-list small,
+.agentops-timeline small {
+  color: var(--muted);
+}
+
+.agentops-body,
+.agentops-run-list,
+.agentops-timeline ol {
+  display: grid;
+  gap: 8px;
+}
+
+.agentops-run-list,
+.agentops-timeline ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.agentops-run-list button {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  gap: 3px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #ffffff;
+  color: var(--ink);
+  padding: 8px;
+  text-align: left;
+}
+
+.agentops-run-list button[aria-pressed="true"] {
+  border-color: rgba(0, 107, 112, 0.45);
+  background: #f0faf8;
+}
+
+.agentops-run-list span,
+.agentops-timeline strong {
+  overflow-wrap: anywhere;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+}
+
+.agentops-timeline {
+  display: grid;
+  gap: 8px;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+
+.agentops-timeline h3 {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+
+.agentops-timeline li {
+  display: grid;
+  gap: 4px;
+  border-left: 2px solid var(--line-strong);
+  padding-left: 8px;
+}
+
+.agentops-timeline li div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.agentops-timeline li span {
+  color: var(--muted-2);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.agentops-timeline p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .export-notice {

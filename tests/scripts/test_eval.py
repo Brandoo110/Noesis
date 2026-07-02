@@ -63,7 +63,9 @@ def test_eval_existing_runs_return_case_and_average_metrics(tmp_path: Path) -> N
             "failed": 0,
         }
         assert report.averages["grounding_rate"] == 1.0
+        assert report.agentops.total_runs == 1
         assert "average grounding_rate=1.00" in module.format_report(report)
+        assert "agentops total_runs=1" in module.format_report(report)
     finally:
         checkpoint_conn.close()
         conn.close()
@@ -80,6 +82,8 @@ def test_eval_json_report_includes_mode_cases_metrics_and_trace_summary(
 
     assert payload["mode"] == "from_db"
     assert payload["averages"]["grounding_rate"] == 1.0
+    assert payload["agentops"]["total_runs"] == 1
+    assert payload["agentops"]["evidence_coverage"] == 1.0
     assert payload["cases"][0]["symbol"] == "AAPL"
     assert payload["cases"][0]["trace_summary"]["degraded"] == 1
 
@@ -91,6 +95,8 @@ def test_eval_markdown_report_labels_mode_and_trace_summary(tmp_path: Path) -> N
 
     assert "# Noesis eval report" in markdown
     assert "Mode: `from_db`" in markdown
+    assert "## AgentOps" in markdown
+    assert "- total_runs: 1" in markdown
     assert "| AAPL | evaluated | run-aapl | 1.00 | 1.00 | 1.00 | 1.00 | 2 / 1 / 0 |" in markdown
 
 

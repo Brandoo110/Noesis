@@ -27,6 +27,11 @@ from noesis.db.repos.positions_repo import PositionsRepo
 from noesis.db.repos.run_registry_repo import RunRegistryRepo
 from noesis.db.repos.theses_repo import ThesesRepo
 from noesis.db.repos.thesis_assumptions_repo import ThesisAssumptionsRepo
+from noesis.graph.agentops_runtime import (
+    SourceDocumentsRuntime,
+    ToolCacheEntriesRuntime,
+    ToolInvocationsRuntime,
+)
 
 
 @dataclass
@@ -312,6 +317,9 @@ class RepoRuntime:
     graph_edges: GraphEdgesRuntime = field(init=False)
     node_expansions: NodeExpansionsRuntime = field(init=False)
     holding_relevances: HoldingRelevancesRuntime = field(init=False)
+    source_documents: SourceDocumentsRuntime = field(init=False)
+    tool_invocations: ToolInvocationsRuntime = field(init=False)
+    tool_cache_entries: ToolCacheEntriesRuntime = field(init=False)
 
     def __post_init__(self) -> None:
         self.positions = PositionsRuntime(self.conn)
@@ -326,3 +334,6 @@ class RepoRuntime:
         self.graph_edges = GraphEdgesRuntime(self.conn)
         self.node_expansions = NodeExpansionsRuntime(self.conn)
         self.holding_relevances = HoldingRelevancesRuntime(self.conn)
+        self.source_documents = SourceDocumentsRuntime(self.conn)
+        self.tool_invocations = ToolInvocationsRuntime(self.conn)
+        self.tool_cache_entries = ToolCacheEntriesRuntime(self.conn)

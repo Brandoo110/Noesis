@@ -72,3 +72,28 @@ CREATE TABLE IF NOT EXISTS holding_relevances(
   id TEXT PRIMARY KEY, entity_id TEXT NOT NULL, position_id TEXT NOT NULL,
   path_json TEXT NOT NULL, created_at TEXT NOT NULL);
 CREATE INDEX IF NOT EXISTS idx_relevance_entity ON holding_relevances(entity_id);
+
+CREATE TABLE IF NOT EXISTS source_documents(
+  id TEXT PRIMARY KEY, run_id TEXT NOT NULL, entity_id TEXT,
+  url TEXT, title TEXT, publisher TEXT, published_at TEXT, fetched_at TEXT NOT NULL,
+  source_type TEXT NOT NULL, reliability REAL NOT NULL, content_hash TEXT NOT NULL,
+  source_tier INTEGER NOT NULL, created_at TEXT NOT NULL);
+CREATE INDEX IF NOT EXISTS idx_source_documents_run ON source_documents(run_id);
+CREATE INDEX IF NOT EXISTS idx_source_documents_hash ON source_documents(content_hash);
+
+CREATE TABLE IF NOT EXISTS tool_invocations(
+  id TEXT PRIMARY KEY, run_id TEXT NOT NULL, trace_id TEXT,
+  tool_name TEXT NOT NULL, status TEXT NOT NULL, permission_level TEXT NOT NULL,
+  input_summary TEXT, output_summary TEXT, error_message TEXT, cache_key TEXT,
+  cache_hit INTEGER NOT NULL DEFAULT 0, retry_count INTEGER NOT NULL DEFAULT 0,
+  latency_ms INTEGER NOT NULL DEFAULT 0, token_input INTEGER NOT NULL DEFAULT 0,
+  token_output INTEGER NOT NULL DEFAULT 0, estimated_cost_usd REAL NOT NULL DEFAULT 0,
+  started_at TEXT NOT NULL, ended_at TEXT, created_at TEXT NOT NULL);
+CREATE INDEX IF NOT EXISTS idx_tool_invocations_run ON tool_invocations(run_id);
+
+CREATE TABLE IF NOT EXISTS tool_cache_entries(
+  id TEXT PRIMARY KEY, cache_key TEXT NOT NULL UNIQUE, tool_name TEXT NOT NULL,
+  cache_policy TEXT NOT NULL, ttl_seconds INTEGER, expires_at TEXT,
+  hit_count INTEGER NOT NULL DEFAULT 0, last_hit_at TEXT, payload_hash TEXT NOT NULL,
+  payload_json TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);
+CREATE INDEX IF NOT EXISTS idx_tool_cache_entries_tool ON tool_cache_entries(tool_name);

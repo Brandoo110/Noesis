@@ -189,3 +189,59 @@ class HoldingRelevanceRow(BaseModel):
 
     def path(self) -> list[str]:
         return _parse_json(self.path_json, LIST_STR_ADAPTER, [])
+
+
+class SourceDocumentRow(BaseModel):
+    id: str
+    run_id: str
+    entity_id: str | None
+    url: str | None
+    title: str | None
+    publisher: str | None
+    published_at: str | None
+    fetched_at: str
+    source_type: str
+    reliability: float
+    content_hash: str
+    source_tier: int
+    created_at: str
+
+
+class ToolInvocationRow(BaseModel):
+    id: str
+    run_id: str
+    trace_id: str | None
+    tool_name: str
+    status: str
+    permission_level: str
+    input_summary: str | None
+    output_summary: str | None
+    error_message: str | None
+    cache_key: str | None
+    cache_hit: bool
+    retry_count: int
+    latency_ms: int
+    token_input: int
+    token_output: int
+    estimated_cost_usd: float
+    started_at: str
+    ended_at: str | None
+    created_at: str
+
+    def total_tokens(self) -> int:
+        return self.token_input + self.token_output
+
+
+class ToolCacheEntryRow(BaseModel):
+    id: str
+    cache_key: str
+    tool_name: str
+    cache_policy: str
+    ttl_seconds: int | None
+    expires_at: str | None
+    hit_count: int
+    last_hit_at: str | None
+    payload_hash: str
+    payload_json: str | None
+    created_at: str
+    updated_at: str

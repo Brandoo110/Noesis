@@ -128,6 +128,9 @@ def test_graph_deps_can_hold_repo_bundle_and_adapters() -> None:
         graph_edges=object(),
         node_expansions=object(),
         holding_relevances=object(),
+        source_documents=object(),
+        tool_invocations=object(),
+        tool_cache_entries=object(),
     )
     deps = GraphDeps(
         repos=bundle,

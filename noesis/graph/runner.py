@@ -27,6 +27,13 @@ from noesis.graph.snapshots import get_run_snapshot
 from noesis.graph.state import GraphDeps, ResearchState
 from noesis.graph.tracing import trace_node
 from noesis.tools.llm.router import LLMRouter
+from noesis.tools.registry import (
+    ToolAwareEvidenceRetriever,
+    ToolAwareLLMRouter,
+    ToolAwareSearchAdapter,
+    ToolExecutor,
+    default_tool_registry,
+)
 from noesis.tools.retrieval.store import EvidenceRetriever
 from noesis.tools.search.base import SearchAdapter
 
@@ -62,11 +69,20 @@ def build_graph_deps(
     llm: LLMRouter,
     now: Callable[[], str],
 ) -> GraphDeps:
+    repos = RepoRuntime(conn)
+    executor = ToolExecutor(
+        conn=conn,
+        registry=default_tool_registry(),
+        now=now,
+    )
     return GraphDeps(
-        repos=RepoRuntime(conn),
-        search=search,
-        retriever=EvidenceRetriever(chroma_dir, lambda: conn),
-        llm=llm,
+        repos=repos,
+        search=ToolAwareSearchAdapter(search, executor),
+        retriever=ToolAwareEvidenceRetriever(
+            EvidenceRetriever(chroma_dir, lambda: conn),
+            executor,
+        ),
+        llm=ToolAwareLLMRouter(llm, executor),
         now=now,
         checkpointer=make_sqlite_checkpointer(checkpoint_conn),
     )
@@ -117,8 +133,9 @@ def execute_seed_run(run_id: str, deps: GraphDeps) -> None:
         ),
         "degraded": [],
     }
+    run_deps = _run_scoped_deps(deps, run_id)
     try:
-        _graph(deps).invoke(state, _config(run_id))
+        _graph(run_deps).invoke(state, _config(run_id))
     except ResearchNodeError:
         _set_run_failed(run_id, deps)
     except Exception:
@@ -129,8 +146,9 @@ def execute_seed_run(run_id: str, deps: GraphDeps) -> None:
 def resume_run(
     run_id: str, confirmation: ConfirmationResult, deps: GraphDeps
 ) -> RunHandle:
+    run_deps = _run_scoped_deps(deps, run_id)
     try:
-        _graph(deps).invoke(
+        _graph(run_deps).invoke(
             Command(resume=confirmation.model_dump(mode="json")),
             _config(run_id),
         )
@@ -159,8 +177,9 @@ def start_expand_run(entity_id: str, position_id: str, deps: GraphDeps) -> RunHa
         "raw_input": _position_input_from_entity(entity),
         "degraded": [],
     }
+    run_deps = _run_scoped_deps(deps, run_id)
     try:
-        _expand_graph(deps).invoke(state, _config(run_id))
+        _expand_graph(run_deps).invoke(state, _config(run_id))
     except ResearchNodeError:
         _set_run_failed(run_id, deps)
     except Exception:
@@ -257,6 +276,24 @@ def _handle(run_id: str, deps: GraphDeps, *, created: bool = False) -> RunHandle
         thesis_id=thesis_id if thesis is not None else None,
         created=created,
     )
+
+
+def _run_scoped_deps(deps: GraphDeps, run_id: str) -> GraphDeps:
+    return GraphDeps(
+        repos=deps.repos,
+        search=_bind_run_id(deps.search, run_id),
+        retriever=_bind_run_id(deps.retriever, run_id),
+        llm=_bind_run_id(deps.llm, run_id),
+        now=deps.now,
+        checkpointer=deps.checkpointer,
+    )
+
+
+def _bind_run_id(tooling: object, run_id: str) -> object:
+    binder = getattr(tooling, "with_run_id", None)
+    if callable(binder):
+        return binder(run_id)
+    return tooling
 
 
 def _set_run_failed(run_id: str, deps: GraphDeps) -> None:
