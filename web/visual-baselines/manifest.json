@@ -1,21 +1,21 @@
 {
-  "web": "http://127.0.0.1:5174",
+  "web": "http://127.0.0.1:5173",
   "viewports": [
     {
       "name": "desktop",
       "width": 1280,
       "height": 900,
-      "screenshot": "output/playwright/visual-smoke/desktop.png",
+      "screenshot": "output/playwright/visual-smoke-baseline/desktop.png",
       "baseline": "web/visual-baselines/desktop.png",
-      "sha256": "176a4580b0431534a39d5cc91a09e3941bb30c9e4b40f002560bfdf111b1d60d"
+      "sha256": "9ba482703bd40501afd91cea67dfbdad284fecb6f58760daefe8b588c250db86"
     },
     {
       "name": "mobile",
       "width": 390,
       "height": 844,
-      "screenshot": "output/playwright/visual-smoke/mobile.png",
+      "screenshot": "output/playwright/visual-smoke-baseline/mobile.png",
       "baseline": "web/visual-baselines/mobile.png",
-      "sha256": "b671a60c999778ba707917c5ac8716e132c7985e0cf980e2519717ed52858766"
+      "sha256": "07d74fa361ad69ffd24e4e5b88a89fe193d367d90580ecc5ec64116782481cc4"
     }
   ]
 }

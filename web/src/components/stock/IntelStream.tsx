@@ -10,17 +10,17 @@ export function IntelStream({
   onEvidenceClick
 }: IntelStreamProps): JSX.Element {
   return (
-    <section aria-label="分类情报" className="detail-section">
+    <section aria-label="分类情报" className="intel-list">
       <h2>分类情报流</h2>
       {items.length === 0 ? <p className="empty-note">暂无情报。</p> : null}
-      <ul className="intel-list">
+      <ul>
         {items.map((item) => (
           <li aria-label={`情报 ${item.title}`} key={item.title}>
-            <div className="item-heading">
+            <div>
               <strong>{item.title}</strong>
               <span>{item.event_type}</span>
             </div>
-            <div className="meta-row">
+            <div>
               <span>{item.sentiment.dir}</span>
               <span>{`tier ${item.source_tier}`}</span>
             </div>

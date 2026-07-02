@@ -18,7 +18,7 @@ export function ThesisPanel({
   onEvidenceClick
 }: ThesisPanelProps): JSX.Element {
   return (
-    <section aria-label="thesis" className="detail-section thesis-section">
+    <section aria-label="thesis" className="thesis-groups">
       <h2>Thesis</h2>
       {thesis ? <p>{thesis.summary}</p> : <p className="empty-note">暂无 thesis。</p>}
       {thesis ? (
@@ -31,8 +31,8 @@ export function ThesisPanel({
               onEvidenceClick={onEvidenceClick}
             />
           ))}
-          <div className="button-row">
-            <button className="primary-action" onClick={() => onConfirm("confirmed")} type="button">
+          <div className="confirm-row">
+            <button className="primary-button" onClick={() => onConfirm("confirmed")} type="button">
               确认 thesis 假设
             </button>
             <button onClick={() => onConfirm("edited")} type="button">
@@ -60,10 +60,10 @@ function AssumptionGroup({
   onEvidenceClick
 }: AssumptionGroupProps): JSX.Element {
   return (
-    <section aria-label={KIND_LABELS[kind]} className="assumption-group">
+    <section aria-label={KIND_LABELS[kind]} className={`thesis-group ${groupColor(kind)}`}>
       <h3>{KIND_LABELS[kind]}</h3>
       {assumptions.length === 0 ? <p className="empty-note">暂无。</p> : null}
-      <ul className="summary-list">
+      <ul>
         {assumptions.map((assumption) => (
           <li key={assumption.text}>
             <span>{assumption.text}</span>
@@ -78,4 +78,10 @@ function AssumptionGroup({
       </ul>
     </section>
   );
+}
+
+function groupColor(kind: ThesisAssumption["kind"]): "green" | "blue" | "amber" {
+  if (kind === "reason") return "green";
+  if (kind === "assumption") return "blue";
+  return "amber";
 }

@@ -1,0 +1,130 @@
+@media (max-width: 900px) {
+  html,
+  body,
+  #root {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .noesis-app {
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .main-column {
+    min-height: 0;
+    overflow: auto;
+  }
+
+  .rail {
+    display: none;
+  }
+
+  .mobile-nav {
+    display: flex;
+    justify-content: space-around;
+    margin: 0 12px 12px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--surface);
+    box-shadow: 0 16px 40px rgba(23, 34, 32, 0.14);
+    padding: 8px;
+  }
+
+  .mobile-nav button,
+  .mobile-nav a {
+    flex: 1;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--muted);
+    padding: 9px 8px;
+    font-weight: 650;
+    text-align: center;
+    text-decoration: none;
+  }
+
+  .mobile-nav button[aria-pressed="true"],
+  .mobile-nav a[aria-current="page"] {
+    background: var(--brand-100);
+    color: var(--brand-700);
+  }
+
+  .topbar {
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 10px 14px;
+  }
+
+  .topbar-search {
+    order: 3;
+    max-width: none;
+    flex-basis: 100%;
+  }
+
+  .page-body {
+    padding: 14px 14px 20px;
+  }
+
+  .home-grid,
+  .ops-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ops-metrics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .pos-head {
+    display: none;
+  }
+
+  .pos-row {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "symbol"
+      "actions"
+      "status";
+    gap: 8px 10px;
+  }
+
+  .symbol-cell {
+    grid-area: symbol;
+  }
+
+  .status-pill {
+    grid-area: status;
+    justify-self: start;
+  }
+
+  .row-actions {
+    grid-area: actions;
+    flex-wrap: wrap;
+    justify-self: start;
+  }
+
+  .pos-cell-market,
+  .pos-cell-kind {
+    display: none;
+  }
+
+  .add-form {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .relationship-table-head,
+  .relationship-row {
+    grid-template-columns: minmax(0, 1fr) 76px 86px;
+  }
+
+  .relationship-table-head span:nth-child(n+4),
+  .relationship-row > *:nth-child(n+4) {
+    display: none;
+  }
+
+  .detail-panel,
+  .evidence-panel {
+    width: 100vw;
+  }
+}

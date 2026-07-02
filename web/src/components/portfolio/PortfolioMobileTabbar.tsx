@@ -1,6 +1,6 @@
 export function PortfolioMobileTabbar(): JSX.Element {
   return (
-    <nav aria-label="移动端导航" className="mobile-tabbar">
+    <nav aria-label="移动端导航" className="mobile-nav">
       <a href="#portfolio-title">
         <span aria-hidden="true">I</span>
         <strong>Intelligence</strong>

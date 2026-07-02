@@ -23,8 +23,8 @@ export function PositionInput({
   setForm
 }: PositionInputProps): JSX.Element {
   return (
-    <section className="surface compact-surface">
-      <div className="section-heading">
+    <section className="card positions-card">
+      <div className="card-header compact">
         <div>
           <p className="eyebrow">Position input</p>
           <h2>Position Input</h2>
@@ -32,7 +32,7 @@ export function PositionInput({
       </div>
       <form
         aria-label="新增持仓表单"
-        className="position-form"
+        className="add-form"
         onSubmit={onSubmit}
       >
         <label>
@@ -75,7 +75,7 @@ export function PositionInput({
             <option value="watching">watching</option>
           </select>
         </label>
-        <button className="primary-action" disabled={isSaving} type="submit">
+        <button className="primary-button" disabled={isSaving} type="submit">
           新增持仓
         </button>
       </form>

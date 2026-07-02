@@ -36,22 +36,22 @@ export function StockReport({
   }
 
   return (
-    <section aria-label="个股深度报告" className="stock-report">
-      <header className="section-heading">
+    <section aria-label="个股深度报告" className="summary-card">
+      <header className="card-header compact">
         <div>
           <p className="eyebrow">report snapshot</p>
           <h2>{`${symbol} 深度报告`}</h2>
         </div>
-        <button className="primary-action" onClick={handleExport} type="button">
+        <button className="secondary-button export-report" onClick={handleExport} type="button">
           导出 Markdown
         </button>
       </header>
       {exportedFilename ? (
-        <p className="export-notice" role="status">
+        <p className="toast" role="status">
           已生成 {exportedFilename}，来源清单和“仅供参考”边界已保留。
         </p>
       ) : null}
-      <div className="report-grid">
+      <div>
         <ReportSummary detail={detail} />
         <ReportChanges items={detail.intelItems} />
         <ReportChain edges={detail.neighbors} />
@@ -80,7 +80,7 @@ function ReportChanges({ items }: { items: IntelItem[] }): JSX.Element {
     <section>
       <h3>② 变化</h3>
       {items.length === 0 ? <p className="empty-note">暂无变化情报。</p> : null}
-      <ul className="summary-list">
+      <ul>
         {items.map((item) => (
           <li key={item.title}>{`${item.title}: ${item.content}`}</li>
         ))}
@@ -94,7 +94,7 @@ function ReportChain({ edges }: { edges: Edge[] }): JSX.Element {
     <section>
       <h3>③ 产业链</h3>
       {edges.length === 0 ? <p className="empty-note">暂无产业链边。</p> : null}
-      <ul className="summary-list">
+      <ul>
         {edges.map((edge) => (
           <li key={edge.id}>
             <span>{RELATION_LABELS[edge.relation]}</span>
@@ -145,7 +145,7 @@ function ReportSentiment({ items }: { items: IntelItem[] }): JSX.Element {
     <section>
       <h3>⑤ 方向</h3>
       {items.length === 0 ? <p className="empty-note">暂无方向信号。</p> : null}
-      <ul className="summary-list">
+      <ul>
         <li>{`up: ${counts.up}`}</li>
         <li>{`down: ${counts.down}`}</li>
         <li>{`neutral: ${counts.neutral}`}</li>
@@ -166,7 +166,7 @@ function ReportThesis({
       <h3>⑥ Thesis</h3>
       {thesis ? <p>{thesis.summary}</p> : <p className="empty-note">暂无 thesis。</p>}
       {thesis ? (
-        <ul className="summary-list">
+        <ul>
           {thesis.assumptions.map((item) => (
             <li key={item.text}>
               <span>{`${KIND_LABELS[item.kind]}：${item.text}`}</span>
@@ -195,10 +195,10 @@ function ReportAttention({
   return (
     <section>
       <h3>⑦ 关注点（仅供参考）</h3>
-      <div className="disclaimer-block">
+      <div className="redline-note">
         <strong>仅供参考</strong>
         {risks.length === 0 ? <span>暂无关注点。</span> : null}
-        <ul className="summary-list">
+        <ul>
           {risks.map((risk) => (
             <li key={risk.text}>
               <span>{risk.text}</span>
@@ -221,7 +221,7 @@ function ReportSources({ detail }: { detail: StockDetailData }): JSX.Element {
     <section>
       <h3>⑧ 来源清单</h3>
       {detail.evidences.length === 0 ? <p className="empty-note">暂无来源。</p> : null}
-      <ul className="summary-list">
+      <ul>
         {detail.evidences.map((evidence) => (
           <li key={evidence.id}>
             <span>{evidence.title ?? evidence.id}</span>

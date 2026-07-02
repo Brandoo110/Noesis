@@ -1,7 +1,6 @@
 import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { createPosition, listPositions } from "../../api/client";
-import { AgentOpsDashboard } from "../agentops/AgentOpsDashboard";
 import { GraphExplorer } from "../graph/GraphExplorer";
 import { usePortfolioRunSeeds } from "../../hooks/use-portfolio-run-seeds";
 import { useRun } from "../../hooks/use-run";
@@ -140,7 +139,7 @@ export function PortfolioHome({ onGraphSeedSelected }: PortfolioHomeProps): JSX.
   }
 
   return (
-    <section aria-labelledby="portfolio-title" className="portfolio-page">
+    <section aria-labelledby="portfolio-title" className="page-body">
       <PortfolioTopbar
         filters={filters}
         isFilterOpen={isFilterOpen}
@@ -152,10 +151,10 @@ export function PortfolioHome({ onGraphSeedSelected }: PortfolioHomeProps): JSX.
         setSearchQuery={setSearchQuery}
       />
 
-      {error ? <p className="alert" role="alert">{error}</p> : null}
+      {error ? <p className="compact-alert" role="alert">{error}</p> : null}
 
-      <div className="portfolio-grid">
-        <aside className="left-rail" aria-label="持仓控制台" id="positions">
+      <div className="home-grid">
+        <aside className="card positions-card" aria-label="持仓控制台" id="positions">
           <PositionInput
             form={form}
             isSaving={isSaving}
@@ -163,8 +162,8 @@ export function PortfolioHome({ onGraphSeedSelected }: PortfolioHomeProps): JSX.
             setForm={setForm}
           />
 
-          <section className="surface positions-surface">
-            <div className="section-heading">
+          <section className="positions-card">
+            <div className="card-header compact">
               <div>
                 <p className="eyebrow">Portfolio</p>
                 <h2>Portfolio</h2>
@@ -172,9 +171,9 @@ export function PortfolioHome({ onGraphSeedSelected }: PortfolioHomeProps): JSX.
               <span className="count-pill">{filteredPositions.length} ITEMS</span>
             </div>
             {isLoading ? (
-              <p className="muted">加载中...</p>
+              <p className="empty-note">加载中...</p>
             ) : positionsError ? (
-              <div className="inline-recovery" role="alert">
+              <div className="compact-alert" role="alert">
                 <span>{positionsError}</span>
                 <button onClick={() => void refreshPositions()} type="button">
                   重新加载持仓
@@ -202,7 +201,7 @@ export function PortfolioHome({ onGraphSeedSelected }: PortfolioHomeProps): JSX.
 
         <section
           aria-label="研究工作区"
-          className="workspace-surface"
+          className="card graph-summary"
           id="research-workspace"
           ref={workspaceRef}
           tabIndex={-1}
@@ -216,7 +215,7 @@ export function PortfolioHome({ onGraphSeedSelected }: PortfolioHomeProps): JSX.
               seedEntity={graphSeed.seedEntity}
             />
           ) : (
-            <div className="empty-workspace">
+            <div className="empty-box">
               <p className="eyebrow">图谱探索器</p>
               <h2>选择一个完成研究的持仓查看图谱</h2>
               <p>
@@ -226,8 +225,7 @@ export function PortfolioHome({ onGraphSeedSelected }: PortfolioHomeProps): JSX.
           )}
         </section>
 
-        <aside className="right-rail" aria-label="组合洞察">
-          <AgentOpsDashboard />
+        <aside className="side-stack" aria-label="组合洞察">
           {!isLoading ? (
             <PortfolioInsights
               activeRun={{

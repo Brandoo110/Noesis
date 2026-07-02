@@ -54,14 +54,14 @@ export function PortfolioBrief({
   }
 
   return (
-    <section aria-label="组合 Brief" className="surface brief-surface" id="portfolio-brief">
-      <header className="section-heading">
+    <section aria-label="组合 Brief" className="card portfolio-brief" id="portfolio-brief">
+      <header className="card-header compact">
         <div>
           <p className="eyebrow">Portfolio brief</p>
           <h2>Portfolio Brief</h2>
         </div>
         <button
-          className="primary-action"
+          className="secondary-button small"
           disabled={!brief}
           onClick={handleExport}
           type="button"
@@ -69,18 +69,18 @@ export function PortfolioBrief({
           导出 Markdown
         </button>
       </header>
-      <p className="muted">
+      <p className="redline-note">
         <strong>仅供参考</strong>
         <span>。用于研究跟踪，保留产业段重叠和推断标记。</span>
       </p>
       {exportedFilename ? (
-        <p className="export-notice" role="status">
+        <p className="toast" role="status">
           已生成 {exportedFilename}，内容沿用当前 Brief 与红线措辞。
         </p>
       ) : null}
-      {isLoading ? <p className="muted">加载中...</p> : null}
+      {isLoading ? <p className="empty-note">加载中...</p> : null}
       {error ? (
-        <div className="inline-recovery" role="alert">
+        <div className="compact-alert" role="alert">
           <span>{error}</span>
           <button disabled={isLoading} onClick={() => void loadBrief()} type="button">
             重新加载 Brief
@@ -89,7 +89,7 @@ export function PortfolioBrief({
       ) : null}
       {!isLoading && !error && brief ? (
         <>
-          <div className="brief-metrics" aria-label="Brief 指标">
+          <div className="brief-stats" aria-label="Brief 指标">
             <span>
               <strong>{brief.positions.length}</strong>
               <small>持仓数量</small>

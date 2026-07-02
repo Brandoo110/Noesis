@@ -34,16 +34,17 @@ export function PortfolioTopbar({
   setSearchQuery
 }: PortfolioTopbarProps): JSX.Element {
   return (
-    <header className="app-topbar">
-      <div className="brand-lockup">
-        <span aria-hidden="true" className="brand-mark">N</span>
-        <div>
-          <h1 id="portfolio-title">Noesis Portfolio</h1>
-          <p>local intelligence workspace</p>
-        </div>
+    <header className="topbar">
+      <div className="topbar-title">
+        <h1 id="portfolio-title">Noesis Portfolio</h1>
+        <p>local intelligence workspace</p>
       </div>
-      <label className="command-search">
-        <span>搜索</span>
+      <label className="topbar-search">
+        <span className="sr-only">搜索</span>
+        <svg aria-hidden="true" viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="7" />
+          <path d="m20 20-3.5-3.5" />
+        </svg>
         <input
           aria-label="全局搜索"
           placeholder="搜索标的、主题、证据或 thesis..."
@@ -61,8 +62,8 @@ export function PortfolioTopbar({
             setIsReadinessOpen(false);
           }}
           type="button"
+          className="secondary-button"
         >
-          <span aria-hidden="true" className="tool-glyph">F</span>
           <span>Filter</span>
         </button>
         <button
@@ -73,14 +74,14 @@ export function PortfolioTopbar({
             setIsFilterOpen(false);
           }}
           type="button"
+          className="secondary-button health-button"
         >
-          <span aria-hidden="true" className="tool-glyph">H</span>
+          <i aria-hidden="true" />
           <span>Health</span>
         </button>
-        <span className="user-badge" aria-label="local user">U</span>
       </div>
       {isFilterOpen ? (
-        <section aria-label="筛选面板" className="topbar-popover filter-panel">
+        <section aria-label="筛选面板" className="popover filter-popover">
           <label>
             持仓类型
             <select
@@ -121,14 +122,14 @@ export function PortfolioTopbar({
         </section>
       ) : null}
       {isReadinessOpen ? (
-        <section aria-label="产品状态面板" className="topbar-popover readiness-panel">
+        <section aria-label="产品状态面板" className="popover health-popover">
           <p className="eyebrow">Launch readiness</p>
           <h2>产品状态</h2>
           <ul>
-            <li><strong>本地优先</strong><span>SQLite + 本地 Web，无交易通道。</span></li>
-            <li><strong>非荐股</strong><span>只输出研究关注点和证据化情报。</span></li>
-            <li><strong>证据化</strong><span>结论保留 evidence / source tier / basis 标记。</span></li>
-            <li><strong>门禁</strong><span>前端测试和 production build 作为上线检查。</span></li>
+            <li className="health-row"><strong>本地优先</strong><span>SQLite + 本地 Web，无交易通道。</span></li>
+            <li className="health-row"><strong>非荐股</strong><span>只输出研究关注点和证据化情报。</span></li>
+            <li className="health-row"><strong>证据化</strong><span>结论保留 evidence / source tier / basis 标记。</span></li>
+            <li className="health-row"><strong>门禁</strong><span>前端测试和 production build 作为上线检查。</span></li>
           </ul>
         </section>
       ) : null}

@@ -20,7 +20,7 @@ export function PortfolioOverlap({
     );
 
   return (
-    <section aria-label="和其他持仓的关系" className="detail-section detail-overlap-section">
+    <section aria-label="和其他持仓的关系" className="watch-card">
       <h2>和其他持仓的关系</h2>
       <small aria-label="组合重叠关系">
         <strong>仅供参考</strong>
@@ -32,7 +32,7 @@ export function PortfolioOverlap({
               <li key={group.segment_id}>
                 <strong>{group.segment_name}</strong>
                 <span>{others.map((position) => position.symbol).join(" / ")}</span>
-                <span className={basisClassName(group.basis)}>
+                <span className={`basis-badge ${group.basis}`}>
                   {basisLabel(group.basis)}
                 </span>
               </li>
@@ -53,10 +53,4 @@ function otherPositions(
 
 function basisLabel(basis: Basis): string {
   return basis === "source_backed" ? "有出处" : "基于推断";
-}
-
-function basisClassName(basis: Basis): string {
-  return basis === "source_backed"
-    ? "overlap-source-backed"
-    : "overlap-inferred";
 }

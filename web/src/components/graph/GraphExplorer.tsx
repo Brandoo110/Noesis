@@ -98,18 +98,18 @@ export function GraphExplorer({
   }
 
   return (
-    <section aria-label="图谱探索器" className="graph-explorer">
+    <section aria-label="图谱探索器" className="graph-card card">
       <header className="graph-header">
         <div>
           <p className="eyebrow">Research Graph</p>
           <h2>{`Research Graph - ${entityLabel(seedEntity)}`}</h2>
-          <p className="muted">
+          <p className="empty-note">
             {[seedEntity.symbol, seedEntity.name].filter(Boolean).join(" · ")}
           </p>
         </div>
-        <div className="graph-actions">
-          <button onClick={handleFitView} type="button">Fit View</button>
-          <label className="graph-filter">
+        <div className="graph-controls">
+          <button className="secondary-button" onClick={handleFitView} type="button">Fit View</button>
+          <label className="segmented">
             证据边
             <select
               aria-label="图谱边筛选"
@@ -121,18 +121,18 @@ export function GraphExplorer({
               <option value="inferred">inferred</option>
             </select>
           </label>
-          <button aria-label="刷新" onClick={handleRefresh} type="button">Focus Mode</button>
+          <button aria-label="刷新" className="secondary-button" onClick={handleRefresh} type="button">Focus Mode</button>
         </div>
       </header>
-      <div className="graph-toolbar">
+      <div>
         <div className="graph-legend" aria-label="图谱图例">
-          <span><i className="legend-line source-backed" />source_backed</span>
+          <span><i className="legend-line source" />source_backed</span>
           <span><i className="legend-line inferred" />inferred</span>
-          <span><i className="legend-dot holding" />持仓（种子）</span>
-          <span><i className="legend-dot company" />公司</span>
-          <span><i className="legend-dot segment" />产业 / 主题</span>
+          <span><i className="legend-node seed" />持仓（种子）</span>
+          <span><i className="legend-node company" />公司</span>
+          <span><i className="legend-node segment" />产业 / 主题</span>
         </div>
-        <div className="graph-run-chip">
+        <div className="count-pill">
           <span>lazy expand</span>
           <strong>{runId ?? "no run"}</strong>
         </div>
@@ -154,8 +154,8 @@ export function GraphExplorer({
           </ReactFlow>
         </div>
       </ReactFlowProvider>
-      <section aria-label="关系清单" className="relationship-panel">
-        <div className="relationship-panel-header">
+      <section aria-label="关系清单" className="card relationships-card">
+        <div className="relationship-head">
           <div>
             <p className="eyebrow">Relationship Evidence</p>
             <h3>Active Relationships</h3>
@@ -164,7 +164,7 @@ export function GraphExplorer({
         </div>
         {relationRows.length > 0 ? (
           <>
-          <div className="relationship-table-header" aria-hidden="true">
+          <div className="relationship-table-head" aria-hidden="true">
             <span>From → To</span>
             <span>Relation</span>
             <span>Basis</span>
@@ -172,30 +172,29 @@ export function GraphExplorer({
             <span>Evid</span>
             <span>Rationale</span>
           </div>
-          <ul className="relationship-list">
+          <ul>
             {relationRows.map(({ edge, source, target }) => (
               <li className="relationship-row" key={edge.id}>
-                <div className="relationship-route">
+                <div>
                   <strong>{`${entityLabel(source)} → ${entityLabel(target)}`}</strong>
                 </div>
-                <span className="relationship-relation">{RELATION_LABELS[edge.relation]}</span>
+                <span>{RELATION_LABELS[edge.relation]}</span>
                 <span
                   className={
                     edge.basis === "source_backed"
-                      ? "source-badge"
-                      : "inferred-badge"
+                      ? "basis-badge source_backed"
+                      : "basis-badge inferred"
                   }
                 >
                   {edge.basis === "source_backed" ? "Source" : "Inferred"}
                 </span>
-                <span className="relationship-confidence">
+                <span className="mono">
                   {`${Math.round(edge.confidence * 100)}%`}
                 </span>
-                <span className="relationship-evidence-cell">
+                <span className="evidence-cell">
                   <span>{edge.evidence_ids.length}</span>
                   {edge.evidence_ids.length > 0 ? (
                     <button
-                      className="secondary-action"
                       onClick={() => evidenceDrawer.open(edge.evidence_ids)}
                       type="button"
                     >
@@ -203,7 +202,7 @@ export function GraphExplorer({
                     </button>
                   ) : null}
                 </span>
-                <p className="relationship-rationale">
+                <p>
                   {edge.rationale ?? (edge.source_tier ? `source tier ${edge.source_tier}` : "暂无说明")}
                 </p>
               </li>
@@ -217,7 +216,7 @@ export function GraphExplorer({
         )}
       </section>
       {isDetailOpen && runId ? (
-        <div className="detail-drawer">
+        <div className="detail-layer">
           <StockDetail
             entityId={seedEntity.id}
             onConfirmed={onThesisConfirmed}

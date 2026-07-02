@@ -46,27 +46,27 @@ export function CorrelationMatrix({
   return (
     <small
       aria-label="供应链相关性矩阵"
-      className="surface overlap-surface correlation-matrix-surface"
+      className="card correlation-card"
       data-testid="correlation-matrix-panel"
     >
-      <div className="section-heading">
+      <div className="card-header compact">
         <div>
           <p className="eyebrow">Correlation</p>
           <h2>供应链相关性</h2>
         </div>
       </div>
-      <p className="muted">
+      <p className="redline-note">
         <strong>仅供参考</strong>
         <span>：共享上游数越高，潜在共同供应链风险越值得关注。</span>
       </p>
-      {error ? <span className="inline-recovery" role="alert">{error}</span> : null}
-      {matrix === null && !error ? <span className="muted">加载中...</span> : null}
+      {error ? <span className="compact-alert" role="alert">{error}</span> : null}
+      {matrix === null && !error ? <span className="empty-note">加载中...</span> : null}
       {matrix !== null && (matrix.positions.length < 2 || matrix.cells.length === 0) ? (
         <span className="empty-note">持仓不足，暂无相关性</span>
       ) : null}
       {matrix !== null && matrix.positions.length >= 2 && matrix.cells.length > 0 ? (
         <>
-          <table className="correlation-matrix-table">
+          <table className="matrix">
             <thead>
               <tr>
                 <th aria-label="持仓" />

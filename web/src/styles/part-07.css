@@ -17,14 +17,113 @@
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  margin: 0;
 }
 .trace-step p small {
   border-radius: 7px;
   background: var(--field);
   padding: 3px 7px;
 }
+.run-trace h3,
+.trace-step strong,
+.trace-step > small {
+  overflow-wrap: anywhere;
+}
+.trace-step {
+  grid-template-columns: minmax(0, 1fr);
+  border-top: 1px solid var(--line-2);
+  padding-top: 12px;
+}
+.trace-step > div:first-child,
+.trace-step > div:last-of-type {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.trace-step > div:first-child {
+  justify-content: space-between;
+}
 .mobile-nav {
   display: none;
+}
+.muted {
+  color: var(--ink-3);
+}
+.compact-alert {
+  border: 1px solid var(--warn-line);
+  border-radius: 10px;
+  background: var(--warn-bg);
+  color: var(--warn-ink);
+  padding: 9px 10px;
+  font-size: 12px;
+}
+.legend-line.source {
+  border-color: var(--brand-700);
+}
+.correlation-cell {
+  min-width: 34px;
+  min-height: 28px;
+  border-radius: 8px;
+  color: var(--ink);
+  font-weight: 700;
+}
+.correlation-detail {
+  display: block;
+  margin-top: 10px;
+  color: var(--ink-3);
+}
+.edge-hit-area {
+  stroke: transparent;
+  stroke-width: 14;
+  cursor: pointer;
+}
+.node-heading {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+}
+.node-heading span span {
+  display: block;
+  color: var(--ink-3);
+  font-size: 11px;
+}
+.node-glyph {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--brand-100);
+  color: var(--brand-700);
+  font-weight: 800;
+}
+.node-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+.react-flow__node {
+  z-index: 5;
+  pointer-events: auto;
+}
+.react-flow__node .graph-node {
+  position: relative;
+  left: auto;
+  top: auto;
+  width: 220px;
+  min-height: 112px;
+  height: auto;
+  pointer-events: auto;
+}
+.react-flow__node .node-actions button {
+  position: relative;
+  z-index: 2;
+}
+.nodrag,
+.nopan {
+  pointer-events: auto;
 }
 .toast {
   position: fixed;
@@ -38,129 +137,4 @@
   padding: 10px 16px;
   font-size: 12.5px;
   animation: toastUp 0.22s ease;
-}
-@media (max-width: 900px) {
-  html,
-  body,
-  #root {
-    height: 100%;
-    overflow: hidden;
-  }
-
-  .noesis-app {
-    display: grid;
-    grid-template-rows: minmax(0, 1fr) auto;
-    height: 100vh;
-    overflow: hidden;
-  }
-
-  .main-column {
-    min-height: 0;
-    overflow: auto;
-  }
-
-  .rail {
-    display: none;
-  }
-
-  .mobile-nav {
-    display: flex;
-    justify-content: space-around;
-    margin: 0 12px 12px;
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    background: var(--surface);
-    box-shadow: 0 16px 40px rgba(23, 34, 32, 0.14);
-    padding: 8px;
-  }
-
-  .mobile-nav button {
-    flex: 1;
-    border-radius: 10px;
-    background: transparent;
-    color: var(--muted);
-    padding: 9px 8px;
-    font-weight: 650;
-  }
-
-  .mobile-nav button[aria-pressed="true"] {
-    background: var(--brand-100);
-    color: var(--brand-700);
-  }
-
-  .topbar {
-    flex-wrap: wrap;
-    gap: 10px;
-    padding: 10px 14px;
-  }
-
-  .topbar-search {
-    order: 3;
-    max-width: none;
-    flex-basis: 100%;
-  }
-
-  .page-body {
-    padding: 14px 14px 20px;
-  }
-
-  .home-grid,
-  .ops-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .ops-metrics {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .pos-head {
-    display: none;
-  }
-
-  .pos-row {
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-areas:
-      "symbol status"
-      "symbol actions";
-    gap: 8px 10px;
-    align-items: center;
-  }
-
-  .symbol-cell {
-    grid-area: symbol;
-  }
-
-  .status-pill {
-    grid-area: status;
-    justify-self: end;
-  }
-
-  .row-actions {
-    grid-area: actions;
-    flex-wrap: wrap;
-  }
-
-  .pos-cell-market,
-  .pos-cell-kind {
-    display: none;
-  }
-
-  .add-form {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .relationship-table-head,
-  .relationship-row {
-    grid-template-columns: minmax(0, 1fr) 76px 86px;
-  }
-
-  .relationship-table-head span:nth-child(n+4),
-  .relationship-row > *:nth-child(n+4) {
-    display: none;
-  }
-
-  .detail-panel,
-  .evidence-panel {
-    width: 100vw;
-  }
 }

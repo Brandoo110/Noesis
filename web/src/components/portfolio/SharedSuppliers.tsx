@@ -52,10 +52,10 @@ export function SharedSuppliers({
   return (
     <small
       aria-label="共享供应商提示"
-      className="surface overlap-surface shared-suppliers-surface"
+      className="card portfolio-brief"
       data-testid="shared-suppliers-panel"
     >
-      <div className="section-heading">
+      <div className="card-header compact">
         <div>
           <p className="eyebrow">Supply Chain</p>
           <h2>共享上游供应商</h2>
@@ -72,16 +72,16 @@ export function SharedSuppliers({
         <strong>仅供参考</strong>
         <span>。这些持仓共享同一上游供应商，可关注共同供应链风险。</span>
       </p>
-      {isLoading ? <span className="muted">加载中...</span> : null}
+      {isLoading ? <span className="empty-note">加载中...</span> : null}
       {error ? (
-        <span className="inline-recovery" role="alert">
+        <span className="compact-alert" role="alert">
           <span>{error}</span>
           <button disabled={isLoading} onClick={() => void loadSharedSuppliers()} type="button">
             重新加载共享供应商
           </button>
         </span>
       ) : null}
-      {analysis.error ? <span className="inline-recovery">{analysis.error}</span> : null}
+      {analysis.error ? <span className="compact-alert">{analysis.error}</span> : null}
       {!isLoading && !error && groups.length === 0 ? (
         <span className="empty-note">暂无共享上游供应商</span>
       ) : null}
@@ -91,7 +91,7 @@ export function SharedSuppliers({
             <li key={group.supplier_id}>
               <strong>{group.supplier_name}</strong>
               <span>{group.positions.map(positionLabel).join(" / ")}</span>
-              <span className={basisClassName(group.basis)}>
+              <span className={`basis-badge ${group.basis}`}>
                 {basisLabel(group.basis)}
               </span>
             </li>
@@ -110,10 +110,6 @@ function positionLabel(position: SharedSupplierGroup["positions"][number]): stri
 
 function basisLabel(basis: Basis): string {
   return basis === "source_backed" ? "有出处" : "基于推断";
-}
-
-function basisClassName(basis: Basis): string {
-  return basis === "source_backed" ? "overlap-source-backed" : "overlap-inferred";
 }
 
 function toErrorMessage(caught: unknown): string {

@@ -77,14 +77,15 @@ export function AgentOpsDashboard(): JSX.Element {
   }, [selectedRunId]);
 
   return (
-    <section aria-label="AgentOps Dashboard" className="surface agentops-surface">
-      <header className="section-heading">
+    <section aria-label="AgentOps Dashboard" className="ops-view">
+      <header className="card-header compact">
         <div>
           <p className="eyebrow">AgentOps</p>
           <h2>Run Operations</h2>
         </div>
         <button
           aria-label="刷新 AgentOps"
+          className="secondary-button small"
           onClick={() => void loadDashboard()}
           type="button"
         >
@@ -92,18 +93,20 @@ export function AgentOpsDashboard(): JSX.Element {
         </button>
       </header>
 
-      {error ? <p className="alert compact-alert" role="alert">{error}</p> : null}
-      {isLoading ? <p className="muted">加载中...</p> : null}
+      {error ? <p className="compact-alert" role="alert">{error}</p> : null}
+      {isLoading ? <p className="empty-note">加载中...</p> : null}
 
       {metrics ? <MetricsStrip metrics={metrics} /> : null}
 
       {runs.length > 0 ? (
-        <div className="agentops-body">
-          <ul aria-label="AgentOps run list" className="agentops-run-list">
+        <div className="ops-grid">
+          <section className="card ops-runs">
+          <ul aria-label="AgentOps run list">
             {runs.map((run) => (
               <li key={run.run_id}>
                 <button
                   aria-pressed={run.run_id === selectedRunId}
+                  className="run-card"
                   onClick={() => setSelectedRunId(run.run_id)}
                   type="button"
                 >
@@ -115,10 +118,11 @@ export function AgentOpsDashboard(): JSX.Element {
               </li>
             ))}
           </ul>
+          </section>
 
-          <section aria-label="Run trace timeline" className="agentops-timeline">
+          <section aria-label="Run trace timeline" className="card run-trace">
             <h3>{selectedRun?.run_id ?? "Run trace"}</h3>
-            {isTraceLoading ? <p className="muted">加载中...</p> : null}
+            {isTraceLoading ? <p className="empty-note">加载中...</p> : null}
             {trace ? (
               <ol>
                 {trace.steps.map((step, index) => (
@@ -153,7 +157,7 @@ function MetricsStrip({ metrics }: { metrics: MetricsSummary }): JSX.Element {
   ];
 
   return (
-    <div aria-label="AgentOps 指标" className="agentops-metrics">
+    <div aria-label="AgentOps 指标" className="ops-metrics">
       {items.map(([label, value]) => (
         <span key={label}>
           <strong>{value}</strong>
@@ -166,13 +170,13 @@ function MetricsStrip({ metrics }: { metrics: MetricsSummary }): JSX.Element {
 
 function TraceStep({ step }: { step: RunTraceStep }): JSX.Element {
   return (
-    <li>
+    <li className={`trace-step ${step.status}`}>
       <div>
         <strong>{step.name}</strong>
         <span>{step.kind}</span>
       </div>
       <p>{step.status} · {formatMs(step.latency_ms)}</p>
-      <div className="agentops-step-meta">
+      <div>
         {step.cache_hit !== null ? (
           <small>{step.cache_hit ? "cache hit" : "cache miss"}</small>
         ) : null}

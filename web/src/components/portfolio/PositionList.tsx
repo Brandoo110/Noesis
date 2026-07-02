@@ -28,13 +28,14 @@ export function PositionList({
   }
 
   return (
-    <div className="position-table-shell">
-      <div className="position-table-header" aria-hidden="true">
+    <div>
+      <div className="pos-head" aria-hidden="true">
         <span>标的</span>
-        <span>市场/类型</span>
+        <span className="pos-cell-market">市场</span>
+        <span className="pos-cell-kind">类型</span>
         <span>RUN</span>
       </div>
-      <ul aria-label="持仓列表" className="position-list">
+      <ul aria-label="持仓列表">
         {positions.map((position) => {
           const positionLabel = primaryPositionLabel(position);
           const currentRunId = runId;
@@ -76,29 +77,28 @@ export function PositionList({
             <li
               className={
                 activePositionId === position.id
-                  ? "position-row position-row-active"
-                  : "position-row"
+                  ? "pos-row pos-row-active"
+                  : "pos-row"
               }
               key={position.id}
             >
-              <div className="position-main">
-                <span className="position-icon" aria-hidden="true">
+              <div className="symbol-cell">
+                <span aria-hidden="true">
                   {positionLabel.slice(0, 1).toUpperCase()}
                 </span>
-                <span>
+                <div>
                   <strong>{positionLabel}</strong>
-                  <span>
+                  <small>
                     {secondaryPositionLabel(position, activePositionId, runEntity, runPositionId)}
-                  </span>
-                </span>
+                  </small>
+                </div>
               </div>
-              <div className="position-meta">
-                <span>{position.market}</span>
-                <span>{position.kind}</span>
-              </div>
-              <div className="position-actions">
+              <span className="market-chip pos-cell-market">{position.market}</span>
+              <span className="pos-cell-kind">{position.kind}</span>
+              <div className="row-actions">
                 <button
                   aria-label={`${action} ${positionLabel}`}
+                  className="secondary-button"
                   disabled={action === "研究中"}
                   onClick={() => void onStartRun(position.id)}
                   type="button"
@@ -108,15 +108,15 @@ export function PositionList({
                 {activePositionId === position.id ? (
                   <span
                     aria-label={`研究状态 ${positionLabel}`}
-                    className="run-status"
+                    className="status-pill"
                   >
-                    <span className="status-chip">{statusLabel(runStatus)}</span>
-                    <span className="raw-status">{runStatus}</span>
-                    {currentRunId ? <span className="run-id">{currentRunId}</span> : null}
+                    <span>{statusLabel(runStatus)}</span>
+                    <span>{runStatus}</span>
+                    {currentRunId ? <span className="mono">{currentRunId}</span> : null}
                     {currentGraph ? (
                       <button
                         aria-label={`查看图谱 ${positionLabel}`}
-                        className="secondary-action"
+                        className="graph-button"
                         onClick={() =>
                           onViewGraph(position.id, currentGraph.runId, currentGraph.entity)
                         }
@@ -128,7 +128,7 @@ export function PositionList({
                     {staleGraph ? (
                       <button
                         aria-label={`查看旧图谱 ${positionLabel}`}
-                        className="secondary-action"
+                        className="graph-button"
                         onClick={() =>
                           onViewGraph(position.id, staleGraph.runId, staleGraph.entity)
                         }
@@ -142,7 +142,7 @@ export function PositionList({
                 {inactiveLatestGraph ? (
                   <button
                     aria-label={`查看图谱 ${positionLabel}`}
-                    className="secondary-action"
+                    className="graph-button"
                     onClick={() =>
                       onViewGraph(position.id, inactiveLatestGraph.runId, inactiveLatestGraph.entity)
                     }
@@ -156,7 +156,7 @@ export function PositionList({
           );
         })}
       </ul>
-      <div className="position-table-footer">
+      <div className="table-footer">
         <span>{`显示 1-${positions.length} / ${positions.length}`}</span>
         <span aria-hidden="true">‹ ›</span>
       </div>

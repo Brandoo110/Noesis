@@ -44,7 +44,7 @@ export function EvidenceDrawer(): JSX.Element | null {
   }
 
   return (
-    <div className="drawer-layer">
+    <div className="evidence-layer">
       <div
         aria-hidden="true"
         className="drawer-backdrop"
@@ -53,14 +53,14 @@ export function EvidenceDrawer(): JSX.Element | null {
       <aside
         aria-labelledby="evidence-drawer-title"
         aria-modal="true"
-        className="evidence-drawer"
+        className="evidence-panel"
         onKeyDown={handleKeyDown}
         ref={drawerRef}
         role="dialog"
         tabIndex={-1}
       >
         <header className="drawer-header">
-          <span className="drawer-symbol" aria-hidden="true">E</span>
+          <span className="count-pill" aria-hidden="true">E</span>
           <div>
             <p className="eyebrow">Evidence Viewer</p>
             <h2 id="evidence-drawer-title">证据抽屉</h2>
@@ -69,18 +69,18 @@ export function EvidenceDrawer(): JSX.Element | null {
             Close
           </button>
         </header>
-        {evidence.isLoading ? <p className="drawer-loading">加载证据...</p> : null}
+        {evidence.isLoading ? <p className="empty-note">加载证据...</p> : null}
         {evidence.evidences.length === 0 &&
         !evidence.isLoading &&
         Object.keys(evidence.errors).length === 0 ? (
           <p className="empty-note">暂无可展示证据。</p>
         ) : null}
-        <ul className="evidence-list">
+        <ul>
           {evidence.evidences.map((item) => (
             <li className="evidence-card" key={item.id}>
-              <div className="evidence-card-header">
-                <span className="evidence-id">{item.id}</span>
-                <span className="evidence-tier">{`tier ${item.source_tier}`}</span>
+              <div>
+                <span className="mono">{item.id}</span>
+                <span className={tierClassName(item.source_tier)}>{`tier ${item.source_tier}`}</span>
               </div>
               <h3>{item.title ?? item.id}</h3>
               <dl className="evidence-meta">
@@ -99,10 +99,10 @@ export function EvidenceDrawer(): JSX.Element | null {
                   <dd>{item.published_at ?? "unknown"}</dd>
                 </div>
               </dl>
-              <p className="evidence-snippet">{item.snippet}</p>
+              <blockquote>{item.snippet}</blockquote>
               {item.url ? (
                 <p>
-                  <a className="source-link" href={item.url} rel="noreferrer" target="_blank">
+                  <a href={item.url} rel="noreferrer" target="_blank">
                     打开来源
                   </a>
                 </p>
@@ -111,7 +111,7 @@ export function EvidenceDrawer(): JSX.Element | null {
           ))}
         </ul>
         {Object.entries(evidence.errors).map(([id, message]) => (
-          <div className="alert evidence-error" key={id} role="alert">
+          <div className="compact-alert" key={id} role="alert">
             <span>{id}:{message}</span>
             <button
               aria-label={`重新加载证据 ${id}`}
@@ -125,4 +125,10 @@ export function EvidenceDrawer(): JSX.Element | null {
       </aside>
     </div>
   );
+}
+
+function tierClassName(tier: number): string {
+  if (tier === 1) return "tier-badge tier-1";
+  if (tier === 2) return "tier-badge tier-2";
+  return "tier-badge tier-3";
 }

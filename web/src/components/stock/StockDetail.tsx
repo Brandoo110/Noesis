@@ -59,22 +59,22 @@ export function StockDetail({
   }
 
   if (stock.isLoading) {
-    return <section aria-label="个股详情" className="stock-detail">加载中...</section>;
+    return <section aria-label="个股详情" className="detail-panel">加载中...</section>;
   }
 
   const hasMissingCompletedThesis =
     stock.detail.run?.status === "completed" && stock.detail.thesis === null;
 
   return (
-    <section aria-label="个股详情" className="stock-detail">
-      <header className="stock-detail-header">
+    <section aria-label="个股详情" className="detail-panel">
+      <header className="drawer-header">
         <div>
           <p className="eyebrow">Stock detail / Thesis view</p>
           <h2>
             {stock.detail.entity?.symbol ?? stock.detail.entityId}
             <span>{stock.detail.entity?.name ? ` · ${stock.detail.entity.name}` : ""}</span>
           </h2>
-          <div className="detail-meta-strip">
+          <div className="detail-chips">
             <span>{stock.detail.entity?.market ?? "market unknown"}</span>
             <span>{`run id: ${runId}`}</span>
             <span>{stock.detail.run?.status ?? "status unknown"}</span>
@@ -82,7 +82,7 @@ export function StockDetail({
           </div>
         </div>
         <button
-          className="secondary-action"
+          className="secondary-button"
           onClick={() => setShowReport((current) => !current)}
           type="button"
         >
@@ -99,7 +99,7 @@ export function StockDetail({
           </div>
           {onRetryResearch ? (
             <button
-              className="secondary-action"
+              className="secondary-button"
               disabled={isRetrying}
               onClick={() => void handleRetryResearch()}
               type="button"
@@ -110,12 +110,12 @@ export function StockDetail({
         </section>
       ) : null}
       {showReport ? (
-        <div className="report-dock">
+        <div className="summary-card">
           <StockReport detail={stock.detail} onEvidenceClick={open} />
         </div>
       ) : null}
-      <div className="stock-detail-grid">
-        <div className="detail-column">
+      <div>
+        <div>
           <StatusSummary detail={stock.detail} errors={stock.errors} />
           <IntelStream
             items={stock.detail.intelItems}
@@ -128,7 +128,7 @@ export function StockDetail({
             overlaps={stock.detail.overlaps}
           />
         </div>
-        <aside className="detail-column detail-column-aside">
+        <aside>
           <ThesisPanel
             onConfirm={(status) => void handleConfirm(status)}
             onEvidenceClick={open}
