@@ -100,6 +100,9 @@ describe("GraphView", () => {
 
     expect(screen.getByTestId("graph-node-entity-aapl")).toHaveTextContent("AAPL");
     fireEvent.click(screen.getByTestId("graph-node-entity-aapl"));
+    expect(await screen.findByRole("heading", { name: "分类情报流" })).toBeInTheDocument();
+    expect(expandEntityMock).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "展开 Apple Inc." }));
     await waitFor(() =>
       expect(expandEntityMock).toHaveBeenCalledWith("entity-aapl", "position-1")
     );
@@ -114,7 +117,6 @@ describe("GraphView", () => {
     expect(expandEntityMock).toHaveBeenCalledTimes(1);
 
     fireEvent.click(screen.getByRole("button", { name: "个股详情" }));
-    expect(await screen.findByRole("heading", { name: "分类情报流" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Thesis" })).toBeInTheDocument();
     fireEvent.click(
       within(screen.getByLabelText("情报 Supplier update")).getByRole("button", {

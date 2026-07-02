@@ -18,20 +18,23 @@
   outline: 2px solid var(--brand-700);
   box-shadow: 0 0 0 4px rgba(10, 92, 87, 0.12);
 }
-.graph-node i {
+.graph-expand-badge {
   position: absolute;
   top: -8px;
   right: -8px;
   display: grid;
-  width: 24px;
-  height: 24px;
+  min-width: 22px;
+  height: 22px;
   place-items: center;
+  border: 2px solid var(--surface);
   border-radius: 50%;
   background: var(--brand-700);
   color: var(--surface);
   font-family: "IBM Plex Mono", monospace;
   font-size: 11px;
-  font-style: normal;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(10, 92, 87, 0.3);
 }
 .relationships-card,
 .graph-summary {

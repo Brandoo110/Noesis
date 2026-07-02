@@ -52,6 +52,8 @@ describe("WorkspaceShell", () => {
     expect(within(nav).getByRole("button", { name: "组合工作台" })).toBeInTheDocument();
     expect(within(nav).getByRole("button", { name: "图谱探索" })).toBeInTheDocument();
     expect(within(nav).getByRole("button", { name: "AgentOps" })).toBeInTheDocument();
+    const mobileNav = screen.getByRole("navigation", { name: "移动端导航" });
+    expect(within(mobileNav).getAllByRole("button")).toHaveLength(3);
     expect(screen.getByLabelText("组合首页")).toBeInTheDocument();
 
     fireEvent.click(within(nav).getByRole("button", { name: "图谱探索" }));
@@ -63,6 +65,9 @@ describe("WorkspaceShell", () => {
 
     fireEvent.click(within(nav).getByRole("button", { name: "AgentOps" }));
     expect(screen.getByLabelText("AgentOps视图")).toHaveTextContent("mock agentops");
+
+    fireEvent.click(within(mobileNav).getByRole("button", { name: "组合工作台" }));
+    expect(screen.getByLabelText("组合首页")).toBeInTheDocument();
   });
 
   it("captures graph seed from the portfolio view and opens graph workspace", () => {

@@ -122,6 +122,9 @@ describe("App portfolio integration path", () => {
     expect(screen.getByTestId("graph-node-entity-aapl")).toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId("graph-node-entity-aapl"));
+    expect(await screen.findByRole("heading", { name: "分类情报流" })).toBeInTheDocument();
+    expect(expandEntityMock).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "展开 Apple Inc." }));
     await waitFor(() =>
       expect(expandEntityMock).toHaveBeenCalledWith("entity-aapl", "position-1")
     );
@@ -131,7 +134,6 @@ describe("App portfolio integration path", () => {
     expect(expandEntityMock).toHaveBeenCalledTimes(1);
 
     fireEvent.click(screen.getByRole("button", { name: "个股详情" }));
-    expect(await screen.findByRole("heading", { name: "分类情报流" })).toBeInTheDocument();
     fireEvent.click(
       within(screen.getByLabelText("情报 Supplier update")).getByRole("button", {
         name: "查看证据"

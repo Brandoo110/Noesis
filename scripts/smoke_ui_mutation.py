@@ -226,7 +226,7 @@ async (page) => {{
   await page.getByRole('button', {{ name: `查看图谱 ${{symbol}}` }}).waitFor({{ timeout: 45000 }});
   await page.getByRole('button', {{ name: `查看图谱 ${{symbol}}` }}).click();
   await expectText(`Research Graph — ${{symbol}}`, 30000);
-  await page.getByTestId(`graph-node-entity-${{symbol.toLowerCase()}}`).click();
+  await page.getByRole('button', {{ name: new RegExp(`^展开 .*${{symbol}}|^展开 `) }}).first().click();
   await page.getByText('Fixture Supplier', {{ exact: true }}).waitFor({{ timeout: 30000 }});
   await page.screenshot({{ path: graphScreenshot, fullPage: true }});
   await page.getByRole('button', {{ name: '个股详情' }}).click();

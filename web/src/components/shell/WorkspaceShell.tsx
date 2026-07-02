@@ -4,6 +4,7 @@ import { AgentOpsView } from "../views/AgentOpsView";
 import { GraphView } from "../views/GraphView";
 import { PortfolioView } from "../views/PortfolioView";
 import type { GraphSeed } from "../views/view-types";
+import { MobileNav } from "./MobileNav";
 import { SideRail } from "./SideRail";
 import { WORKSPACE_VIEWS, type WorkspaceView } from "./shell-types";
 import { TopBar } from "./TopBar";
@@ -36,6 +37,7 @@ export function WorkspaceShell(): JSX.Element {
           {view === "ops" ? <AgentOpsView /> : null}
         </main>
       </div>
+      <MobileNav activeView={view} onViewChange={setView} />
     </div>
   );
 }

@@ -54,7 +54,7 @@ export function GraphExplorer({
   }
 
   return (
-    <section aria-label="图谱探索器" className="graph-card card">
+    <section aria-label="图谱探索器" className="graph-card">
       <header className="graph-header">
         <div>
           <p className="eyebrow">RESEARCH GRAPH · LAZY EXPAND</p>
@@ -102,8 +102,9 @@ export function GraphExplorer({
         basisFilter={basisFilter}
         edges={visibleEdges}
         nodes={graph.nodes}
-        onNodeClick={handleNodeClick}
+        onExpandNode={handleNodeClick}
         onOpenEvidence={evidenceDrawer.open}
+        onSeedDetail={runId ? () => setIsDetailOpen(true) : undefined}
         seedEntity={seedEntity}
       />
       {isDetailOpen && runId ? (

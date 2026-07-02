@@ -15,8 +15,9 @@ interface GraphStageProps {
   basisFilter: "all" | Basis;
   edges: FlowEdge<EdgeViewData>[];
   nodes: FlowNode<EntityNodeViewData>[];
-  onNodeClick: (entityId: string) => void;
+  onExpandNode: (entityId: string) => void;
   onOpenEvidence: (evidenceIds: string[]) => void;
+  onSeedDetail?: () => void;
   seedEntity: EntityNode;
 }
 
@@ -31,8 +32,9 @@ export function GraphStage({
   basisFilter,
   edges,
   nodes,
-  onNodeClick,
+  onExpandNode,
   onOpenEvidence,
+  onSeedDetail,
   seedEntity
 }: GraphStageProps): JSX.Element {
   const model = buildGraphRenderModel(seedEntity, nodes, edges, basisFilter);
@@ -63,7 +65,12 @@ export function GraphStage({
             ))}
           </svg>
           {model.nodes.map((node) => (
-            <GraphNodeButton key={node.id} node={node} onNodeClick={onNodeClick} />
+            <GraphNodeButton
+              key={node.id}
+              node={node}
+              onExpandNode={onExpandNode}
+              onSeedDetail={onSeedDetail}
+            />
           ))}
         </div>
       </div>
@@ -77,35 +84,56 @@ export function GraphStage({
 
 function GraphNodeButton({
   node,
-  onNodeClick
+  onExpandNode,
+  onSeedDetail
 }: {
   node: GraphRenderNode;
-  onNodeClick: (entityId: string) => void;
+  onExpandNode: (entityId: string) => void;
+  onSeedDetail?: () => void;
 }): JSX.Element {
   const size = nodeSize(node.entity, node.isSeed);
-  const dataNode = node;
+  const canExpand = !node.expanded;
+  const label = node.entity.name || node.entity.symbol || node.id;
   return (
-    <button
-      className={graphNodeClass(node)}
-      data-testid={`graph-node-${node.id}`}
-      onClick={() => {
-        if (dataNode.isSeed || !dataNode.expanded) {
-          onNodeClick(dataNode.id);
-        }
-      }}
+    <div
+      className="graph-node-shell"
       style={{
         "--h": `${size.h}px`,
         "--w": `${size.w}px`,
         "--x": `${node.left}px`,
         "--y": `${node.top}px`
       } as CSSProperties}
-      title={node.isSeed ? "持仓种子 · 点击展开产业链" : node.entity.name}
-      type="button"
     >
-      {node.entity.symbol ? <strong>{node.entity.symbol}</strong> : null}
-      <span>{node.entity.name}</span>
-      {!node.isSeed && !node.expanded ? <i>+</i> : null}
-    </button>
+      <button
+        className={graphNodeClass(node)}
+        data-testid={`graph-node-${node.id}`}
+        onClick={() => {
+          if (node.isSeed && onSeedDetail) {
+            onSeedDetail();
+            return;
+          }
+          if (!node.expanded) {
+            onExpandNode(node.id);
+          }
+        }}
+        title={node.isSeed ? "持仓种子 · 点击查看个股详情" : node.entity.name}
+        type="button"
+      >
+        {node.entity.symbol ? <strong>{node.entity.symbol}</strong> : null}
+        <span>{node.entity.name}</span>
+      </button>
+      {canExpand ? (
+        <button
+          aria-label={`展开 ${label}`}
+          className="graph-expand-badge"
+          onClick={() => onExpandNode(node.id)}
+          title="点击展开产业链（懒加载）"
+          type="button"
+        >
+          +
+        </button>
+      ) : null}
+    </div>
   );
 }
 

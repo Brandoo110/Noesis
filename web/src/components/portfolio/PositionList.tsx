@@ -157,8 +157,8 @@ export function PositionList({
         })}
       </ul>
       <div className="table-footer">
-        <span>{`显示 1-${positions.length} / ${positions.length}`}</span>
-        <span aria-hidden="true">‹ ›</span>
+        <span>{`显示 1-${positions.length} · 共 ${positions.length} 项`}</span>
+        <span>非荐股 · 每条结论均挂证据</span>
       </div>
     </div>
   );

@@ -6,7 +6,6 @@ import { useRun } from "../../hooks/use-run";
 import type { Position } from "../../types/api";
 import { PortfolioGraphWorkspace } from "./PortfolioGraphWorkspace";
 import { PortfolioInsights } from "./PortfolioInsights";
-import { PortfolioMobileTabbar } from "./PortfolioMobileTabbar";
 import { PositionInput, type PositionFormState } from "./PositionInput";
 import { PositionList } from "./PositionList";
 import { PortfolioTopbar, type PortfolioFilters } from "./PortfolioTopbar";
@@ -240,7 +239,6 @@ export function PortfolioHome({ onGraphSeedSelected }: PortfolioHomeProps): JSX.
           ) : null}
         </aside>
       </div>
-      <PortfolioMobileTabbar />
     </section>
   );
 }

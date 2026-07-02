@@ -60,13 +60,15 @@ export function EvidenceDrawer(): JSX.Element | null {
         tabIndex={-1}
       >
         <header className="drawer-header">
-          <span className="count-pill" aria-hidden="true">E</span>
           <div>
-            <p className="eyebrow">Evidence Viewer</p>
+            <p className="eyebrow">EVIDENCE VIEWER</p>
             <h2 id="evidence-drawer-title">证据抽屉</h2>
           </div>
+          <span className="count-pill" aria-hidden="true">
+            {`${evidence.evidences.length} 条`}
+          </span>
           <button aria-label="关闭" onClick={close} type="button">
-            Close
+            ×
           </button>
         </header>
         {evidence.isLoading ? <p className="empty-note">加载证据...</p> : null}

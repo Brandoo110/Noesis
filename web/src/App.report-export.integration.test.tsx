@@ -107,7 +107,11 @@ describe("App report export integration", () => {
     expect(stockMarkdown).not.toMatch(REDLINE_PATTERN);
     stockCapture.restore();
 
-    fireEvent.click(screen.getByRole("button", { name: "组合工作台" }));
+    fireEvent.click(
+      within(screen.getByRole("navigation", { name: "主导航" })).getByRole("button", {
+        name: "组合工作台"
+      })
+    );
     const briefCapture = installDownloadCapture();
     fireEvent.click(
       within(await screen.findByLabelText("组合 Brief")).getByRole("button", {

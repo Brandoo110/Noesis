@@ -85,14 +85,14 @@ vi.mock("../stock/StockDetail", () => ({
 const expandEntityMock = vi.mocked(client.expandEntity);
 
 describe("GraphExplorer", () => {
-  it("renders the design graph stage and lazily expands clicked node", async () => {
+  it("opens detail from the seed node and expands through the seed badge", async () => {
     const seed = makeEntity({ id: "entity-aapl", name: "Apple Inc.", symbol: "AAPL" });
     const neighbor = makeEntity({ id: "entity-tsm", name: "TSMC", symbol: "TSM" });
     expandEntityMock.mockResolvedValue(makeExpandResult("entity-aapl", [
       makeEdge("edge-aapl-tsm", neighbor)
     ]));
 
-    renderGraph(<GraphExplorer positionId="position-1" seedEntity={seed} />);
+    renderGraph(<GraphExplorer positionId="position-1" runId="run-1" seedEntity={seed} />);
 
     expect(screen.getByTestId("graph-stage")).toBeInTheDocument();
     expect(screen.queryByTestId("react-flow")).not.toBeInTheDocument();
@@ -101,6 +101,12 @@ describe("GraphExplorer", () => {
     expect(screen.queryByText("TSM")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId("graph-node-entity-aapl"));
+    expect(screen.getByRole("dialog", { name: "个股详情" })).toHaveTextContent(
+      "entity-aapl:position-1:run-1"
+    );
+    expect(expandEntityMock).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "展开 Apple Inc." }));
 
     await waitFor(() =>
       expect(expandEntityMock).toHaveBeenCalledWith("entity-aapl", "position-1")
@@ -124,9 +130,9 @@ describe("GraphExplorer", () => {
       makeEdge("edge-inferred", inferredNeighbor, "inferred")
     ]));
 
-    renderGraph(<GraphExplorer positionId="position-1" seedEntity={seed} />);
+    renderGraph(<GraphExplorer positionId="position-1" runId="run-1" seedEntity={seed} />);
 
-    fireEvent.click(screen.getByTestId("graph-node-entity-aapl"));
+    fireEvent.click(screen.getByRole("button", { name: "展开 Apple Inc." }));
     expect(await screen.findByTestId("edge-path-edge-source")).toBeInTheDocument();
     expect(screen.getByTestId("edge-path-edge-inferred")).toBeInTheDocument();
 
