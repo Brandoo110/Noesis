@@ -1,9 +1,16 @@
 import { PortfolioHome } from "../portfolio/PortfolioHome";
+import type { GraphSeed } from "./view-types";
 
-export function PortfolioView(): JSX.Element {
+interface PortfolioViewProps {
+  onGraphSeedSelected?: (seed: GraphSeed) => void;
+}
+
+export function PortfolioView({
+  onGraphSeedSelected
+}: PortfolioViewProps): JSX.Element {
   return (
     <section aria-label="组合首页" className="portfolio-view">
-      <PortfolioHome />
+      <PortfolioHome onGraphSeedSelected={onGraphSeedSelected} />
     </section>
   );
 }

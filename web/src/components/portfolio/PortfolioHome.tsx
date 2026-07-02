@@ -5,13 +5,14 @@ import { AgentOpsDashboard } from "../agentops/AgentOpsDashboard";
 import { GraphExplorer } from "../graph/GraphExplorer";
 import { usePortfolioRunSeeds } from "../../hooks/use-portfolio-run-seeds";
 import { useRun } from "../../hooks/use-run";
-import type { EntityNode, Position } from "../../types/api";
+import type { Position } from "../../types/api";
 import { PortfolioInsights } from "./PortfolioInsights";
 import { PortfolioMobileTabbar } from "./PortfolioMobileTabbar";
 import { PositionInput, type PositionFormState } from "./PositionInput";
 import { PositionList } from "./PositionList";
 import { PortfolioTopbar, type PortfolioFilters } from "./PortfolioTopbar";
 import { buildInput, matchesKind, matchesResearch, matchesSearch, prefersReducedMotion, toErrorMessage } from "./portfolio-home-utils";
+import type { GraphSeed } from "../views/view-types";
 
 const EMPTY_FORM: PositionFormState = {
   symbol: "",
@@ -20,12 +21,13 @@ const EMPTY_FORM: PositionFormState = {
   kind: "owned"
 };
 
-const EMPTY_FILTERS: PortfolioFilters = {
-  kind: "all",
-  research: "all"
-};
+const EMPTY_FILTERS: PortfolioFilters = { kind: "all", research: "all" };
 
-export function PortfolioHome(): JSX.Element {
+interface PortfolioHomeProps {
+  onGraphSeedSelected?: (seed: GraphSeed) => void;
+}
+
+export function PortfolioHome({ onGraphSeedSelected }: PortfolioHomeProps): JSX.Element {
   const [positions, setPositions] = useState<Position[]>([]);
   const [form, setForm] = useState<PositionFormState>(EMPTY_FORM);
   const [isLoading, setIsLoading] = useState(true);
@@ -182,7 +184,9 @@ export function PortfolioHome(): JSX.Element {
               <PositionList
                 activePositionId={activePositionId}
                 onViewGraph={(positionId, runId, seedEntity) => {
-                  setGraphSeed({ positionId, runId, seedEntity });
+                  const nextSeed = { positionId, runId, seedEntity };
+                  setGraphSeed(nextSeed);
+                  onGraphSeedSelected?.(nextSeed);
                 }}
                 onStartRun={handleStartRun}
                 emptyMessage={positions.length === 0 ? "暂无持仓" : "没有匹配的持仓"}
@@ -241,10 +245,4 @@ export function PortfolioHome(): JSX.Element {
       <PortfolioMobileTabbar />
     </section>
   );
-}
-
-interface GraphSeed {
-  positionId: string;
-  runId: string;
-  seedEntity: EntityNode;
 }

@@ -3,8 +3,41 @@ import { describe, expect, it, vi } from "vitest";
 
 import { WorkspaceShell } from "./WorkspaceShell";
 
+const seed = {
+  positionId: "position-1",
+  runId: "run-1",
+  seedEntity: {
+    id: "entity-aapl",
+    market: "US",
+    name: "Apple Inc.",
+    node_type: "company",
+    symbol: "AAPL"
+  }
+};
+
 vi.mock("../views/PortfolioView", () => ({
-  PortfolioView: () => <section aria-label="组合首页">portfolio content</section>
+  PortfolioView: ({
+    onGraphSeedSelected
+  }: {
+    onGraphSeedSelected?: (nextSeed: typeof seed) => void;
+  }) => (
+    <section aria-label="组合首页">
+      portfolio content
+      <button onClick={() => onGraphSeedSelected?.(seed)} type="button">
+        mock open graph
+      </button>
+    </section>
+  )
+}));
+
+vi.mock("../views/GraphView", () => ({
+  GraphView: ({ seed: activeSeed }: { seed: typeof seed | null }) => (
+    <section aria-label="图谱探索视图">
+      <h2>图谱探索</h2>
+      <span>{activeSeed?.runId ?? "no seed"}</span>
+      <span>{activeSeed?.seedEntity.symbol ?? "no symbol"}</span>
+    </section>
+  )
 }));
 
 describe("WorkspaceShell", () => {
@@ -30,5 +63,15 @@ describe("WorkspaceShell", () => {
         name: "AgentOps"
       })
     ).toBeInTheDocument();
+  });
+
+  it("captures graph seed from the portfolio view and opens graph workspace", () => {
+    render(<WorkspaceShell />);
+
+    fireEvent.click(screen.getByRole("button", { name: "mock open graph" }));
+
+    const graph = screen.getByLabelText("图谱探索视图");
+    expect(within(graph).getByText("run-1")).toBeInTheDocument();
+    expect(within(graph).getByText("AAPL")).toBeInTheDocument();
   });
 });
