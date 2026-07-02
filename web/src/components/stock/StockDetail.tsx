@@ -94,7 +94,7 @@ export function StockDetail({
           <div>
             <strong>本次研究已完成，但没有生成 thesis</strong>
             <p>
-              证据和分类情报仍可查看；上线使用时建议重新研究，直到生成可确认的 thesis。
+              证据和分类情报仍可查看；上线使用时可重新研究，直到生成可确认的 thesis。
             </p>
           </div>
           {onRetryResearch ? (
