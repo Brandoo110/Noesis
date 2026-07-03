@@ -60,6 +60,7 @@ vi.mock("reactflow", () => ({
 vi.mock("./api/client", () => ({
   confirmThesis: vi.fn(),
   createPosition: vi.fn(),
+  resolvePosition: vi.fn(),
   expandEntity: vi.fn(),
   getCorrelationMatrix: vi.fn(),
   getEvidence: vi.fn(),
@@ -86,6 +87,7 @@ interface FlowProps {
 
 const confirmThesisMock = vi.mocked(client.confirmThesis);
 const createPositionMock = vi.mocked(client.createPosition);
+const resolvePositionMock = vi.mocked(client.resolvePosition);
 const expandEntityMock = vi.mocked(client.expandEntity);
 const getCorrelationMatrixMock = vi.mocked(client.getCorrelationMatrix);
 const getEvidenceMock = vi.mocked(client.getEvidence);
@@ -115,6 +117,8 @@ describe("App portfolio integration path", () => {
     fireEvent.change(screen.getByLabelText("Symbol"), { target: { value: "AAPL" } });
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Apple" } });
     fireEvent.click(screen.getByRole("button", { name: "新增持仓" }));
+    const confirmBar = await screen.findByLabelText("录入确认");
+    fireEvent.click(within(confirmBar).getByRole("button", { name: "确认添加" }));
     expect(await screen.findByText("AAPL")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "开始研究 AAPL" }));
@@ -163,6 +167,15 @@ function setupMocks(): void {
   const evidence = makeEvidence();
 
   listPositionsMock.mockImplementation(async () => positions);
+  resolvePositionMock.mockImplementation(async (input) => ({
+    status: "resolved",
+    name: input.name ?? input.symbol ?? "",
+    symbol: input.symbol ?? null,
+    market: input.market,
+    node_type: "company",
+    existing_position_id: null,
+    existing_position_label: null
+  }));
   createPositionMock.mockImplementation(async () => {
     positions = [makePosition()];
     return positions[0];

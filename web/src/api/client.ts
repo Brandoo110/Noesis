@@ -12,6 +12,8 @@ import type {
   PortfolioBrief,
   Position,
   Relevance,
+  ResolvePositionInput,
+  ResolvePositionResult,
   RunDetail,
   RunSummary,
   RunTrace,
@@ -36,6 +38,15 @@ const JSON_HEADERS = { "Content-Type": "application/json" };
 
 export function createPosition(input: CreatePositionInput): Promise<Position> {
   return request<Position>("/positions", {
+    method: "POST",
+    body: JSON.stringify(input)
+  });
+}
+
+export function resolvePosition(
+  input: ResolvePositionInput
+): Promise<ResolvePositionResult> {
+  return request<ResolvePositionResult>("/positions/resolve", {
     method: "POST",
     body: JSON.stringify(input)
   });

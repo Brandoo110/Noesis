@@ -8,6 +8,7 @@ import { makeBrief, makePosition, makeRunDetail } from "./PortfolioHome.test-fix
 
 vi.mock("../../api/client", () => ({
   createPosition: vi.fn(),
+  resolvePosition: vi.fn(),
   expandEntity: vi.fn(),
   getCorrelationMatrix: vi.fn(),
   getOverlaps: vi.fn(),
@@ -20,6 +21,7 @@ vi.mock("../../api/client", () => ({
 
 const listPositionsMock = vi.mocked(client.listPositions);
 const createPositionMock = vi.mocked(client.createPosition);
+const resolvePositionMock = vi.mocked(client.resolvePosition);
 const getCorrelationMatrixMock = vi.mocked(client.getCorrelationMatrix);
 const getOverlapsMock = vi.mocked(client.getOverlaps);
 const getPortfolioBriefMock = vi.mocked(client.getPortfolioBrief);
@@ -30,6 +32,15 @@ const getRunMock = vi.mocked(client.getRun);
 describe("PortfolioHome", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    resolvePositionMock.mockImplementation(async (input) => ({
+      status: "resolved",
+      name: input.name ?? input.symbol ?? "",
+      symbol: input.symbol ?? null,
+      market: input.market,
+      node_type: "company",
+      existing_position_id: null,
+      existing_position_label: null
+    }));
     getCorrelationMatrixMock.mockResolvedValue({ positions: [], cells: [] });
     getOverlapsMock.mockResolvedValue([]);
     getPortfolioBriefMock.mockResolvedValue(makeBrief());
@@ -159,6 +170,9 @@ describe("PortfolioHome", () => {
     fireEvent.change(screen.getByLabelText("Kind"), { target: { value: "watching" } });
     fireEvent.click(screen.getByRole("button", { name: "新增持仓" }));
 
+    const confirmBar = await screen.findByLabelText("录入确认");
+    fireEvent.click(within(confirmBar).getByRole("button", { name: "确认添加" }));
+
     await waitFor(() =>
       expect(createPositionMock).toHaveBeenCalledWith({
         symbol: "MSFT",
@@ -186,6 +200,9 @@ describe("PortfolioHome", () => {
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "SpaceX" } });
     fireEvent.change(screen.getByLabelText("Kind"), { target: { value: "watching" } });
     fireEvent.click(screen.getByRole("button", { name: "新增持仓" }));
+
+    const confirmBar = await screen.findByLabelText("录入确认");
+    fireEvent.click(within(confirmBar).getByRole("button", { name: "确认添加" }));
 
     await waitFor(() =>
       expect(createPositionMock).toHaveBeenCalledWith({

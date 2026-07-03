@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import * as client from "../../api/client";
@@ -21,6 +21,7 @@ import { PortfolioView } from "./PortfolioView";
 
 vi.mock("../../api/client", () => ({
   createPosition: vi.fn(),
+  resolvePosition: vi.fn(),
   expandEntity: vi.fn(),
   getCorrelationMatrix: vi.fn(),
   getMetricsSummary: vi.fn(),
@@ -35,6 +36,7 @@ vi.mock("../../api/client", () => ({
 }));
 
 const createPositionMock = vi.mocked(client.createPosition);
+const resolvePositionMock = vi.mocked(client.resolvePosition);
 const getCorrelationMatrixMock = vi.mocked(client.getCorrelationMatrix);
 const getMetricsSummaryMock = vi.mocked(client.getMetricsSummary);
 const getOverlapsMock = vi.mocked(client.getOverlaps);
@@ -83,6 +85,15 @@ describe("PortfolioView", () => {
       thesis_id: "thesis-aapl"
     });
     getRunMock.mockResolvedValue(makeRunDetail(makeEntity(), makeEvidence()));
+    resolvePositionMock.mockImplementation(async (input) => ({
+      status: "resolved",
+      name: input.name ?? input.symbol ?? "",
+      symbol: input.symbol ?? null,
+      market: input.market,
+      node_type: "company",
+      existing_position_id: null,
+      existing_position_label: null
+    }));
     createPositionMock.mockResolvedValue(
       makePosition({ id: "position-msft", symbol: "MSFT", name: "Microsoft" })
     );
@@ -103,6 +114,8 @@ describe("PortfolioView", () => {
     fireEvent.change(screen.getByLabelText("Symbol"), { target: { value: "MSFT" } });
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Microsoft" } });
     fireEvent.click(screen.getByRole("button", { name: "新增持仓" }));
+    const confirmBar = await screen.findByLabelText("录入确认");
+    fireEvent.click(within(confirmBar).getByRole("button", { name: "确认添加" }));
     await waitFor(() => expect(createPositionMock).toHaveBeenCalledWith({
       kind: "owned",
       market: "US",

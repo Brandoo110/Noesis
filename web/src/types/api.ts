@@ -195,6 +195,23 @@ export interface CreatePositionInput {
   cost_basis?: number | null;
 }
 
+export interface ResolvePositionInput {
+  symbol?: string | null;
+  market: string;
+  name?: string | null;
+  kind?: PositionKind;
+}
+
+export interface ResolvePositionResult {
+  status: "resolved" | "unresolved";
+  name: string | null;
+  symbol: string | null;
+  market: string;
+  node_type: string | null;
+  existing_position_id: string | null;
+  existing_position_label: string | null;
+}
+
 export interface RunSummary {
   run_id: string;
   status: RunStatus;

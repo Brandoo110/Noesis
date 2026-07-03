@@ -1,20 +1,20 @@
-import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { createPosition, listPositions } from "../../api/client";
+import { listPositions } from "../../api/client";
 import { usePortfolioRunSeeds } from "../../hooks/use-portfolio-run-seeds";
+import { usePositionEntry } from "../../hooks/use-position-entry";
 import { useRun } from "../../hooks/use-run";
 import type { Position } from "../../types/api";
 import { OverlapPanel } from "./OverlapPanel";
 import { PortfolioBrief } from "./PortfolioBrief";
 import { PortfolioGraphWorkspace } from "./PortfolioGraphWorkspace";
-import { PositionInput, type PositionFormState } from "./PositionInput";
+import { PositionInput } from "./PositionInput";
 import { PositionList } from "./PositionList";
 import { PortfolioTopbar, type PortfolioFilters } from "./PortfolioTopbar";
 import { SupplyChainCross } from "./SupplyChainCross";
-import { buildInput, graphSeedForPosition, matchesKind, matchesResearch, matchesSearch, prefersReducedMotion, toErrorMessage } from "./portfolio-home-utils";
+import { graphSeedForPosition, matchesKind, matchesResearch, matchesSearch, prefersReducedMotion, toErrorMessage } from "./portfolio-home-utils";
 import type { GraphSeed } from "../views/view-types";
 
-const EMPTY_FORM: PositionFormState = { symbol: "", market: "US", name: "", kind: "owned" };
 const EMPTY_FILTERS: PortfolioFilters = { kind: "all", research: "all" };
 
 interface PortfolioHomeProps {
@@ -23,9 +23,7 @@ interface PortfolioHomeProps {
 
 export function PortfolioHome({ onGraphSeedSelected }: PortfolioHomeProps): JSX.Element {
   const [positions, setPositions] = useState<Position[]>([]);
-  const [form, setForm] = useState<PositionFormState>(EMPTY_FORM);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [activePositionId, setActivePositionId] = useState<string | null>(null);
   const [graphSeed, setGraphSeed] = useState<GraphSeed | null>(null);
@@ -74,6 +72,7 @@ export function PortfolioHome({ onGraphSeedSelected }: PortfolioHomeProps): JSX.
       setIsLoading(false);
     }
   }, []);
+  const entry = usePositionEntry({ onCreated: refreshPositions });
 
   useEffect(() => {
     void refreshPositions();
@@ -93,26 +92,6 @@ export function PortfolioHome({ onGraphSeedSelected }: PortfolioHomeProps): JSX.
     });
     workspace.focus({ preventScroll: true });
   }, [graphSeed, shouldRenderInlineGraph]);
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
-    event.preventDefault();
-    const input = buildInput(form);
-    if (!input.symbol && !input.name) {
-      setError("请输入 Symbol 或公司名称");
-      return;
-    }
-    setIsSaving(true);
-    setError(null);
-    try {
-      await createPosition(input);
-      setForm(EMPTY_FORM);
-      await refreshPositions();
-    } catch (caught) {
-      setError(toErrorMessage(caught));
-    } finally {
-      setIsSaving(false);
-    }
-  }
 
   async function handleStartRun(positionId: string): Promise<void> {
     setError(null);
@@ -161,7 +140,9 @@ export function PortfolioHome({ onGraphSeedSelected }: PortfolioHomeProps): JSX.
         />
       ) : null}
 
-      {error ? <p className="compact-alert" role="alert">{error}</p> : null}
+      {error ?? entry.error ? (
+        <p className="compact-alert" role="alert">{error ?? entry.error}</p>
+      ) : null}
 
       <div className="home-grid">
         <div className="portfolio-main-stack">
@@ -178,7 +159,16 @@ export function PortfolioHome({ onGraphSeedSelected }: PortfolioHomeProps): JSX.
             </header>
 
             {isAddOpen ? (
-              <PositionInput form={form} isSaving={isSaving} onSubmit={(event) => void handleSubmit(event)} setForm={setForm} />
+              <PositionInput
+                form={entry.form}
+                isSaving={entry.isBusy}
+                onCancel={entry.cancel}
+                onConfirm={() => void entry.confirm()}
+                onForceCreate={() => void entry.forceCreate()}
+                onSubmit={(event) => void entry.submit(event)}
+                resolution={entry.resolution}
+                setForm={entry.setForm}
+              />
             ) : null}
 
             {isLoading ? (
