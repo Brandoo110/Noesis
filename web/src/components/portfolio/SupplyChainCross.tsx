@@ -4,14 +4,13 @@ import { getCorrelationMatrix, getSharedSuppliers } from "../../api/client";
 import { useSupplyChainAnalysis } from "../../hooks/use-supply-chain-analysis";
 import type {
   Basis,
-  CorrelationCell,
   CorrelationMatrix as CorrelationMatrixData,
   EntityNode,
   Position,
   SharedPosition,
   SharedSupplierGroup
 } from "../../types/api";
-import { CorrelationMatrixTable } from "./CorrelationMatrixTable";
+import { MatrixDialog } from "./MatrixDialog";
 
 interface SupplyChainCrossProps {
   activeRun: {
@@ -31,7 +30,6 @@ export function SupplyChainCross({
 }: SupplyChainCrossProps): JSX.Element {
   const [groups, setGroups] = useState<SharedSupplierGroup[]>([]);
   const [matrix, setMatrix] = useState<CorrelationMatrixData | null>(null);
-  const [selectedCell, setSelectedCell] = useState<CorrelationCell | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isMatrixOpen, setIsMatrixOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,7 +44,6 @@ export function SupplyChainCross({
       ]);
       setGroups(nextGroups);
       setMatrix(nextMatrix);
-      setSelectedCell(null);
     } catch (caught) {
       setError(toErrorMessage(caught));
     } finally {
@@ -67,24 +64,7 @@ export function SupplyChainCross({
     void loadCrossData();
   }, [loadCrossData, refreshKey]);
 
-  useEffect(() => {
-    if (!isMatrixOpen) {
-      return undefined;
-    }
-    function handleKeyDown(event: KeyboardEvent): void {
-      if (event.key === "Escape") {
-        setIsMatrixOpen(false);
-      }
-    }
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isMatrixOpen]);
-
   const rows = useMemo(() => crossRows(groups), [groups]);
-  const maxCount = useMemo(
-    () => Math.max(1, ...(matrix?.cells.map((cell) => cell.shared_count) ?? [0])),
-    [matrix]
-  );
   const hasMatrix = matrix !== null && matrix.positions.length >= 2 && matrix.cells.length > 0;
 
   return (
@@ -145,47 +125,7 @@ export function SupplyChainCross({
         </ul>
       ) : null}
       {isMatrixOpen && matrix ? (
-        <div className="matrix-layer">
-          <button
-            aria-label="关闭相关性矩阵遮罩"
-            className="drawer-backdrop"
-            onClick={() => setIsMatrixOpen(false)}
-            type="button"
-          />
-          <aside
-            aria-label="供应链相关性矩阵"
-            aria-modal="true"
-            className="matrix-panel"
-            role="dialog"
-          >
-            <header className="drawer-header">
-              <div>
-                <p className="eyebrow">CORRELATION MATRIX</p>
-                <h2>供应链相关性矩阵</h2>
-              </div>
-              <button aria-label="关闭" onClick={() => setIsMatrixOpen(false)} type="button">
-                ×
-              </button>
-            </header>
-            <CorrelationMatrixTable
-              matrix={matrix}
-              maxCount={maxCount}
-              onSelectCell={setSelectedCell}
-            />
-            {selectedCell ? (
-              <span className="correlation-detail" role="status">
-                <strong>共享上游</strong>
-                <ul>
-                  {selectedCell.shared_suppliers.map((supplier) => (
-                    <li key={supplier}>{supplier}</li>
-                  ))}
-                </ul>
-              </span>
-            ) : (
-              <span className="empty-note">点击格子查看共享上游。</span>
-            )}
-          </aside>
-        </div>
+        <MatrixDialog matrix={matrix} onClose={() => setIsMatrixOpen(false)} />
       ) : null}
     </small>
   );

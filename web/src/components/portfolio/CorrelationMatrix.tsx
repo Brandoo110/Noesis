@@ -6,7 +6,7 @@ import type {
   CorrelationMatrix as CorrelationMatrixData,
   MatrixAxis
 } from "../../types/api";
-import { CorrelationMatrixTable } from "./CorrelationMatrixTable";
+import { MatrixDialog } from "./MatrixDialog";
 
 interface CorrelationMatrixProps {
   refreshKey?: number;
@@ -17,7 +17,6 @@ export function CorrelationMatrix({
 }: CorrelationMatrixProps): JSX.Element {
   const [matrix, setMatrix] = useState<CorrelationMatrixData | null>(null);
   const [isMatrixOpen, setIsMatrixOpen] = useState(false);
-  const [selectedCell, setSelectedCell] = useState<CorrelationCell | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -26,7 +25,6 @@ export function CorrelationMatrix({
     void getCorrelationMatrix()
       .then((payload) => {
         if (isMounted) {
-          setSelectedCell(null);
           setMatrix(payload);
         }
       })
@@ -40,25 +38,8 @@ export function CorrelationMatrix({
     };
   }, [refreshKey]);
 
-  const maxCount = useMemo(
-    () => Math.max(1, ...(matrix?.cells.map((cell) => cell.shared_count) ?? [0])),
-    [matrix]
-  );
   const topPairs = useMemo(() => topCorrelationPairs(matrix, 5), [matrix]);
   const hasMatrix = matrix !== null && matrix.positions.length >= 2 && matrix.cells.length > 0;
-
-  useEffect(() => {
-    if (!isMatrixOpen) {
-      return undefined;
-    }
-    function handleKeyDown(event: KeyboardEvent): void {
-      if (event.key === "Escape") {
-        setIsMatrixOpen(false);
-      }
-    }
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isMatrixOpen]);
 
   return (
     <small
@@ -111,51 +92,7 @@ export function CorrelationMatrix({
             ))}
           </ul>
           {isMatrixOpen && matrix ? (
-            <div className="matrix-layer">
-              <button
-                aria-label="关闭相关性矩阵遮罩"
-                className="drawer-backdrop"
-                onClick={() => setIsMatrixOpen(false)}
-                type="button"
-              />
-              <aside
-                aria-label="供应链相关性矩阵"
-                aria-modal="true"
-                className="matrix-panel"
-                role="dialog"
-              >
-                <header className="drawer-header">
-                  <div>
-                    <p className="eyebrow">CORRELATION MATRIX</p>
-                    <h2>供应链相关性矩阵</h2>
-                  </div>
-                  <button
-                    aria-label="关闭"
-                    onClick={() => setIsMatrixOpen(false)}
-                    type="button"
-                  >
-                    ×
-                  </button>
-                </header>
-                <CorrelationMatrixTable
-                  matrix={matrix}
-                  maxCount={maxCount}
-                  onSelectCell={setSelectedCell}
-                />
-                {selectedCell ? (
-                  <span className="correlation-detail" role="status">
-                    <strong>共享上游</strong>
-                    <ul>
-                      {selectedCell.shared_suppliers.map((supplier) => (
-                        <li key={supplier}>{supplier}</li>
-                      ))}
-                    </ul>
-                  </span>
-                ) : (
-                  <span className="empty-note">点击格子查看共享上游。</span>
-                )}
-              </aside>
-            </div>
+            <MatrixDialog matrix={matrix} onClose={() => setIsMatrixOpen(false)} />
           ) : null}
         </>
       ) : null}

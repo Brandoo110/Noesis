@@ -81,8 +81,15 @@ describe("CorrelationMatrix", () => {
     const table = within(viewport).getByRole("table", { name: "供应链相关性" });
 
     expect(viewport).toHaveClass("matrix-scroll");
-    expect(table).toHaveAttribute("data-axis-count", "20");
-    expect(within(table).getAllByText("GOOGL").length).toBeGreaterThan(1);
+    expect(table).toHaveAttribute("data-axis-count", "2");
+    expect(within(table).queryByText("GOOGL")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "显示全部持仓" }));
+
+    const fullTable = within(viewport).getByRole("table", { name: "供应链相关性" });
+
+    expect(fullTable).toHaveAttribute("data-axis-count", "20");
+    expect(within(fullTable).getAllByText("GOOGL").length).toBeGreaterThan(1);
   });
 });
 

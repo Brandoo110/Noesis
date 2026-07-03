@@ -96,6 +96,22 @@
   .central-insight-grid {
     grid-template-columns: 1fr;
   }
+  .matrix-panel,
+  .matrix-panel-standard,
+  .matrix-panel-wide,
+  .matrix-panel-full {
+    left: 0;
+    width: 100vw;
+  }
+  .matrix-header,
+  .matrix-mode-bar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .matrix-header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
   .cross-row {
     grid-template-columns: 1fr;
   }

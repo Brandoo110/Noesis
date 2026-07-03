@@ -74,6 +74,37 @@ describe("SupplyChainCross", () => {
       await screen.findByRole("dialog", { name: "供应链相关性矩阵" })
     ).toBeInTheDocument();
   });
+
+  it("opens a resizable matrix drawer focused on top correlated holdings", async () => {
+    getSharedSuppliersMock.mockResolvedValue([makeSharedSupplier()]);
+    getCorrelationMatrixMock.mockResolvedValue(makeLargeCorrelation());
+
+    render(
+      <SupplyChainCross
+        activeRun={{ entity: null, positionId: null }}
+        positions={seededPositions()}
+      />
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: "查看矩阵" }));
+
+    const dialog = await screen.findByRole("dialog", { name: "供应链相关性矩阵" });
+
+    expect(dialog).toHaveClass("matrix-panel-wide");
+    expect(within(dialog).getByText("重点视图：显示 4 / 9 个持仓")).toBeInTheDocument();
+    expect(within(dialog).getAllByText("AAPL").length).toBeGreaterThan(1);
+    expect(within(dialog).getAllByText("MSFT").length).toBeGreaterThan(1);
+    expect(within(dialog).queryByText("XOM")).not.toBeInTheDocument();
+
+    fireEvent.click(within(dialog).getByRole("button", { name: "全屏" }));
+    expect(dialog).toHaveClass("matrix-panel-full");
+
+    fireEvent.click(within(dialog).getByRole("button", { name: "标准" }));
+    expect(dialog).toHaveClass("matrix-panel-standard");
+
+    fireEvent.click(within(dialog).getByRole("button", { name: "显示全部持仓" }));
+    expect(within(dialog).getAllByText("XOM").length).toBeGreaterThan(1);
+  });
 });
 
 function seededPositions(): Position[] {
@@ -120,5 +151,41 @@ function makeCorrelation() {
       shared_count: 1,
       shared_suppliers: ["Taiwan Semiconductor"]
     }]
+  };
+}
+
+function makeLargeCorrelation() {
+  return {
+    positions: [
+      { position_id: "position-aapl", symbol: "AAPL", label: "Apple" },
+      { position_id: "position-msft", symbol: "MSFT", label: "Microsoft" },
+      { position_id: "position-sony", symbol: "SONY", label: "Sony" },
+      { position_id: "position-amd", symbol: "AMD", label: "AMD" },
+      { position_id: "position-amzn", symbol: "AMZN", label: "Amazon" },
+      { position_id: "position-jpm", symbol: "JPM", label: "JPMorgan" },
+      { position_id: "position-nike", symbol: "NKE", label: "Nike" },
+      { position_id: "position-pfe", symbol: "PFE", label: "Pfizer" },
+      { position_id: "position-xom", symbol: "XOM", label: "Exxon Mobil" }
+    ],
+    cells: [
+      {
+        a_position_id: "position-aapl",
+        b_position_id: "position-msft",
+        shared_count: 2,
+        shared_suppliers: ["Taiwan Semiconductor", "Samsung"]
+      },
+      {
+        a_position_id: "position-aapl",
+        b_position_id: "position-sony",
+        shared_count: 1,
+        shared_suppliers: ["Sony Semiconductor"]
+      },
+      {
+        a_position_id: "position-msft",
+        b_position_id: "position-amd",
+        shared_count: 1,
+        shared_suppliers: ["AMD"]
+      }
+    ]
   };
 }

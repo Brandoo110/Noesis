@@ -60,11 +60,64 @@
   top: 0;
   right: 0;
   overflow: auto;
-  width: min(660px, 100vw);
+  width: min(960px, calc(100vw - 72px));
   height: 100%;
   background: var(--surface);
   box-shadow: -24px 0 56px rgba(18, 28, 26, 0.2);
   animation: slideInR 0.24s ease;
+}
+.matrix-panel-standard {
+  width: min(660px, calc(100vw - 72px));
+}
+.matrix-panel-wide {
+  width: min(960px, calc(100vw - 72px));
+}
+.matrix-panel-full {
+  left: 72px;
+  width: auto;
+}
+.matrix-header {
+  gap: 16px;
+}
+.matrix-header-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+  align-items: center;
+}
+.matrix-size-controls {
+  display: flex;
+  gap: 4px;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  background: rgba(245, 247, 244, 0.88);
+  padding: 3px;
+}
+.matrix-size-button {
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-3);
+  padding: 5px 9px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.matrix-size-button.active {
+  background: var(--brand-700);
+  color: #ffffff;
+}
+.matrix-mode-bar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 18px;
+  border-bottom: 1px solid var(--line-2);
+  color: var(--ink-3);
+  padding: 12px 0 0;
+  font-size: 12px;
+  font-weight: 700;
 }
 .matrix-panel .matrix-scroll {
   margin: 18px;
