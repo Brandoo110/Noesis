@@ -17,21 +17,30 @@ describe("CorrelationMatrix", () => {
     vi.clearAllMocks();
   });
 
-  it("renders shared supplier counts with neutral styling and supplier details", async () => {
+  it("renders top shared-supplier pairs and opens the full matrix on demand", async () => {
     getCorrelationMatrixMock.mockResolvedValue(makeMatrix());
 
     render(<CorrelationMatrix />);
 
     const panel = await screen.findByTestId("correlation-matrix-panel");
+
+    expect(panel.tagName.toLowerCase()).toBe("small");
+    expect(within(panel).getByText("仅供参考")).toBeInTheDocument();
+    expect(within(panel).getByText("AAPL / Microsoft")).toBeInTheDocument();
+    expect(within(panel).getByText("2 个共享上游")).toBeInTheDocument();
+    expect(within(panel).getByText("TSMC、Samsung")).toBeInTheDocument();
+    expect(screen.queryByTestId("correlation-matrix-scroll")).not.toBeInTheDocument();
+
+    fireEvent.click(within(panel).getByRole("button", { name: "查看矩阵" }));
+
+    const dialog = await screen.findByRole("dialog", { name: "供应链相关性矩阵" });
     const sharedCell = await screen.findByTestId(
       "correlation-cell-position-aapl-position-msft"
     );
     const diagonalCell = screen.getByTestId("correlation-cell-position-aapl-position-aapl");
 
-    expect(panel.tagName.toLowerCase()).toBe("small");
-    expect(within(panel).getByText("仅供参考")).toBeInTheDocument();
-    expect(within(panel).getAllByText("AAPL")).toHaveLength(2);
-    expect(within(panel).getAllByText("Microsoft")).toHaveLength(2);
+    expect(within(dialog).getAllByText("AAPL")).toHaveLength(2);
+    expect(within(dialog).getAllByText("Microsoft")).toHaveLength(2);
     expect(sharedCell).toHaveTextContent("2");
     const sharedButton = within(sharedCell).getByRole("button", { name: "2" });
     expect(sharedButton.getAttribute("style")).toContain("rgba(76, 84, 92");
@@ -60,6 +69,13 @@ describe("CorrelationMatrix", () => {
     getCorrelationMatrixMock.mockResolvedValue(makeLargeMatrix());
 
     render(<CorrelationMatrix />);
+
+    const panel = await screen.findByTestId("correlation-matrix-panel");
+
+    expect(within(panel).getAllByRole("listitem")).toHaveLength(1);
+    expect(screen.queryByTestId("correlation-matrix-scroll")).not.toBeInTheDocument();
+
+    fireEvent.click(within(panel).getByRole("button", { name: "查看矩阵" }));
 
     const viewport = await screen.findByTestId("correlation-matrix-scroll");
     const table = within(viewport).getByRole("table", { name: "供应链相关性" });

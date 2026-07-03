@@ -1,0 +1,118 @@
+.correlation-card .card-header.compact {
+  align-items: flex-start;
+  justify-content: space-between;
+}
+.correlation-pairs {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.correlation-pair {
+  display: grid;
+  gap: 6px;
+  border: 1px solid var(--line-2);
+  border-radius: 11px;
+  background: #FDFEFD;
+  padding: 10px 11px;
+  list-style: none;
+}
+.correlation-pair-main {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+.correlation-pair-main strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 12.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.correlation-count-badge {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: var(--brand-100);
+  color: var(--brand-700);
+  padding: 3px 8px;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10px;
+  font-weight: 700;
+}
+.correlation-suppliers {
+  overflow: hidden;
+  color: var(--ink-3);
+  font-size: 11.5px;
+  line-height: 1.45;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.matrix-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 58;
+}
+.matrix-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  overflow: auto;
+  width: min(660px, 100vw);
+  height: 100%;
+  background: var(--surface);
+  box-shadow: -24px 0 56px rgba(18, 28, 26, 0.2);
+  animation: slideInR 0.24s ease;
+}
+.matrix-panel .matrix-scroll {
+  margin: 18px;
+  border: 1px solid var(--line-2);
+  border-radius: 14px;
+  background:
+    linear-gradient(#ffffff, #ffffff) padding-box,
+    radial-gradient(circle at 1px 1px, rgba(117, 134, 126, 0.18) 1px, transparent 0)
+      border-box;
+  background-size: auto, 12px 12px;
+  padding: 14px;
+}
+.matrix-panel .matrix {
+  border-spacing: 3px;
+  min-width: 0;
+}
+.matrix-panel .matrix th,
+.matrix-panel .matrix td {
+  width: 38px;
+  min-width: 38px;
+  max-width: 38px;
+  height: 28px;
+}
+.matrix-panel .matrix th {
+  color: var(--ink-2);
+  font-size: 9.5px;
+  letter-spacing: 0;
+}
+.matrix-panel .matrix th:first-child {
+  width: 58px;
+  min-width: 58px;
+  max-width: 58px;
+  background: rgba(255, 255, 255, 0.92);
+}
+.matrix-panel .correlation-cell {
+  width: 100%;
+  min-width: 0;
+  height: 28px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--ink);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.matrix-panel .correlation-detail,
+.matrix-panel .empty-note {
+  display: block;
+  margin: 0 18px 18px;
+}

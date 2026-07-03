@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import type { CSSProperties } from "react";
 
 import { getCorrelationMatrix } from "../../api/client";
 import type {
@@ -7,6 +6,7 @@ import type {
   CorrelationMatrix as CorrelationMatrixData,
   MatrixAxis
 } from "../../types/api";
+import { CorrelationMatrixTable } from "./CorrelationMatrixTable";
 
 interface CorrelationMatrixProps {
   refreshKey?: number;
@@ -16,6 +16,7 @@ export function CorrelationMatrix({
   refreshKey = 0
 }: CorrelationMatrixProps): JSX.Element {
   const [matrix, setMatrix] = useState<CorrelationMatrixData | null>(null);
+  const [isMatrixOpen, setIsMatrixOpen] = useState(false);
   const [selectedCell, setSelectedCell] = useState<CorrelationCell | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,6 +26,7 @@ export function CorrelationMatrix({
     void getCorrelationMatrix()
       .then((payload) => {
         if (isMounted) {
+          setSelectedCell(null);
           setMatrix(payload);
         }
       })
@@ -42,6 +44,21 @@ export function CorrelationMatrix({
     () => Math.max(1, ...(matrix?.cells.map((cell) => cell.shared_count) ?? [0])),
     [matrix]
   );
+  const topPairs = useMemo(() => topCorrelationPairs(matrix, 5), [matrix]);
+  const hasMatrix = matrix !== null && matrix.positions.length >= 2 && matrix.cells.length > 0;
+
+  useEffect(() => {
+    if (!isMatrixOpen) {
+      return undefined;
+    }
+    function handleKeyDown(event: KeyboardEvent): void {
+      if (event.key === "Escape") {
+        setIsMatrixOpen(false);
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isMatrixOpen]);
 
   return (
     <small
@@ -54,6 +71,15 @@ export function CorrelationMatrix({
           <p className="eyebrow">Correlation</p>
           <h2>供应链相关性</h2>
         </div>
+        {hasMatrix ? (
+          <button
+            className="secondary-button small"
+            onClick={() => setIsMatrixOpen(true)}
+            type="button"
+          >
+            查看矩阵
+          </button>
+        ) : null}
       </div>
       <p className="redline-note">
         <strong>仅供参考</strong>
@@ -64,43 +90,72 @@ export function CorrelationMatrix({
       {matrix !== null && (matrix.positions.length < 2 || matrix.cells.length === 0) ? (
         <span className="empty-note">持仓不足，暂无相关性</span>
       ) : null}
-      {matrix !== null && matrix.positions.length >= 2 && matrix.cells.length > 0 ? (
+      {hasMatrix ? (
         <>
-          <div className="matrix-scroll" data-testid="correlation-matrix-scroll">
-            <table
-              aria-label="供应链相关性"
-              className="matrix"
-              data-axis-count={matrix.positions.length}
-            >
-              <thead>
-                <tr>
-                  <th aria-label="持仓" />
-                  {matrix.positions.map((position) => (
-                    <th key={position.position_id}>{positionLabel(position)}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {matrix.positions.map((row) => (
-                  <tr key={row.position_id}>
-                    <th>{positionLabel(row)}</th>
-                    {matrix.positions.map((column) =>
-                      matrixCell(row, column, matrix.cells, maxCount, setSelectedCell)
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          {selectedCell ? (
-            <span className="correlation-detail" role="status">
-              <strong>共享上游</strong>
-              <ul>
-                {selectedCell.shared_suppliers.map((supplier) => (
-                  <li key={supplier}>{supplier}</li>
-                ))}
-              </ul>
-            </span>
+          <ul aria-label="共同供应链关注点" className="correlation-pairs">
+            {topPairs.map((pair) => (
+              <li
+                className="correlation-pair"
+                key={`${pair.cell.a_position_id}-${pair.cell.b_position_id}`}
+              >
+                <span className="correlation-pair-main">
+                  <strong>{`${positionLabel(pair.left)} / ${positionLabel(pair.right)}`}</strong>
+                  <span className="correlation-count-badge">
+                    {`${pair.cell.shared_count} 个共享上游`}
+                  </span>
+                </span>
+                <span className="correlation-suppliers">
+                  {supplierSummary(pair.cell.shared_suppliers)}
+                </span>
+              </li>
+            ))}
+          </ul>
+          {isMatrixOpen && matrix ? (
+            <div className="matrix-layer">
+              <button
+                aria-label="关闭相关性矩阵遮罩"
+                className="drawer-backdrop"
+                onClick={() => setIsMatrixOpen(false)}
+                type="button"
+              />
+              <aside
+                aria-label="供应链相关性矩阵"
+                aria-modal="true"
+                className="matrix-panel"
+                role="dialog"
+              >
+                <header className="drawer-header">
+                  <div>
+                    <p className="eyebrow">CORRELATION MATRIX</p>
+                    <h2>供应链相关性矩阵</h2>
+                  </div>
+                  <button
+                    aria-label="关闭"
+                    onClick={() => setIsMatrixOpen(false)}
+                    type="button"
+                  >
+                    ×
+                  </button>
+                </header>
+                <CorrelationMatrixTable
+                  matrix={matrix}
+                  maxCount={maxCount}
+                  onSelectCell={setSelectedCell}
+                />
+                {selectedCell ? (
+                  <span className="correlation-detail" role="status">
+                    <strong>共享上游</strong>
+                    <ul>
+                      {selectedCell.shared_suppliers.map((supplier) => (
+                        <li key={supplier}>{supplier}</li>
+                      ))}
+                    </ul>
+                  </span>
+                ) : (
+                  <span className="empty-note">点击格子查看共享上游。</span>
+                )}
+              </aside>
+            </div>
           ) : null}
         </>
       ) : null}
@@ -108,57 +163,44 @@ export function CorrelationMatrix({
   );
 }
 
-function matrixCell(
-  row: MatrixAxis,
-  column: MatrixAxis,
-  cells: CorrelationCell[],
-  maxCount: number,
-  setSelectedCell: (cell: CorrelationCell) => void
-): JSX.Element {
-  const testId = `correlation-cell-${row.position_id}-${column.position_id}`;
-  if (row.position_id === column.position_id) {
-    return <td data-testid={testId} key={column.position_id} />;
-  }
-  const cell = findCell(row.position_id, column.position_id, cells);
-  if (!cell) {
-    return <td data-testid={testId} key={column.position_id} />;
-  }
-  return (
-    <td data-testid={testId} key={column.position_id}>
-      <button
-        className="correlation-cell"
-        onClick={() => setSelectedCell(cell)}
-        onMouseEnter={() => setSelectedCell(cell)}
-        style={neutralCellStyle(cell.shared_count, maxCount)}
-        type="button"
-      >
-        {cell.shared_count}
-      </button>
-    </td>
-  );
+interface CorrelationPair {
+  cell: CorrelationCell;
+  left: MatrixAxis;
+  right: MatrixAxis;
 }
 
-function findCell(
-  leftPositionId: string,
-  rightPositionId: string,
-  cells: CorrelationCell[]
-): CorrelationCell | undefined {
-  return cells.find(
-    (cell) =>
-      (cell.a_position_id === leftPositionId && cell.b_position_id === rightPositionId) ||
-      (cell.a_position_id === rightPositionId && cell.b_position_id === leftPositionId)
+function topCorrelationPairs(
+  matrix: CorrelationMatrixData | null,
+  limit: number
+): CorrelationPair[] {
+  if (!matrix) return [];
+  const positionsById = new Map(
+    matrix.positions.map((position) => [position.position_id, position])
   );
-}
-
-function neutralCellStyle(count: number, maxCount: number): CSSProperties {
-  const alpha = (0.16 + (count / maxCount) * 0.44).toFixed(2);
-  return { backgroundColor: `rgba(76, 84, 92, ${alpha})` };
+  return matrix.cells
+    .map((cell) => {
+      const left = positionsById.get(cell.a_position_id);
+      const right = positionsById.get(cell.b_position_id);
+      return left && right ? { cell, left, right } : null;
+    })
+    .filter((pair): pair is CorrelationPair => pair !== null)
+    .sort(
+      (left, right) =>
+        right.cell.shared_count - left.cell.shared_count ||
+        positionLabel(left.left).localeCompare(positionLabel(right.left))
+    )
+    .slice(0, limit);
 }
 
 function positionLabel(position: MatrixAxis): string {
   return position.symbol && position.symbol.trim().length > 0
     ? position.symbol
     : position.label;
+}
+
+function supplierSummary(suppliers: string[]): string {
+  const shown = suppliers.slice(0, 3).join("、");
+  return suppliers.length > 3 ? `${shown} 等` : shown;
 }
 
 function toErrorMessage(caught: unknown): string {
