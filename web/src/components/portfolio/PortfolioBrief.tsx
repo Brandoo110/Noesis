@@ -7,7 +7,6 @@ import {
 } from "../../lib/markdown";
 import type { PortfolioBrief as PortfolioBriefData } from "../../types/api";
 import {
-  BriefOverlaps,
   PositionSummaries,
   RunHealthSummary
 } from "./PortfolioBriefSections";
@@ -17,11 +16,13 @@ interface PortfolioBriefProps {
     positionId: string | null;
     status: string;
   };
+  onSelectPosition?: (positionId: string) => void;
   refreshKey?: number;
 }
 
 export function PortfolioBrief({
   activeRun,
+  onSelectPosition,
   refreshKey = 0
 }: PortfolioBriefProps): JSX.Element {
   const [brief, setBrief] = useState<PortfolioBriefData | null>(null);
@@ -89,23 +90,37 @@ export function PortfolioBrief({
       ) : null}
       {!isLoading && !error && brief ? (
         <>
-          <div className="brief-stats" aria-label="Brief 指标">
+          <div
+            aria-label="Brief 指标"
+            className={
+              issueCount(brief) > 0
+                ? "brief-stats brief-stats-alert"
+                : "brief-stats"
+            }
+          >
             <span>
               <strong>{brief.positions.length}</strong>
-              <small>持仓数量</small>
-            </span>
-            <span>
-              <strong>{brief.overlaps.length}</strong>
-              <small>重叠主题</small>
+              <small>持仓</small>
             </span>
             <span>
               <strong>{confirmedCount(brief)}</strong>
-              <small>thesis ready</small>
+              <small>thesis</small>
+            </span>
+            <span>
+              <strong>{brief.overlaps.length}</strong>
+              <small>重叠</small>
+            </span>
+            <span>
+              <strong>{issueCount(brief)}</strong>
+              <small>异常</small>
             </span>
           </div>
           <RunHealthSummary health={brief.run_health} />
-          <PositionSummaries activeRun={activeRun} brief={brief} />
-          <BriefOverlaps overlaps={brief.overlaps} />
+          <PositionSummaries
+            activeRun={activeRun}
+            brief={brief}
+            onSelectPosition={onSelectPosition}
+          />
         </>
       ) : null}
     </section>
@@ -114,6 +129,14 @@ export function PortfolioBrief({
 
 function confirmedCount(brief: PortfolioBriefData): number {
   return brief.positions.filter((position) => position.thesis_summary).length;
+}
+
+function issueCount(brief: PortfolioBriefData): number {
+  return (
+    brief.run_health.failed +
+    brief.run_health.completed_without_thesis +
+    brief.run_health.degraded_runs
+  );
 }
 
 function toErrorMessage(caught: unknown): string {

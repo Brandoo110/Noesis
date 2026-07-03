@@ -19,25 +19,24 @@ describe("PortfolioBrief", () => {
     vi.clearAllMocks();
   });
 
-  it("renders positions and overlaps with a research-only tone", async () => {
+  it("renders only real thesis summaries and collapses unresearched holdings", async () => {
+    const onSelectPosition = vi.fn();
     getPortfolioBriefMock.mockResolvedValue(makeBrief());
 
-    render(<PortfolioBrief />);
+    render(<PortfolioBrief onSelectPosition={onSelectPosition} />);
 
     const brief = await screen.findByLabelText("组合 Brief");
 
     expect(within(brief).getByText("仅供参考")).toBeInTheDocument();
-    expect(within(brief).getByText("AAPL")).toBeInTheDocument();
+    fireEvent.click(within(brief).getByText("AAPL"));
+    expect(onSelectPosition).toHaveBeenCalledWith("position-aapl");
     expect(
       within(brief).getByText("Apple supplier pressure is easing.")
     ).toBeInTheDocument();
-    expect(within(brief).getByText("MSFT")).toBeInTheDocument();
-    expect(within(brief).getByText("尚未研究")).toBeInTheDocument();
-    expect(within(brief).getByText("Consumer Electronics")).toBeInTheDocument();
-    expect(within(brief).getByText("AAPL / MSFT")).toBeInTheDocument();
-    expect(within(brief).getByText("基于推断")).toBeInTheDocument();
-    expect(within(brief).getByLabelText("Brief 运行健康")).toHaveTextContent(
-      "latest runs"
+    expect(within(brief).queryByText("MSFT")).not.toBeInTheDocument();
+    expect(within(brief).getByText("1 个持仓尚未研究")).toBeInTheDocument();
+    expect(brief.textContent).not.toContain(
+      "has evidence-backed research context"
     );
     expect(brief.textContent).not.toMatch(REDLINE_PATTERN);
   });
@@ -69,9 +68,11 @@ describe("PortfolioBrief", () => {
 
     const health = await screen.findByLabelText("Brief 运行健康");
 
+    expect(health).toHaveTextContent("异常 3");
+    expect(health).toHaveClass("run-health-alert");
     expect(health).toHaveTextContent("MSFT");
     expect(health).toHaveTextContent("failed: graph_wiring_failed");
-    expect(health).toHaveTextContent("completed without thesis");
+    expect(health).toHaveTextContent("完成但无 thesis");
     expect(health).toHaveTextContent("no_intel_for_thesis");
   });
 
@@ -97,7 +98,7 @@ describe("PortfolioBrief", () => {
     expect(screen.getByRole("status")).toHaveTextContent("portfolio-brief.md");
   });
 
-  it("keeps long live summaries compact in the right rail", async () => {
+  it("keeps long live summaries compact and expandable in the right rail", async () => {
     const longSummary = "A".repeat(220);
     getPortfolioBriefMock.mockResolvedValue({
       ...makeBrief(),
@@ -115,6 +116,9 @@ describe("PortfolioBrief", () => {
 
     expect(summary).toHaveTextContent(`${"A".repeat(165)}...`);
     expect(summary).not.toHaveTextContent(longSummary);
+    fireEvent.click(screen.getByRole("button", { name: "展开 AAPL 摘要" }));
+
+    expect(summary).toHaveTextContent(longSummary);
   });
 
   it("retries loading the portfolio brief after an API failure", async () => {

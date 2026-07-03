@@ -11,6 +11,7 @@ interface PortfolioInsightsProps {
     status: string;
   };
   onAnalyzed: () => void;
+  onBriefPositionSelected?: (positionId: string) => void;
   positions: Position[];
   refreshKey: number;
 }
@@ -18,6 +19,7 @@ interface PortfolioInsightsProps {
 export function PortfolioInsights({
   activeRun,
   onAnalyzed,
+  onBriefPositionSelected,
   positions,
   refreshKey
 }: PortfolioInsightsProps): JSX.Element {
@@ -28,6 +30,7 @@ export function PortfolioInsights({
           positionId: activeRun.positionId,
           status: activeRun.status
         }}
+        onSelectPosition={onBriefPositionSelected}
         refreshKey={refreshKey}
       />
       <OverlapPanel refreshKey={refreshKey} />

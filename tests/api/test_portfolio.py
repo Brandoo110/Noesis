@@ -204,6 +204,51 @@ def test_portfolio_brief_returns_null_thesis_for_unresearched_position(
     }
 
 
+def test_portfolio_brief_treats_eval_placeholder_thesis_as_null(
+    api_context: ApiTestContext,
+) -> None:
+    conn = connect(api_context.db_path)
+    try:
+        migrate(conn)
+        with with_tx(conn):
+            PositionsRepo().insert(
+                _position("position-amd", "AMD", "Advanced Micro Devices"),
+                conn=conn,
+            )
+            RunRegistryRepo().insert(
+                _run("run-amd", "position-amd", "entity-amd"),
+                conn=conn,
+            )
+            ThesesRepo().insert(
+                ThesisRow(
+                    id="thesis-amd-placeholder",
+                    position_id="position-amd",
+                    run_id="run-amd",
+                    summary="Advanced Micro Devices has evidence-backed research context.",
+                    status="confirmed",
+                    created_at=NOW,
+                    updated_at=NOW,
+                ),
+                conn=conn,
+            )
+    finally:
+        conn.close()
+
+    response = api_context.client.get("/portfolio/brief")
+    payload = response.json()
+
+    assert response.status_code == 200
+    assert payload["positions"] == [
+        {
+            "position_id": "position-amd",
+            "symbol": "AMD",
+            "name": "Advanced Micro Devices",
+            "thesis_summary": None,
+            "thesis_status": None,
+        }
+    ]
+
+
 def test_portfolio_brief_collapses_duplicate_position_identity(
     api_context: ApiTestContext,
 ) -> None:

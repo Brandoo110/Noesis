@@ -116,3 +116,74 @@
   display: block;
   margin: 0 18px 18px;
 }
+.brief-stats-alert span:last-child {
+  border-color: var(--warn-line);
+  background: var(--warn-bg);
+  color: var(--warn-ink);
+}
+.run-health-alert .run-health-top span {
+  color: var(--amber-700);
+  font-weight: 700;
+}
+.run-health ul {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+}
+.run-health li {
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+  border-radius: 8px;
+  background: var(--warn-bg);
+  color: var(--warn-ink);
+  padding: 6px 8px;
+  list-style: none;
+  font-size: 11.5px;
+}
+.brief-lines ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+}
+.brief-line-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: start;
+  list-style: none;
+}
+.brief-symbol-button {
+  border-radius: 999px;
+  background: var(--brand-100);
+  color: var(--brand-700);
+  padding: 4px 8px;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.brief-summary {
+  color: var(--ink-3);
+  font-family: "IBM Plex Sans", "Noto Sans SC", sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+.brief-expand-button {
+  background: transparent;
+  color: var(--brand-700);
+  padding: 0;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.brief-unresearched-note {
+  margin: 0;
+  border-top: 1px solid var(--line-2);
+  color: var(--muted);
+  padding-top: 8px;
+  font-size: 11.5px;
+}

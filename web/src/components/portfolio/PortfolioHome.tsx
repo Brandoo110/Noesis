@@ -9,16 +9,10 @@ import { PortfolioInsights } from "./PortfolioInsights";
 import { PositionInput, type PositionFormState } from "./PositionInput";
 import { PositionList } from "./PositionList";
 import { PortfolioTopbar, type PortfolioFilters } from "./PortfolioTopbar";
-import { buildInput, matchesKind, matchesResearch, matchesSearch, prefersReducedMotion, toErrorMessage } from "./portfolio-home-utils";
+import { buildInput, graphSeedForPosition, matchesKind, matchesResearch, matchesSearch, prefersReducedMotion, toErrorMessage } from "./portfolio-home-utils";
 import type { GraphSeed } from "../views/view-types";
 
-const EMPTY_FORM: PositionFormState = {
-  symbol: "",
-  market: "US",
-  name: "",
-  kind: "owned"
-};
-
+const EMPTY_FORM: PositionFormState = { symbol: "", market: "US", name: "", kind: "owned" };
 const EMPTY_FILTERS: PortfolioFilters = { kind: "all", research: "all" };
 
 interface PortfolioHomeProps {
@@ -139,11 +133,19 @@ export function PortfolioHome({ onGraphSeedSelected }: PortfolioHomeProps): JSX.
     }
   }
 
+  function handleBriefPositionSelected(positionId: string): void {
+    const nextSeed = graphSeedForPosition(positions, positionId);
+    if (nextSeed === null) {
+      return;
+    }
+    if (shouldRenderInlineGraph) {
+      setGraphSeed(nextSeed);
+    }
+    onGraphSeedSelected?.(nextSeed);
+  }
+
   return (
-    <section
-      aria-labelledby="portfolio-title"
-      className={shouldRenderInlineGraph ? "page-body" : "portfolio-home"}
-    >
+    <section aria-labelledby="portfolio-title" className={shouldRenderInlineGraph ? "page-body" : "portfolio-home"}>
       {shouldRenderInlineGraph ? (
         <PortfolioTopbar
           filters={filters}
@@ -167,11 +169,7 @@ export function PortfolioHome({ onGraphSeedSelected }: PortfolioHomeProps): JSX.
               <h2>持仓</h2>
             </div>
             <span className="count-pill">{filteredPositions.length} ITEMS</span>
-            <button
-              className="primary-button"
-              onClick={() => setIsAddOpen((current) => !current)}
-              type="button"
-            >
+            <button className="primary-button" onClick={() => setIsAddOpen((current) => !current)} type="button">
               + 添加持仓
             </button>
           </header>
@@ -233,6 +231,7 @@ export function PortfolioHome({ onGraphSeedSelected }: PortfolioHomeProps): JSX.
                 status: run.status
               }}
               onAnalyzed={refreshOverlaps}
+              onBriefPositionSelected={handleBriefPositionSelected}
               positions={insightPositions}
               refreshKey={overlapRefreshKey}
             />
