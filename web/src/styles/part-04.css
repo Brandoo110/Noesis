@@ -31,27 +31,6 @@
   color: var(--muted);
   font-size: 11.5px;
 }
-.matrix {
-  display: grid;
-  grid-template-columns: 52px repeat(5, 1fr);
-  gap: 5px;
-  align-items: center;
-}
-.matrix b {
-  color: var(--ink-3);
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 10.5px;
-  text-align: center;
-}
-.matrix span {
-  display: grid;
-  min-height: 28px;
-  place-items: center;
-  border-radius: 5px;
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 10.5px;
-  font-weight: 600;
-}
 .graph-view,
 .ops-view {
   display: grid;

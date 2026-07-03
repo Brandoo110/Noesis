@@ -66,26 +66,32 @@ export function CorrelationMatrix({
       ) : null}
       {matrix !== null && matrix.positions.length >= 2 && matrix.cells.length > 0 ? (
         <>
-          <table className="matrix">
-            <thead>
-              <tr>
-                <th aria-label="持仓" />
-                {matrix.positions.map((position) => (
-                  <th key={position.position_id}>{positionLabel(position)}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {matrix.positions.map((row) => (
-                <tr key={row.position_id}>
-                  <th>{positionLabel(row)}</th>
-                  {matrix.positions.map((column) =>
-                    matrixCell(row, column, matrix.cells, maxCount, setSelectedCell)
-                  )}
+          <div className="matrix-scroll" data-testid="correlation-matrix-scroll">
+            <table
+              aria-label="供应链相关性"
+              className="matrix"
+              data-axis-count={matrix.positions.length}
+            >
+              <thead>
+                <tr>
+                  <th aria-label="持仓" />
+                  {matrix.positions.map((position) => (
+                    <th key={position.position_id}>{positionLabel(position)}</th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {matrix.positions.map((row) => (
+                  <tr key={row.position_id}>
+                    <th>{positionLabel(row)}</th>
+                    {matrix.positions.map((column) =>
+                      matrixCell(row, column, matrix.cells, maxCount, setSelectedCell)
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
           {selectedCell ? (
             <span className="correlation-detail" role="status">
               <strong>共享上游</strong>

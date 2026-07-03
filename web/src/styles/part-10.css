@@ -15,6 +15,48 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.matrix-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+.matrix {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: separate;
+  border-spacing: 4px;
+  table-layout: fixed;
+}
+.matrix th,
+.matrix td {
+  box-sizing: border-box;
+  width: 44px;
+  min-width: 44px;
+  max-width: 44px;
+  height: 28px;
+  padding: 0;
+  text-align: center;
+  vertical-align: middle;
+}
+.matrix th {
+  overflow: hidden;
+  color: var(--ink);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10.5px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.matrix th:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  width: 64px;
+  min-width: 64px;
+  max-width: 64px;
+  background: var(--surface);
+  text-align: right;
+}
 .drawer-header-actions {
   display: flex;
   flex: 0 0 auto;

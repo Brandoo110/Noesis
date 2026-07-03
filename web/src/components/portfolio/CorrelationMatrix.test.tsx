@@ -55,6 +55,19 @@ describe("CorrelationMatrix", () => {
 
     expect(await screen.findByText("持仓不足，暂无相关性")).toBeInTheDocument();
   });
+
+  it("keeps large matrices inside a scroll viewport", async () => {
+    getCorrelationMatrixMock.mockResolvedValue(makeLargeMatrix());
+
+    render(<CorrelationMatrix />);
+
+    const viewport = await screen.findByTestId("correlation-matrix-scroll");
+    const table = within(viewport).getByRole("table", { name: "供应链相关性" });
+
+    expect(viewport).toHaveClass("matrix-scroll");
+    expect(table).toHaveAttribute("data-axis-count", "20");
+    expect(within(table).getAllByText("GOOGL").length).toBeGreaterThan(1);
+  });
 });
 
 function makeMatrix(): CorrelationMatrixData {
@@ -69,6 +82,46 @@ function makeMatrix(): CorrelationMatrixData {
         b_position_id: "position-msft",
         shared_count: 2,
         shared_suppliers: ["TSMC", "Samsung"]
+      }
+    ]
+  };
+}
+
+function makeLargeMatrix(): CorrelationMatrixData {
+  const symbols = [
+    "AAPL",
+    "MSFT",
+    "SONY",
+    "tesla",
+    "AMD",
+    "AMZN",
+    "ASML",
+    "BABA",
+    "COST",
+    "DIS",
+    "GOOGL",
+    "JPM",
+    "META",
+    "NFLX",
+    "NKE",
+    "NVDA",
+    "PFE",
+    "TM",
+    "TSLA",
+    "XOM"
+  ];
+  return {
+    positions: symbols.map((symbol) => ({
+      position_id: `position-${symbol.toLowerCase()}`,
+      symbol,
+      label: symbol
+    })),
+    cells: [
+      {
+        a_position_id: "position-aapl",
+        b_position_id: "position-msft",
+        shared_count: 1,
+        shared_suppliers: ["TSMC"]
       }
     ]
   };
