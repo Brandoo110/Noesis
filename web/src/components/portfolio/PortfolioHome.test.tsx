@@ -116,7 +116,7 @@ describe("PortfolioHome", () => {
     expect(listPositionsMock).toHaveBeenCalledTimes(2);
   });
 
-  it("mounts portfolio overlap hints below the position list", async () => {
+  it("mounts overlap and supply-chain cross insights below the position list", async () => {
     listPositionsMock.mockResolvedValue([
       makePosition({ id: "position-1", symbol: "AAPL", name: "Apple" })
     ]);
@@ -125,10 +125,15 @@ describe("PortfolioHome", () => {
     render(<PortfolioHome />);
 
     await screen.findByLabelText("持仓列表");
+    const centralInsights = await screen.findByLabelText("组合中央洞察");
     const overlapPanel = await screen.findByLabelText("组合重叠提示");
+    const crossPanel = await screen.findByTestId("supply-chain-cross-panel");
+
+    expect(centralInsights).toContainElement(overlapPanel);
+    expect(centralInsights).toContainElement(crossPanel);
     expect(within(overlapPanel).getByText("Consumer Electronics")).toBeInTheDocument();
     expect(within(overlapPanel).getByText("AAPL / MSFT")).toBeInTheDocument();
-    expect(await screen.findByLabelText("组合 Brief")).toBeInTheDocument();
+    expect(await screen.findByLabelText("组合 Brief")).not.toHaveTextContent("Consumer Electronics");
     expect(screen.getByText("Apple supplier pressure is easing.")).toBeInTheDocument();
   });
 

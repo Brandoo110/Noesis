@@ -63,14 +63,11 @@ describe("App V1.5 supply chain path", () => {
     expect(expandEntityMock).toHaveBeenCalledWith("entity-aapl", "position-aapl");
     expect(expandEntityMock).toHaveBeenCalledWith("entity-msft", "position-msft");
 
-    const sharedPanel = await screen.findByTestId("shared-suppliers-panel");
-    const correlationPanel = await screen.findByTestId("correlation-matrix-panel");
-    expect(within(sharedPanel).getByText("Taiwan Semiconductor")).toBeInTheDocument();
-    expect(within(sharedPanel).getByText("AAPL / MSFT")).toBeInTheDocument();
-    expect(within(correlationPanel).getByText("AAPL / MSFT")).toBeInTheDocument();
-    expect(within(correlationPanel).getByText("1 个共享上游")).toBeInTheDocument();
+    const crossPanel = await screen.findByTestId("supply-chain-cross-panel");
+    expect(within(crossPanel).getByText("AAPL × MSFT")).toBeInTheDocument();
+    expect(within(crossPanel).getByText("共享 Taiwan Semiconductor")).toBeInTheDocument();
 
-    fireEvent.click(within(correlationPanel).getByRole("button", { name: "查看矩阵" }));
+    fireEvent.click(within(crossPanel).getByRole("button", { name: "查看矩阵" }));
 
     expect(
       within(screen.getByTestId("correlation-cell-position-aapl-position-msft")).getByText("1")

@@ -93,7 +93,8 @@ describe("PortfolioView", () => {
 
     expect(await screen.findByText("AAPL")).toBeInTheDocument();
     expect(await screen.findByText("Consumer Electronics")).toBeInTheDocument();
-    expect((await screen.findAllByText("Taiwan Semiconductor")).length).toBeGreaterThan(0);
+    expect(await screen.findByTestId("supply-chain-cross-panel")).toBeInTheDocument();
+    expect(await screen.findByText("共享 Taiwan Semiconductor")).toBeInTheDocument();
     expect(getOverlapsMock).toHaveBeenCalled();
     expect(getSharedSuppliersMock).toHaveBeenCalled();
     expect(getCorrelationMatrixMock).toHaveBeenCalled();

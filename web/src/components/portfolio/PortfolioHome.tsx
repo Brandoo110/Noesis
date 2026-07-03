@@ -4,11 +4,13 @@ import { createPosition, listPositions } from "../../api/client";
 import { usePortfolioRunSeeds } from "../../hooks/use-portfolio-run-seeds";
 import { useRun } from "../../hooks/use-run";
 import type { Position } from "../../types/api";
+import { OverlapPanel } from "./OverlapPanel";
+import { PortfolioBrief } from "./PortfolioBrief";
 import { PortfolioGraphWorkspace } from "./PortfolioGraphWorkspace";
-import { PortfolioInsights } from "./PortfolioInsights";
 import { PositionInput, type PositionFormState } from "./PositionInput";
 import { PositionList } from "./PositionList";
 import { PortfolioTopbar, type PortfolioFilters } from "./PortfolioTopbar";
+import { SupplyChainCross } from "./SupplyChainCross";
 import { buildInput, graphSeedForPosition, matchesKind, matchesResearch, matchesSearch, prefersReducedMotion, toErrorMessage } from "./portfolio-home-utils";
 import type { GraphSeed } from "../views/view-types";
 
@@ -162,77 +164,71 @@ export function PortfolioHome({ onGraphSeedSelected }: PortfolioHomeProps): JSX.
       {error ? <p className="compact-alert" role="alert">{error}</p> : null}
 
       <div className="home-grid">
-        <section className="card positions-card" aria-label="持仓控制台" id="positions">
-          <header className="card-header">
-            <div>
-              <p className="eyebrow">Portfolio</p>
-              <h2>持仓</h2>
-            </div>
-            <span className="count-pill">{filteredPositions.length} ITEMS</span>
-            <button className="primary-button" onClick={() => setIsAddOpen((current) => !current)} type="button">
-              + 添加持仓
-            </button>
-          </header>
-
-          {isAddOpen ? (
-            <PositionInput
-              form={form}
-              isSaving={isSaving}
-              onSubmit={(event) => void handleSubmit(event)}
-              setForm={setForm}
-            />
-          ) : null}
-
-          {isLoading ? (
-            <p className="empty-note">加载中...</p>
-          ) : positionsError ? (
-            <div className="compact-alert" role="alert">
-              <span>{positionsError}</span>
-              <button onClick={() => void refreshPositions()} type="button">
-                重新加载持仓
+        <div className="portfolio-main-stack">
+          <section className="card positions-card" aria-label="持仓控制台" id="positions">
+            <header className="card-header">
+              <div>
+                <p className="eyebrow">Portfolio</p>
+                <h2>持仓</h2>
+              </div>
+              <span className="count-pill">{filteredPositions.length} ITEMS</span>
+              <button className="primary-button" onClick={() => setIsAddOpen((current) => !current)} type="button">
+                + 添加持仓
               </button>
-            </div>
-          ) : (
-            <PositionList
-              activePositionId={activePositionId}
-              onViewGraph={(positionId, runId, seedEntity) => {
-                const nextSeed = { positionId, runId, seedEntity };
-                if (shouldRenderInlineGraph) {
-                  setGraphSeed(nextSeed);
-                }
-                onGraphSeedSelected?.(nextSeed);
-              }}
-              onStartRun={handleStartRun}
-              emptyMessage={positions.length === 0 ? "暂无持仓" : "没有匹配的持仓"}
-              positions={filteredPositions}
-              runEntity={run.entity}
-              runId={run.runId}
-              runPositionId={run.positionId}
-              runStatus={run.status}
-            />
-          )}
-        </section>
+            </header>
+
+            {isAddOpen ? (
+              <PositionInput form={form} isSaving={isSaving} onSubmit={(event) => void handleSubmit(event)} setForm={setForm} />
+            ) : null}
+
+            {isLoading ? (
+              <p className="empty-note">加载中...</p>
+            ) : positionsError ? (
+              <div className="compact-alert" role="alert">
+                <span>{positionsError}</span>
+                <button onClick={() => void refreshPositions()} type="button">重新加载持仓</button>
+              </div>
+            ) : (
+              <PositionList
+                activePositionId={activePositionId}
+                onViewGraph={(positionId, runId, seedEntity) => {
+                  const nextSeed = { positionId, runId, seedEntity };
+                  if (shouldRenderInlineGraph) {
+                    setGraphSeed(nextSeed);
+                  }
+                  onGraphSeedSelected?.(nextSeed);
+                }}
+                onStartRun={handleStartRun}
+                emptyMessage={positions.length === 0 ? "暂无持仓" : "没有匹配的持仓"}
+                positions={filteredPositions} runEntity={run.entity} runId={run.runId}
+                runPositionId={run.positionId}
+                runStatus={run.status}
+              />
+            )}
+          </section>
+
+          {!isLoading ? (
+            <section aria-label="组合中央洞察" className="central-insight-grid">
+              <OverlapPanel refreshKey={overlapRefreshKey} />
+              <SupplyChainCross
+                activeRun={{ entity: run.entity, positionId: run.positionId }}
+                onAnalyzed={refreshOverlaps}
+                positions={insightPositions}
+                refreshKey={overlapRefreshKey}
+              />
+            </section>
+          ) : null}
+        </div>
 
         {shouldRenderInlineGraph ? (
-          <PortfolioGraphWorkspace
-            graphSeed={graphSeed}
-            onRetryResearch={handleStartRun}
-            onThesisConfirmed={handleThesisConfirmed}
-            workspaceRef={workspaceRef}
-          />
+          <PortfolioGraphWorkspace graphSeed={graphSeed} onRetryResearch={handleStartRun} onThesisConfirmed={handleThesisConfirmed} workspaceRef={workspaceRef} />
         ) : null}
 
         <aside className="side-stack" aria-label="组合洞察">
           {!isLoading ? (
-            <PortfolioInsights
-              activeRun={{
-                entity: run.entity,
-                positionId: run.positionId,
-                status: run.status
-              }}
-              onAnalyzed={refreshOverlaps}
-              onBriefPositionSelected={handleBriefPositionSelected}
-              positions={insightPositions}
+            <PortfolioBrief
+              activeRun={{ positionId: run.positionId, status: run.status }}
+              onSelectPosition={handleBriefPositionSelected}
               refreshKey={overlapRefreshKey}
             />
           ) : null}

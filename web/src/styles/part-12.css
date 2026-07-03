@@ -1,0 +1,63 @@
+.portfolio-main-stack {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+.central-insight-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.supply-chain-cross .card-header.compact {
+  align-items: flex-start;
+  justify-content: space-between;
+}
+.cross-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.cross-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cross-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 8px;
+  align-items: center;
+  border: 1px solid var(--line-2);
+  border-radius: 10px;
+  background: #FDFEFD;
+  padding: 9px 10px;
+  list-style: none;
+}
+.cross-row strong,
+.cross-row span:not(.basis-badge) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cross-row strong {
+  color: var(--ink);
+  font-size: 12px;
+}
+.cross-row span:not(.basis-badge) {
+  color: var(--ink-3);
+  font-size: 11.5px;
+}
+@media (max-width: 900px) {
+  .central-insight-grid {
+    grid-template-columns: 1fr;
+  }
+  .cross-row {
+    grid-template-columns: 1fr;
+  }
+  .cross-actions {
+    justify-content: flex-start;
+  }
+}
