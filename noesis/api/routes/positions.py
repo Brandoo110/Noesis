@@ -4,11 +4,13 @@ from fastapi import APIRouter, Depends, Response, status
 
 from noesis.api.deps import get_graph_deps
 from noesis.api.dto import CreatePositionRequest, EntityNodeResponse, PositionResponse
+from noesis.api.dto_positions import ResolvePositionRequest, ResolvePositionResponse
 from noesis.api.position_rows import dedupe_positions, position_label, preferred_position
 from noesis.db.connection import with_tx
 from noesis.db.models import EntityRow, PositionRow, RunRow
+from noesis.graph.nodes.intake_resolve import preview_resolve
 from noesis.graph.runner import get_run_snapshot
-from noesis.graph.schemas import ResolvedEntity
+from noesis.graph.schemas import PositionInput, ResolvedEntity
 from noesis.graph.state import GraphDeps
 
 router = APIRouter(prefix="/positions", tags=["positions"])
@@ -54,6 +56,49 @@ def create_position(
     with with_tx(deps.repos.conn):
         deps.repos.positions.insert(row)
     return _position_response(row, deps)
+
+
+@router.post("/resolve", response_model=ResolvePositionResponse)
+def resolve_position(
+    request: ResolvePositionRequest,
+    deps: GraphDeps = Depends(get_graph_deps),
+) -> ResolvePositionResponse:
+    market = request.market.strip().upper()
+    raw_input = PositionInput(
+        symbol=_normalize_symbol(request.symbol) or None,
+        market=market,
+        name=_normalize_name(request.name),
+        kind=request.kind,
+    )
+    resolved = preview_resolve(raw_input, deps)
+    if resolved is None:
+        return ResolvePositionResponse(
+            status="unresolved",
+            name=raw_input.name,
+            symbol=raw_input.symbol,
+            market=market,
+            node_type=None,
+            existing_position_id=None,
+            existing_position_label=None,
+        )
+    symbol = resolved.identifiers.get("symbol")
+    resolved_market = (resolved.market or market).strip().upper()
+    existing = deps.repos.positions.list_by_identity(
+        "local-user",
+        symbol or resolved.name,
+        resolved_market,
+        request.kind,
+    )
+    row = preferred_position(existing, deps) if existing else None
+    return ResolvePositionResponse(
+        status="resolved",
+        name=resolved.name,
+        symbol=symbol,
+        market=resolved_market,
+        node_type=resolved.node_type,
+        existing_position_id=row.id if row is not None else None,
+        existing_position_label=position_label(row) if row is not None else None,
+    )
 
 
 @router.get("", response_model=list[PositionResponse])

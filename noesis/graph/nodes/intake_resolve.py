@@ -38,6 +38,31 @@ def intake_resolve(state: ResearchState, deps: GraphDeps) -> ResearchStateUpdate
     return {"resolved_entity": resolved, "entity_id": resolved.entity_id, "degraded": degraded}
 
 
+def preview_resolve(
+    raw_input: PositionInput, deps: GraphDeps
+) -> ResolvedEntity | None:
+    """Resolve a holding into an entity without persisting anything.
+
+    Used by the position-entry confirmation flow: the user sees the resolved
+    company and confirms before the position (or entity) is written.
+    """
+    if raw_input.symbol:
+        existing = deps.repos.entities.find_by_symbol(
+            raw_input.market, raw_input.symbol
+        )
+        if existing is not None:
+            return _row_to_resolved(existing)
+    if not deps.llm.available(LLMRole.LIGHT):
+        return None
+    try:
+        resolved = deps.llm.complete_json(
+            LLMRole.LIGHT, _prompt(raw_input), ResolvedEntity
+        )
+    except (LLMUnavailableError, ResearchNodeError):
+        return None
+    return _normalize_entity_identifiers(resolved)
+
+
 def _row_to_resolved(row: EntityRow) -> ResolvedEntity:
     return ResolvedEntity(
         entity_id=row.id,
@@ -109,8 +134,9 @@ def _prompt(raw_input: PositionInput) -> str:
     return (
         "Resolve this investment holding into a company entity. "
         "In identifiers, use the key 'symbol' for listed tickers; do not use "
-        "a symbol identifier for private companies or when no public ticker exists. "
-        "'ticker' or 'code'. Examples: {'symbol':'AAPL'}, {'cik':'0000320193'}, "
+        "'ticker' or 'code'. Do not include a symbol identifier for private "
+        "companies or when no public ticker exists. "
+        "Examples: {'symbol':'AAPL'}, {'cik':'0000320193'}, "
         "{'isin':'US0378331005'}. "
         f"symbol={raw_input.symbol or ''}; market={raw_input.market}; name={raw_input.name or ''}"
     )
