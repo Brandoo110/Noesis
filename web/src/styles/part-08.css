@@ -134,8 +134,8 @@
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
       "symbol"
-      "actions"
-      "status";
+      "status"
+      "actions";
     gap: 8px 10px;
   }
 
@@ -154,9 +154,9 @@
     justify-self: start;
   }
 
-  .pos-cell-market,
-  .pos-cell-kind {
-    display: none;
+  .status-chip {
+    grid-area: status;
+    justify-self: start;
   }
 
   .add-form {

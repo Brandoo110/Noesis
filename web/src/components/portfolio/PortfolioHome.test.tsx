@@ -47,7 +47,7 @@ describe("PortfolioHome", () => {
 
     expect(within(list).getByText("AAPL")).toBeInTheDocument();
     expect(within(list).getByText("Apple")).toBeInTheDocument();
-    expect(within(list).getByText("owned")).toBeInTheDocument();
+    expect(within(list).getByText("US · owned")).toBeInTheDocument();
   });
 
   it("filters positions by global search and topbar filters", async () => {

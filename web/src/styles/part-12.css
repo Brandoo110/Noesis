@@ -50,6 +50,48 @@
   color: var(--ink-3);
   font-size: 11.5px;
 }
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  gap: 6px;
+  max-width: 100%;
+  overflow: hidden;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.status-chip strong,
+.status-chip span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.status-ready {
+  background: var(--brand-100);
+  color: var(--brand-700);
+}
+.status-running {
+  background: #ECF2F1;
+  color: var(--ink-2);
+}
+.status-idle {
+  background: #F0F3EF;
+  color: var(--muted);
+}
+.status-pending {
+  background: var(--warn-bg);
+  color: var(--warn-ink);
+}
+.row-actions-muted {
+  opacity: 0.68;
+  transition: opacity 0.16s ease;
+}
+.pos-row:hover .row-actions-muted,
+.pos-row:focus-within .row-actions-muted {
+  opacity: 1;
+}
 @media (max-width: 900px) {
   .central-insight-grid {
     grid-template-columns: 1fr;
