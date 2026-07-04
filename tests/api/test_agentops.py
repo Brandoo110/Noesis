@@ -139,6 +139,14 @@ def test_delete_runs_clears_run_history_but_keeps_positions_and_entities(
     api_context: ApiTestContext,
 ) -> None:
     _seed_agentops_run(api_context.db_path)
+    with connect(api_context.db_path) as conn:
+        with with_tx(conn):
+            conn.execute(
+                """
+                INSERT INTO evidences_fts(evidence_id, title, snippet)
+                VALUES ('evidence-agentops-1', 'Apple evidence', 'Apple evidence snippet.')
+                """
+            )
 
     response = api_context.client.delete("/runs")
     payload = response.json()
@@ -153,6 +161,7 @@ def test_delete_runs_clears_run_history_but_keeps_positions_and_entities(
     with connect(api_context.db_path) as conn:
         assert conn.execute("SELECT COUNT(*) FROM positions").fetchone()[0] == 1
         assert conn.execute("SELECT COUNT(*) FROM entities").fetchone()[0] == 1
+        assert conn.execute("SELECT COUNT(*) FROM evidences_fts").fetchone()[0] == 0
 
 
 def test_get_run_trace_combines_node_and_tool_timeline(

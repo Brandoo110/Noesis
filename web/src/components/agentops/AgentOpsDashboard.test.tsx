@@ -253,6 +253,27 @@ describe("AgentOpsDashboard", () => {
     expect(await screen.findByText("search.tavily")).toBeInTheDocument();
   });
 
+  it("shows a styled retry action when clearing runs fails", async () => {
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+    listRunsMock.mockResolvedValue(makeRunList());
+    getMetricsSummaryMock.mockResolvedValue(makeMetrics());
+    getRunTraceMock.mockResolvedValue(makeTrace());
+    clearRunsMock.mockRejectedValue(new Error("DELETE /runs failed: 500"));
+
+    render(<AgentOpsDashboard />);
+
+    await screen.findByText("run-agentops");
+    fireEvent.click(screen.getByRole("button", { name: "清空 Run 记录" }));
+
+    expect(await screen.findByText("DELETE /runs failed: 500")).toBeInTheDocument();
+    const alert = screen.getByRole("alert");
+    expect(within(alert).getByRole("button", { name: "刷新 AgentOps" })).toHaveClass(
+      "compact-alert-action"
+    );
+
+    confirmSpy.mockRestore();
+  });
+
   it("paginates run list and loads a run from the next page", async () => {
     listRunsMock.mockResolvedValue({ runs: makeManyRuns(10) });
     getMetricsSummaryMock.mockResolvedValue(makeMetrics());

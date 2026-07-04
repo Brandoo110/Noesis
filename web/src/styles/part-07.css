@@ -51,12 +51,31 @@
   color: var(--ink-3);
 }
 .compact-alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   border: 1px solid var(--warn-line);
   border-radius: 10px;
   background: var(--warn-bg);
   color: var(--warn-ink);
   padding: 9px 10px;
   font-size: 12px;
+}
+.compact-alert-action {
+  min-height: 30px;
+  border: 1px solid rgba(124, 79, 0, 0.28);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--warn-ink);
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 700;
+  box-shadow: 0 1px 2px rgba(26, 40, 36, 0.08);
+}
+.compact-alert-action:hover {
+  border-color: rgba(124, 79, 0, 0.46);
+  background: #FFF9EA;
 }
 .legend-line.source {
   border-color: var(--brand-700);

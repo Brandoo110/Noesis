@@ -119,6 +119,11 @@ def clear_runs(deps: GraphDeps = Depends(get_graph_deps)) -> ClearRunsResponse:
     deleted = {table: _table_count(deps, table) for table in tables}
     with with_tx(deps.repos.conn):
         for table in tables:
+            if table == "evidences_fts":
+                deps.repos.conn.execute(
+                    "INSERT INTO evidences_fts(evidences_fts) VALUES('delete-all')"
+                )
+                continue
             deps.repos.conn.execute(f"DELETE FROM {table}")
     return ClearRunsResponse(deleted=deleted)
 

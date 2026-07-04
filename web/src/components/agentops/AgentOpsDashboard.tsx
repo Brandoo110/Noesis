@@ -175,6 +175,7 @@ export function AgentOpsDashboard(): JSX.Element {
           <span>{error}</span>
           <button
             aria-label="刷新 AgentOps"
+            className="compact-alert-action"
             onClick={() => void loadDashboard()}
             type="button"
           >
