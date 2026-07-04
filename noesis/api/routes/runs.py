@@ -8,6 +8,7 @@ from noesis.agentops.diagnostics import (
     RunDiagnostic,
     build_run_diagnostic,
 )
+from noesis.agentops.evidence_preview import clean_evidence_preview
 from noesis.db.connection import with_tx
 from noesis.db.models import EvidenceRow, NodeTraceRow, ToolInvocationRow
 from noesis.api.deps import get_graph_deps
@@ -297,7 +298,7 @@ def _evidence_preview_response(item: EvidenceRow) -> EvidencePreviewResponse:
         title=item.title,
         source=item.source,
         url=item.url,
-        snippet=item.snippet,
+        snippet=clean_evidence_preview(item.snippet, item.title),
         source_tier=item.source_tier,
         published_at=item.published_at,
     )

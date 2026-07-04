@@ -194,6 +194,37 @@ def test_get_run_trace_combines_node_and_tool_timeline(
     assert payload["steps"][2]["cache_hit"] is True
 
 
+def test_get_run_trace_cleans_evidence_preview_snippets(
+    api_context: ApiTestContext,
+) -> None:
+    _seed_agentops_run(
+        api_context.db_path,
+        evidence_snippet=(
+            "Skip to Content\n"
+            "Got a tip for us?Let us know\n"
+            "a. Send us an email\n"
+            "> Bloomberg corroborates The FT report today, adding that Apple is "
+            "lobbying Washington and in negotiations with two Chinese companies. "
+            "> Apple Inc. is in negotiations to purchase chips from two Chinese "
+            "semiconductor makers to reduce the impact of a global memory shortage."
+        ),
+    )
+
+    response = api_context.client.get("/runs/run-agentops/trace")
+    snippet = response.json()["evidence_previews"][0]["snippet"]
+
+    assert response.status_code == 200
+    assert "Skip to Content" not in snippet
+    assert "Got a tip" not in snippet
+    assert ">" not in snippet
+    assert snippet == (
+        "Bloomberg corroborates The FT report today, adding that Apple is "
+        "lobbying Washington and in negotiations with two Chinese companies. "
+        "Apple Inc. is in negotiations to purchase chips from two Chinese "
+        "semiconductor makers to reduce the impact of a global memory shortage."
+    )
+
+
 def test_get_run_trace_diagnoses_degraded_and_failed_steps(
     api_context: ApiTestContext,
 ) -> None:
@@ -287,6 +318,7 @@ def _seed_agentops_run(
     fallback_used: str | None = None,
     tool_status: str = "success",
     tool_error: str | None = None,
+    evidence_snippet: str = "Apple evidence snippet.",
 ) -> None:
     with connect(db_path) as conn:
         migrate(conn)
@@ -328,7 +360,7 @@ def _seed_agentops_run(
                         source_tier=2,
                         url="https://example.com/apple",
                         title="Apple evidence",
-                        snippet="Apple evidence snippet.",
+                        snippet=evidence_snippet,
                         captured_at=NOW,
                         published_at=None,
                         created_at=NOW,
