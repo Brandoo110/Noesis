@@ -26,7 +26,7 @@ const getPortfolioBriefMock = vi.mocked(client.getPortfolioBrief);
 const getSharedSuppliersMock = vi.mocked(client.getSharedSuppliers);
 const listPositionsMock = vi.mocked(client.listPositions);
 
-describe("PortfolioHome position deletion", () => {
+describe("PortfolioHome empty and deletion states", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     getCorrelationMatrixMock.mockResolvedValue({ positions: [], cells: [] });
@@ -53,5 +53,16 @@ describe("PortfolioHome position deletion", () => {
     expect(await screen.findByText("暂无持仓")).toBeInTheDocument();
     expect(listPositionsMock).toHaveBeenCalledTimes(2);
     confirmSpy.mockRestore();
+  });
+
+  it("renders the empty portfolio count and message with localized card spacing", async () => {
+    listPositionsMock.mockResolvedValue([]);
+
+    render(<PortfolioHome />);
+
+    const emptyMessage = await screen.findByText("暂无持仓");
+    expect(emptyMessage).toHaveClass("position-list-empty");
+    expect(screen.getByText("0 项")).toBeInTheDocument();
+    expect(screen.queryByText(/ITEMS/)).not.toBeInTheDocument();
   });
 });

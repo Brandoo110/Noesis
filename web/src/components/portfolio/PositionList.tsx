@@ -26,7 +26,7 @@ export function PositionList({
   runStatus
 }: PositionListProps): JSX.Element {
   if (positions.length === 0) {
-    return <p className="empty-note">{emptyMessage}</p>;
+    return <p className="empty-note position-list-empty">{emptyMessage}</p>;
   }
 
   return (

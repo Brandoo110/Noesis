@@ -173,7 +173,7 @@ export function PortfolioHome({ onGraphSeedSelected }: PortfolioHomeProps): JSX.
                 <p className="eyebrow">Portfolio</p>
                 <h2>持仓</h2>
               </div>
-              <span className="count-pill">{filteredPositions.length} ITEMS</span>
+              <span className="count-pill">{filteredPositions.length} 项</span>
               <button className="primary-button" onClick={() => setIsAddOpen((current) => !current)} type="button">
                 + 添加持仓
               </button>
