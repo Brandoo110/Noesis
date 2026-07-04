@@ -7,6 +7,7 @@ from hashlib import sha256
 
 from noesis.db.connection import with_tx
 from noesis.eval.cases import EvalCase
+from noesis.eval.users import EVAL_USER_ID
 from noesis.graph.state import GraphDeps
 
 
@@ -26,10 +27,11 @@ def _has_seed_run(case: EvalCase, conn: sqlite3.Connection) -> bool:
         JOIN positions ON positions.id = run_registry.position_id
         WHERE upper(positions.symbol) = ?
           AND positions.market = ?
+          AND positions.user_id = ?
           AND run_registry.node_kind = 'seed'
         LIMIT 1
         """,
-        (case.symbol.upper(), case.market),
+        (case.symbol.upper(), case.market, EVAL_USER_ID),
     ).fetchone()
     return row is not None
 
@@ -110,7 +112,7 @@ def _insert_position(
         """,
         (
             position_id,
-            "local-user",
+            EVAL_USER_ID,
             case.symbol,
             case.market,
             case.name,

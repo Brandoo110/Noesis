@@ -40,6 +40,7 @@ from noesis.eval.report import (
 )
 from noesis.eval.fixtures import seed_eval_fixture_runs
 from noesis.eval.runner import evaluate_existing_runs as evaluate_existing_runs_from_db
+from noesis.eval.users import EVAL_USER_ID
 from noesis.graph.runner import build_graph_deps, get_run_snapshot, start_run
 from noesis.graph.schemas import EvidenceRecord, GraphEdgeDraft, PositionInput, ResolvedEntity
 from noesis.graph.state import GraphDeps
@@ -182,11 +183,11 @@ def _ensure_position(case: EvalCase, deps: GraphDeps) -> str:
     row = deps.repos.conn.execute(
         """
         SELECT * FROM positions
-        WHERE user_id = 'local-user' AND upper(symbol) = ? AND market = ?
+        WHERE user_id = ? AND upper(symbol) = ? AND market = ?
         ORDER BY created_at DESC, id DESC
         LIMIT 1
         """,
-        (case.symbol.upper(), case.market),
+        (EVAL_USER_ID, case.symbol.upper(), case.market),
     ).fetchone()
     if row is not None:
         return str(row["id"])
@@ -196,7 +197,7 @@ def _ensure_position(case: EvalCase, deps: GraphDeps) -> str:
         deps.repos.positions.insert(
             PositionRow(
                 id=position_id,
-                user_id="local-user",
+                user_id=EVAL_USER_ID,
                 symbol=case.symbol,
                 market=case.market,
                 name=case.name,

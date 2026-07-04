@@ -147,6 +147,66 @@ def test_eval_seed_fixtures_completes_all_eval_cases(tmp_path: Path) -> None:
         conn.close()
 
 
+def test_eval_live_positions_use_eval_user_without_touching_local_user(
+    tmp_path: Path,
+) -> None:
+    module = load_eval_module()
+    conn = connect(tmp_path / "noesis.db")
+    checkpoint_conn = sqlite3.connect(tmp_path / "checkpoints.db", check_same_thread=False)
+    try:
+        migrate(conn)
+        seed_completed_run(conn)
+        deps = build_graph_deps(
+            conn=conn,
+            checkpoint_conn=checkpoint_conn,
+            chroma_dir=str(tmp_path / "chroma"),
+            search=FakeSearchAdapter([]),
+            llm=FakeLLMRouter(),
+            now=lambda: NOW,
+        )
+        before_count = _position_count(conn, "local-user")
+
+        position_id = module._ensure_position(
+            module.EvalCase(symbol="AAPL", market="US", name="Apple Inc."),
+            deps,
+        )
+
+        assert position_id != "position-aapl"
+        assert _position_count(conn, "local-user") == before_count
+        assert _position_count(conn, "eval-user") == 1
+    finally:
+        checkpoint_conn.close()
+        conn.close()
+
+
+def test_eval_fixture_seeding_uses_eval_user_without_touching_local_user(
+    tmp_path: Path,
+) -> None:
+    module = load_eval_module()
+    conn = connect(tmp_path / "noesis.db")
+    checkpoint_conn = sqlite3.connect(tmp_path / "checkpoints.db", check_same_thread=False)
+    try:
+        migrate(conn)
+        seed_completed_run(conn)
+        deps = build_graph_deps(
+            conn=conn,
+            checkpoint_conn=checkpoint_conn,
+            chroma_dir=str(tmp_path / "chroma"),
+            search=FakeSearchAdapter([]),
+            llm=FakeLLMRouter(),
+            now=lambda: NOW,
+        )
+        before_count = _position_count(conn, "local-user")
+
+        module.seed_eval_fixture_runs(module.EVAL_CASES, deps)
+
+        assert _position_count(conn, "local-user") == before_count
+        assert _position_count(conn, "eval-user") >= 20
+    finally:
+        checkpoint_conn.close()
+        conn.close()
+
+
 def _evaluated_report(tmp_path: Path) -> tuple[object, object]:
     module = load_eval_module()
     conn = connect(tmp_path / "noesis.db")
@@ -170,3 +230,12 @@ def _evaluated_report(tmp_path: Path) -> tuple[object, object]:
     finally:
         checkpoint_conn.close()
         conn.close()
+
+
+def _position_count(conn: sqlite3.Connection, user_id: str) -> int:
+    return int(
+        conn.execute(
+            "SELECT count(*) FROM positions WHERE user_id = ?",
+            (user_id,),
+        ).fetchone()[0]
+    )
