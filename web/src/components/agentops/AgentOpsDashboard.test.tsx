@@ -73,6 +73,10 @@ describe("AgentOpsDashboard", () => {
     expect(guide).toHaveTextContent("一次 Agent 执行");
     expect(guide).toHaveTextContent("Run Trace");
     expect(guide).toHaveTextContent("执行时间线");
+    expect(guide).toHaveTextContent("可以按这个顺序读");
+    expect(guide).toHaveTextContent("如果是 awaiting_confirmation，说明研究已经生成待确认内容");
+    expect(guide).toHaveTextContent("点「问题」只看 failed / degraded / retry");
+    expect(guide).toHaveTextContent("展开 step 后先看 Input / Output");
     expect(guide).not.toHaveTextContent("面试怎么讲");
   });
 

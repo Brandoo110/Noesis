@@ -524,52 +524,56 @@ function EvidenceDetail({
 function AgentOpsGuide(): JSX.Element {
   const items = [
     {
+      term: "Run Diagnostics",
+      body: "先看这块。它会把当前选中 run 的结论提前说清楚：是否在等确认、是否失败、是否降级、是否低证据、是否有明显慢步骤。这里如果已经指出问题，优先按右侧 next actions 去看对应 trace。"
+    },
+    {
       term: "Metrics",
-      body: "顶部数字是整体运行概览，用来看这个 Agent 长期是否稳定，比如总 run 数、完成率、平均耗时、证据覆盖率和 cache 命中率。"
+      body: "顶部数字看长期健康度，不是看单条 run。完成率低说明流程经常没跑完；平均耗时或 P95 很高说明有慢节点；证据覆盖率低说明结论可能缺证据；tool failure 高说明外部工具或模型调用不稳。"
     },
     {
       term: "Run",
-      body: "一次 Agent 执行。每发起一次研究，或系统触发一次分析，都会生成一条 run。左侧 Recent Runs 列出来的就是这些历史执行记录。"
+      body: "一次 Agent 执行。每发起一次研究，或系统触发一次分析，都会生成一条 run。左侧卡片先看公司 / symbol / market，确认自己点的是哪一个标的，再看 status 和标签。"
     },
     {
       term: "Status",
-      body: "这条 run 当前处在哪个状态。completed 表示跑完；awaiting_confirmation 表示等用户确认；failed 表示中途失败，需要看右侧 trace 找原因。"
+      body: "看这条 run 停在哪。completed 表示已跑完；running 表示还在处理中；如果是 awaiting_confirmation，说明研究已经生成待确认内容，需要去确认或编辑 thesis；failed 表示中途失败，要看 trace 里的失败 step。"
     },
     {
       term: "Latency",
-      body: "这条 run 花了多久。pending 表示任务还没结束，所以暂时没有最终耗时。耗时明显偏高时，通常要去 trace 里看是哪一步慢。"
+      body: "看时间是不是异常。pending 代表还没有最终耗时；如果单条 run 很慢，先看 Run Diagnostics 标出的最慢步骤，再切到「慢步骤」筛选确认是不是 LLM、搜索、读取或 finalize 卡住。"
     },
     {
       term: "Tools",
-      body: "这条 run 调用了多少次外部能力，比如搜索、网页读取、LLM 生成、PDF 解析或缓存查询。工具数太少时，要确认是否真的完成了调研。"
+      body: "看 Agent 有没有真的动用外部能力，比如搜索、网页读取、LLM 生成、PDF 解析或缓存查询。工具数太少但 run 却 completed 时，要展开 trace 看是否走了降级或缓存。"
     },
     {
       term: "Cache",
-      body: "是否复用了之前的结果。cache hit 代表命中缓存，可以省时间和成本；cache miss 代表这一步重新检索、读取或生成。"
+      body: "看这次是不是复用了旧结果。cache hit 多说明成本低、速度快，但如果你刚改了输入却仍大量命中缓存，要确认是否拿到的是旧证据；cache miss 多说明这次重新检索或生成。"
     },
     {
       term: "Run Trace",
-      body: "选中某条 run 后，右侧显示它的执行时间线。它按顺序告诉你 Agent 先做了什么、后做了什么、每一步是否成功。"
+      body: "执行时间线。它按顺序告诉你 Agent 先做了什么、后做了什么、每一步成功、降级、失败还是等待。排障时不要只看最后状态，要沿 trace 找第一个异常 step。"
     },
     {
-      term: "Node",
-      body: "Agent 自己的业务步骤，比如解析输入、构建证据、扩展产业链、生成 thesis、风险检查、等待用户确认。"
+      term: "Trace filters",
+      body: "先用筛选缩小范围。点「问题」只看 failed / degraded / retry；点「工具」看外部调用；点「慢步骤」找耗时瓶颈；点「证据」只看挂了 evidence 的步骤。"
     },
     {
-      term: "Tool",
-      body: "被 node 调用的外部工具，比如 search、reader、llm。tool 记录用来确认 Agent 的信息是不是通过真实工具拿到的。"
+      term: "Node / Tool",
+      body: "Node 是 Agent 自己的业务步骤，比如解析输入、构建证据、生成 thesis、风险检查。Tool 是 node 调用的外部能力，比如 search、reader、llm。Tool 失败通常是网络、供应商或 key；Node 降级通常是业务兜底生效。"
     },
     {
       term: "Input / Output",
-      body: "input summary 是这一步吃进去的关键信息；output summary 是这一步产出的结果摘要。看它们可以判断这一步有没有跑偏。"
+      body: "展开 step 后先看 Input / Output。Input 看这一步吃进去的对象、query、证据或状态是否正确；Output 看它产出了什么。如果 Input 已经错了，问题在上游；如果 Input 对但 Output 错，问题在这个 step 或它调用的 tool。"
     },
     {
-      term: "Evidence IDs",
-      body: "这一步关联到的证据编号。后续结论如果有 evidence 支撑，就说明不是纯模型猜测；没有 evidence 的结论要更谨慎。"
+      term: "Evidence",
+      body: "看结论有没有证据支撑。Evidence preview 会显示标题、来源、tier、片段和链接。证据为空、tier 低或片段和结论对不上，就不要先信结论，应该回到 ingest / evidence_build / intel_synth 这些步骤继续看。"
     },
     {
       term: "Retry / Failed",
-      body: "retry 表示这一步重试过几次；failed 表示失败。重试多或失败时，优先看对应 tool / node 的 input 和 output。"
+      body: "retry 表示这一步重试过，可能遇到超时、限流或临时失败；failed 表示没有恢复。重试多但最终成功，说明链路能自愈但可能慢；failed 或 degraded 要展开看 Error、Degrade、Tool / Cache。"
     }
   ];
 
@@ -581,6 +585,10 @@ function AgentOpsGuide(): JSX.Element {
           <h2>怎么读上面的信息</h2>
         </div>
       </header>
+      <p className="ops-guide-intro">
+        可以按这个顺序读：先看 Run Diagnostics 判断这次 run 的结论，再看左侧
+        Recent Runs 确认调研对象，最后用 Run Trace 的筛选和 step 展开定位具体原因。
+      </p>
       <dl className="ops-guide-list">
         {items.map((item) => (
           <div key={item.term}>
