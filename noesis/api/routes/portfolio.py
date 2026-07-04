@@ -13,8 +13,13 @@ from noesis.api.dto import (
     SharedSupplierGroupResponse,
 )
 from noesis.api.portfolio_health import run_health_response
-from noesis.api.position_rows import dedupe_positions, position_label
-from noesis.db.models import PositionRow
+from noesis.api.position_rows import (
+    dedupe_positions,
+    display_position_label,
+    display_position_name,
+    position_label,
+)
+from noesis.db.models import EntityRow, PositionRow
 from noesis.graph.state import GraphDeps
 from noesis.graph.traversal import (
     CorrelationMatrix,
@@ -44,7 +49,7 @@ def get_portfolio_shared_suppliers(
     deps: GraphDeps = Depends(get_graph_deps),
 ) -> list[SharedSupplierGroupResponse]:
     positions = dedupe_positions(deps.repos.positions.list_by_user("local-user"), deps)
-    symbols_by_position = _position_symbols(positions)
+    symbols_by_position = _position_symbols(positions, deps)
     return [
         _shared_supplier_response(group, symbols_by_position)
         for group in shared_supply_chain(
@@ -65,7 +70,7 @@ def get_portfolio_correlation(
         deps.repos.graph_edges,
         deps.repos.entities,
     )
-    return _correlation_response(matrix, _position_symbols(positions))
+    return _correlation_response(matrix, _position_symbols(positions, deps))
 
 
 @router.get("/brief", response_model=PortfolioBriefResponse)
@@ -101,12 +106,27 @@ def _positions_with_seed(
     for position in positions:
         seed_entity_id = deps.repos.runs.get_seed_entity_id(position.id)
         if seed_entity_id is not None:
-            values.append((position.id, position_label(position), seed_entity_id))
+            entity = _latest_entity_for_position(position, deps)
+            values.append(
+                (
+                    position.id,
+                    display_position_label(position, _entity_symbol(entity)),
+                    seed_entity_id,
+                )
+            )
     return values
 
 
-def _position_symbols(positions: list[PositionRow]) -> dict[str, str | None]:
-    return {position.id: position.symbol or None for position in positions}
+def _position_symbols(
+    positions: list[PositionRow], deps: GraphDeps
+) -> dict[str, str | None]:
+    return {
+        position.id: display_position_label(
+            position,
+            _entity_symbol(_latest_entity_for_position(position, deps)),
+        )
+        for position in positions
+    }
 
 
 def _brief_position_response(
@@ -115,13 +135,27 @@ def _brief_position_response(
     thesis = deps.repos.theses.latest_for_position(position.id)
     if thesis is not None and _is_eval_placeholder_summary(thesis.summary):
         thesis = None
+    entity = _latest_entity_for_position(position, deps)
     return BriefPositionResponse(
         position_id=position.id,
-        symbol=position_label(position),
-        name=position.name,
+        symbol=display_position_label(position, _entity_symbol(entity)),
+        name=display_position_name(position, entity.name if entity is not None else None),
         thesis_summary=thesis.summary if thesis is not None else None,
         thesis_status=thesis.status if thesis is not None else None,
     )
+
+
+def _latest_entity_for_position(
+    position: PositionRow, deps: GraphDeps
+) -> EntityRow | None:
+    latest_run = deps.repos.runs.latest_seed_for_position(position.id)
+    if latest_run is None or latest_run.entity_id is None:
+        return None
+    return deps.repos.entities.get(latest_run.entity_id)
+
+
+def _entity_symbol(entity: EntityRow | None) -> str | None:
+    return entity.identifiers().get("symbol") if entity is not None else None
 
 
 def _is_eval_placeholder_summary(summary: str) -> bool:

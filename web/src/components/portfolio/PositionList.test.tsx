@@ -47,6 +47,30 @@ describe("PositionList", () => {
     fireEvent.click(screen.getByRole("button", { name: "重新研究 AAPL" }));
     expect(onStartRun).toHaveBeenCalledWith("position-aapl");
   });
+
+  it("uses resolved entity labels for researched name-only rows", () => {
+    render(
+      <PositionList
+        {...props({
+          positions: [
+            {
+              ...basePosition("position-tesla", "tesla", "owned"),
+              latest_run_entity: entity("entity-tsla", "TSLA", "Tesla Inc."),
+              latest_run_id: "run-tsla",
+              latest_run_status: "completed",
+              name: null
+            }
+          ]
+        })}
+      />
+    );
+
+    const list = screen.getByLabelText("持仓列表");
+
+    expect(within(list).getByText("TSLA")).toBeInTheDocument();
+    expect(within(list).getByText("Tesla Inc.")).toBeInTheDocument();
+    expect(within(list).queryByText("待解析")).not.toBeInTheDocument();
+  });
 });
 
 function props(overrides: Partial<ComponentProps<typeof PositionList>> = {}) {
@@ -95,6 +119,6 @@ function basePosition(id: string, symbol: string, kind: Position["kind"]): Posit
   };
 }
 
-function entity(id: string, symbol = "AAPL"): EntityNode {
-  return { id, name: `${symbol} Inc.`, node_type: "company", symbol, market: "US" };
+function entity(id: string, symbol = "AAPL", name = `${symbol} Inc.`): EntityNode {
+  return { id, name, node_type: "company", symbol, market: "US" };
 }

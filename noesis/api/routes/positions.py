@@ -5,7 +5,13 @@ from fastapi import APIRouter, Depends, Response, status
 from noesis.api.deps import get_graph_deps
 from noesis.api.dto import CreatePositionRequest, EntityNodeResponse, PositionResponse
 from noesis.api.dto_positions import ResolvePositionRequest, ResolvePositionResponse
-from noesis.api.position_rows import dedupe_positions, position_label, preferred_position
+from noesis.api.position_rows import (
+    dedupe_positions,
+    display_position_label,
+    display_position_name,
+    position_label,
+    preferred_position,
+)
 from noesis.db.connection import with_tx
 from noesis.db.models import EntityRow, PositionRow, RunRow
 from noesis.graph.nodes.intake_resolve import preview_resolve
@@ -111,17 +117,24 @@ def list_positions(
 
 def _position_response(row: PositionRow, deps: GraphDeps) -> PositionResponse:
     latest_run = deps.repos.runs.latest_seed_for_position(row.id)
+    latest_entity = _latest_run_entity_response(latest_run, deps)
     return PositionResponse(
         id=row.id,
-        symbol=position_label(row),
+        symbol=display_position_label(
+            row,
+            latest_entity.symbol if latest_entity is not None else None,
+        ),
         market=row.market,
-        name=row.name,
+        name=display_position_name(
+            row,
+            latest_entity.name if latest_entity is not None else None,
+        ),
         kind=row.kind,
         qty=row.qty,
         cost_basis=row.cost_basis,
         latest_run_id=latest_run.id if latest_run is not None else None,
         latest_run_status=latest_run.status if latest_run is not None else None,
-        latest_run_entity=_latest_run_entity_response(latest_run, deps),
+        latest_run_entity=latest_entity,
     )
 
 

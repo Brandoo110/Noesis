@@ -159,6 +159,8 @@ function graphFromLatest(position: Position): GraphRef | null {
 }
 
 function primaryPositionLabel(position: Position): string {
+  const resolvedSymbol = position.latest_run_entity?.symbol?.trim();
+  if (resolvedSymbol) return resolvedSymbol.toUpperCase();
   const symbol = position.symbol.trim();
   if (symbol.length > 0) return symbol.toUpperCase();
   if (position.name) return position.name;
@@ -169,6 +171,9 @@ function secondaryPositionLabel(position: Position, activePositionId: string | n
   if (position.name) return position.name;
   if (activePositionId === position.id && runPositionId === position.id && runEntity) {
     return runEntity.name;
+  }
+  if (position.latest_run_entity) {
+    return position.latest_run_entity.name;
   }
   if (position.symbol.trim().length === 0) return "未填写代码";
   return "待解析";

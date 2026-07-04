@@ -34,7 +34,7 @@ def test_portfolio_shared_suppliers_returns_shared_supplier_group(
                 },
                 {
                     "position_id": "position-msft",
-                    "symbol": None,
+                    "symbol": "MSFT",
                     "entity_id": "entity-msft",
                     "confidence": 0.62,
                 },
@@ -65,7 +65,7 @@ def test_portfolio_correlation_returns_sparse_shared_supplier_cells(
     assert response.json() == {
         "positions": [
             {"position_id": "position-aapl", "symbol": "AAPL", "label": "AAPL"},
-            {"position_id": "position-msft", "symbol": None, "label": "Microsoft"},
+            {"position_id": "position-msft", "symbol": "MSFT", "label": "MSFT"},
         ],
         "cells": [
             {

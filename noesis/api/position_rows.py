@@ -37,6 +37,19 @@ def position_label(row: PositionRow) -> str:
     return "unknown"
 
 
+def display_position_label(row: PositionRow, entity_symbol: str | None = None) -> str:
+    symbol = _clean(entity_symbol)
+    if symbol is not None:
+        return symbol.upper()
+    return position_label(row)
+
+
+def display_position_name(row: PositionRow, entity_name: str | None = None) -> str | None:
+    if row.name and row.name.strip():
+        return row.name
+    return _clean(entity_name)
+
+
 def _position_rank(row: PositionRow, deps: GraphDeps) -> tuple[int, int, int]:
     latest_run = deps.repos.runs.latest_seed_for_position(row.id)
     has_live_graph = (
@@ -48,3 +61,10 @@ def _position_rank(row: PositionRow, deps: GraphDeps) -> tuple[int, int, int]:
         1 if latest_run is not None else 0,
         1 if row.name else 0,
     )
+
+
+def _clean(value: str | None) -> str | None:
+    if value is None:
+        return None
+    cleaned = value.strip()
+    return cleaned if cleaned else None
