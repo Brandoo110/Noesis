@@ -10,7 +10,9 @@ import type {
 } from "../../types/api";
 
 const RUNS_PER_PAGE = 8;
+const DASHBOARD_REFRESH_MS = 10_000;
 type TraceFilter = "all" | "issues" | "tools" | "slow" | "evidence";
+type LoadDashboardOptions = { silent?: boolean };
 
 const TRACE_FILTERS: Array<{ id: TraceFilter; label: string }> = [
   { id: "all", label: "全部" },
@@ -50,8 +52,11 @@ export function AgentOpsDashboard(): JSX.Element {
     [slowThreshold, trace, traceFilter]
   );
 
-  const loadDashboard = useCallback(async (): Promise<void> => {
-    setIsLoading(true);
+  const loadDashboard = useCallback(
+    async (options: LoadDashboardOptions = {}): Promise<void> => {
+    if (!options.silent) {
+      setIsLoading(true);
+    }
     setError(null);
     try {
       const [runList, summary] = await Promise.all([
@@ -66,18 +71,29 @@ export function AgentOpsDashboard(): JSX.Element {
       );
     } catch (caught) {
       setError(toErrorMessage(caught));
-      setRuns([]);
-      setMetrics(null);
-      setTrace(null);
-      setSelectedRunId(null);
-      setCurrentPage(0);
+      if (!options.silent) {
+        setRuns([]);
+        setMetrics(null);
+        setTrace(null);
+        setSelectedRunId(null);
+        setCurrentPage(0);
+      }
     } finally {
-      setIsLoading(false);
+      if (!options.silent) {
+        setIsLoading(false);
+      }
     }
   }, []);
 
   useEffect(() => {
     void loadDashboard();
+  }, [loadDashboard]);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      void loadDashboard({ silent: true });
+    }, DASHBOARD_REFRESH_MS);
+    return () => window.clearInterval(intervalId);
   }, [loadDashboard]);
 
   useEffect(() => {
@@ -354,6 +370,9 @@ function scrollToRunPanels(element: HTMLElement | null): void {
 }
 
 function MetricsStrip({ metrics }: { metrics: MetricsSummary }): JSX.Element {
+  const costValue = metrics.cost_tracking_enabled
+    ? formatUsd(metrics.estimated_cost_per_run)
+    : "未配置单价";
   const items = [
     ["runs", String(metrics.total_runs)],
     ["complete", formatPercent(metrics.task_completion_rate)],
@@ -364,7 +383,7 @@ function MetricsStrip({ metrics }: { metrics: MetricsSummary }): JSX.Element {
     ["retry count", String(metrics.retry_count)],
     ["cache hit", formatPercent(metrics.cache_hit_rate)],
     ["tokens/run", String(metrics.average_token_usage)],
-    ["cost/run", formatUsd(metrics.estimated_cost_per_run)],
+    ["cost/run", costValue],
     ["evidence coverage", formatPercent(metrics.evidence_coverage)],
     ["unsupported", String(metrics.unsupported_claim_count)],
     ["RAG retrievals", String(metrics.rag_retrieval_count)]

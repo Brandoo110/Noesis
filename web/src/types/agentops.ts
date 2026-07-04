@@ -95,6 +95,7 @@ export interface MetricsSummary {
   cache_hit_rate: number;
   average_token_usage: number;
   estimated_cost_per_run: number;
+  cost_tracking_enabled: boolean;
   evidence_coverage: number;
   unsupported_claim_count: number;
   rag_retrieval_count: number;

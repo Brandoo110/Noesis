@@ -42,6 +42,29 @@ def test_build_metrics_summary_aggregates_runs_tools_cache_and_evidence(
     assert summary.rag_retrieval_count == 0
 
 
+def test_average_token_usage_is_per_run_not_per_tool(db: Connection) -> None:
+    with with_tx(db):
+        _insert_run(db, "run-one", "completed", NOW, "2026-06-26T00:00:01Z")
+        ToolInvocationsRepo().insert(
+            _tool_invocation("tool-1", "run-one", "success", cache_hit=False),
+            conn=db,
+        )
+        ToolInvocationsRepo().insert(
+            _tool_invocation("tool-2", "run-one", "success", cache_hit=False),
+            conn=db,
+        )
+
+    summary = build_metrics_summary(db)
+
+    assert summary.average_token_usage == 280
+
+
+def test_metrics_summary_marks_cost_tracking_availability(db: Connection) -> None:
+    summary = build_metrics_summary(db, cost_tracking_enabled=False)
+
+    assert summary.cost_tracking_enabled is False
+
+
 def _insert_run(
     conn: Connection,
     run_id: str,

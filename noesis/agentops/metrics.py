@@ -16,12 +16,17 @@ class MetricsSummary:
     cache_hit_rate: float
     average_token_usage: int
     estimated_cost_per_run: float
+    cost_tracking_enabled: bool
     evidence_coverage: float
     unsupported_claim_count: int
     rag_retrieval_count: int
 
 
-def build_metrics_summary(conn: Connection) -> MetricsSummary:
+def build_metrics_summary(
+    conn: Connection,
+    *,
+    cost_tracking_enabled: bool = True,
+) -> MetricsSummary:
     runs = _run_rows(conn)
     tool_rows = _tool_rows(conn, [str(row["id"]) for row in runs])
     total_runs = len(runs)
@@ -40,8 +45,9 @@ def build_metrics_summary(conn: Connection) -> MetricsSummary:
             sum(1 for row in tool_rows if int(row["cache_hit"]) == 1),
             len(tool_rows),
         ),
-        average_token_usage=_average_tokens(tool_rows),
+        average_token_usage=_average_tokens(tool_rows, total_runs),
         estimated_cost_per_run=_cost_per_run(tool_rows, total_runs),
+        cost_tracking_enabled=cost_tracking_enabled,
         evidence_coverage=_ratio(
             sum(1 for row in runs if str(row["id"]) in evidence_run_ids),
             total_runs,
@@ -102,11 +108,11 @@ def _tool_status_rate(rows: list[Row], status: str) -> float:
     return _ratio(sum(1 for row in rows if row["status"] == status), len(rows))
 
 
-def _average_tokens(rows: list[Row]) -> int:
-    if not rows:
+def _average_tokens(rows: list[Row], total_runs: int) -> int:
+    if not rows or total_runs <= 0:
         return 0
     total = sum(int(row["token_input"]) + int(row["token_output"]) for row in rows)
-    return round(total / len(rows))
+    return round(total / total_runs)
 
 
 def _cost_per_run(rows: list[Row], total_runs: int) -> float:

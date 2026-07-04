@@ -1,5 +1,5 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import * as client from "../../api/client";
 import type { AgentOpsRunList, MetricsSummary, RunTrace } from "../../types/api";
@@ -25,6 +25,10 @@ describe("AgentOpsDashboard", () => {
       value: vi.fn(),
       writable: true
     });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("renders metrics runs and the selected run timeline", async () => {
@@ -83,6 +87,46 @@ describe("AgentOpsDashboard", () => {
     expect(guide).toHaveTextContent("点「问题」只看 failed / degraded / retry");
     expect(guide).toHaveTextContent("展开 step 后先看 Input / Output");
     expect(guide).not.toHaveTextContent("面试怎么讲");
+  });
+
+  it("does not show a zero dollar cost when pricing is not configured", async () => {
+    listRunsMock.mockResolvedValue(makeRunList());
+    getMetricsSummaryMock.mockResolvedValue({
+      ...makeMetrics(),
+      average_token_usage: 2044,
+      estimated_cost_per_run: 0,
+      cost_tracking_enabled: false
+    } as MetricsSummary);
+    getRunTraceMock.mockResolvedValue(makeTrace());
+
+    render(<AgentOpsDashboard />);
+
+    const dashboard = await screen.findByLabelText("AgentOps Dashboard");
+    expect(within(dashboard).getByText("未配置单价")).toBeInTheDocument();
+    expect(within(dashboard).queryByText("$0.000000")).not.toBeInTheDocument();
+  });
+
+  it("silently refreshes metrics while the dashboard stays open", async () => {
+    vi.useFakeTimers();
+    listRunsMock.mockResolvedValue(makeRunList());
+    getMetricsSummaryMock
+      .mockResolvedValueOnce(makeMetrics())
+      .mockResolvedValueOnce({ ...makeMetrics(), total_runs: 3 });
+    getRunTraceMock.mockResolvedValue(makeTrace());
+
+    render(<AgentOpsDashboard />);
+    await flushReact();
+
+    const dashboard = screen.getByLabelText("AgentOps Dashboard");
+    const metricsPanel = within(dashboard).getByLabelText("AgentOps 指标");
+    expect(metricValue(metricsPanel, "runs")).toBe("2");
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10_000);
+    });
+
+    expect(getMetricsSummaryMock).toHaveBeenCalledTimes(2);
+    expect(metricValue(metricsPanel, "runs")).toBe("3");
   });
 
   it("shows diagnostic tags on run cards", async () => {
@@ -341,10 +385,23 @@ function makeMetrics(): MetricsSummary {
     cache_hit_rate: 0.5,
     average_token_usage: 140,
     estimated_cost_per_run: 0.0012,
+    cost_tracking_enabled: true,
     evidence_coverage: 0.5,
     unsupported_claim_count: 1,
     rag_retrieval_count: 2
   };
+}
+
+async function flushReact(): Promise<void> {
+  await act(async () => {
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+}
+
+function metricValue(metricsPanel: HTMLElement, label: string): string {
+  const item = within(metricsPanel).getByText(label).closest("article");
+  return item?.querySelector("strong")?.textContent ?? "";
 }
 
 function makeTrace(): RunTrace {
