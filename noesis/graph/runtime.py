@@ -164,6 +164,11 @@ class EvidencesRuntime:
     ) -> list[EvidenceRow]:
         return self.repo.list_by_run(run_id, conn=conn or self.conn)
 
+    def list_by_ids(
+        self, ids: list[str], *, conn: Connection | None = None
+    ) -> list[EvidenceRow]:
+        return self.repo.list_by_ids(ids, conn=conn or self.conn)
+
 
 @dataclass
 class IntelRuntime:

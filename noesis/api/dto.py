@@ -54,10 +54,21 @@ class RunSummaryResponse(BaseModel):
     evidence_count: int
     tool_count: int
     cache_hit_rate: float
+    diagnostic_tags: list[str]
+    last_step_name: str | None
+    slowest_step_name: str | None
+    slowest_step_latency_ms: int | None
+    has_degraded_step: bool
+    has_failed_step: bool
+    has_pending_confirmation: bool
 
 
 class RunListResponse(BaseModel):
     runs: list[RunSummaryResponse]
+
+
+class ClearRunsResponse(BaseModel):
+    deleted: dict[str, int]
 
 
 class RunTraceStepResponse(BaseModel):
@@ -72,12 +83,46 @@ class RunTraceStepResponse(BaseModel):
     cache_hit: bool | None = None
     retry_count: int | None = None
     evidence_ids: list[str]
+    error_kind: str | None = None
+    error_code: str | None = None
+    error_message: str | None = None
+    http_status: int | None = None
+    provider: str | None = None
+    model_id: str | None = None
+    token_input: int | None = None
+    token_output: int | None = None
+    estimated_cost_usd: float | None = None
+    cache_key: str | None = None
+    fallback_used: str | None = None
+    degraded_reason: str | None = None
+
+
+class RunDiagnosticResponse(BaseModel):
+    severity: Literal["ok", "info", "warning", "critical"]
+    title: str
+    summary: str
+    tags: list[str]
+    slowest_step_name: str | None
+    slowest_step_latency_ms: int | None
+    next_actions: list[str]
+
+
+class EvidencePreviewResponse(BaseModel):
+    evidence_id: str
+    title: str | None
+    source: str
+    url: str | None
+    snippet: str
+    source_tier: int | None
+    published_at: str | None
 
 
 class RunTraceResponse(BaseModel):
     run_id: str
     status: str
+    diagnostic: RunDiagnosticResponse
     steps: list[RunTraceStepResponse]
+    evidence_previews: list[EvidencePreviewResponse]
 
 
 class MetricsSummaryResponse(BaseModel):

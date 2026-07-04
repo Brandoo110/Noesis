@@ -92,6 +92,11 @@
   padding: 0 10px;
   font-size: 11.5px;
 }
+.danger-button.small {
+  min-height: 28px;
+  padding: 0 10px;
+  font-size: 11.5px;
+}
 .graph-button {
   background: var(--brand-100);
   color: var(--brand-700);

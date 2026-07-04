@@ -221,7 +221,10 @@ export interface RunSummary {
 export type {
   AgentOpsRunList,
   AgentOpsRunSummary,
+  ClearRunsResult,
+  EvidencePreview,
   MetricsSummary,
+  RunDiagnostic,
   RunTrace,
   RunTraceStep
 } from "./agentops";

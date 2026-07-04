@@ -26,6 +26,16 @@ export function makeRunTrace(runId = "run-agentops"): RunTrace {
   return {
     run_id: runId,
     status: "completed",
-    steps: []
+    diagnostic: {
+      severity: "ok",
+      title: "当前 run 未发现明显问题",
+      summary: "这次运行没有失败、降级、低证据或明显慢步骤。",
+      tags: [],
+      slowest_step_name: null,
+      slowest_step_latency_ms: null,
+      next_actions: ["需要排查时可展开具体 step 查看输入、输出和证据"]
+    },
+    steps: [],
+    evidence_previews: []
   };
 }

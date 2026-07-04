@@ -1,5 +1,6 @@
 import type {
   AgentOpsRunList,
+  ClearRunsResult,
   ConfirmationInput,
   CorrelationMatrix,
   CreatePositionInput,
@@ -73,6 +74,12 @@ export function listRuns(): Promise<AgentOpsRunList> {
 
 export function getRunTrace(runId: string): Promise<RunTrace> {
   return request<RunTrace>(`/runs/${encodeURIComponent(runId)}/trace`);
+}
+
+export function clearRuns(): Promise<ClearRunsResult> {
+  return request<ClearRunsResult>("/runs", {
+    method: "DELETE"
+  });
 }
 
 export function getMetricsSummary(): Promise<MetricsSummary> {

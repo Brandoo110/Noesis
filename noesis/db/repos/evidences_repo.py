@@ -35,6 +35,23 @@ class EvidencesRepo:
         row = conn.execute("SELECT * FROM evidences WHERE id = ?", (id,)).fetchone()
         return row_to_model(row, EvidenceRow)
 
+    def list_by_ids(
+        self, ids: list[str], *, conn: sqlite3.Connection
+    ) -> list[EvidenceRow]:
+        if not ids:
+            return []
+        unique_ids = list(dict.fromkeys(ids))
+        placeholders = ", ".join("?" for _ in unique_ids)
+        rows = conn.execute(
+            f"""
+            SELECT * FROM evidences
+            WHERE id IN ({placeholders})
+            ORDER BY captured_at, id
+            """,
+            tuple(unique_ids),
+        ).fetchall()
+        return rows_to_models(rows, EvidenceRow)
+
     def list_by_run(self, run_id: str, *, conn: sqlite3.Connection) -> list[EvidenceRow]:
         rows = conn.execute(
             "SELECT * FROM evidences WHERE run_id = ? ORDER BY captured_at, id",
