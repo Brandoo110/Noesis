@@ -8,6 +8,7 @@ import { makeBrief, makePosition, makeRunDetail } from "./PortfolioHome.test-fix
 
 vi.mock("../../api/client", () => ({
   createPosition: vi.fn(),
+  deletePosition: vi.fn(),
   resolvePosition: vi.fn(),
   expandEntity: vi.fn(),
   getCorrelationMatrix: vi.fn(),

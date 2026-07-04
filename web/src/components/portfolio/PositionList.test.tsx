@@ -48,6 +48,25 @@ describe("PositionList", () => {
     expect(onStartRun).toHaveBeenCalledWith("position-aapl");
   });
 
+  it("deletes a position from row actions without opening the graph", () => {
+    const onDeletePosition = vi.fn();
+    const onViewGraph = vi.fn();
+    render(
+      <PositionList
+        {...props({
+          onDeletePosition,
+          onViewGraph,
+          positions: [researchedPosition("position-aapl", "AAPL")]
+        })}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "删除持仓 AAPL" }));
+
+    expect(onDeletePosition).toHaveBeenCalledWith("position-aapl");
+    expect(onViewGraph).not.toHaveBeenCalled();
+  });
+
   it("uses resolved entity labels for researched name-only rows", () => {
     render(
       <PositionList
@@ -76,6 +95,7 @@ describe("PositionList", () => {
 function props(overrides: Partial<ComponentProps<typeof PositionList>> = {}) {
   return {
     activePositionId: null,
+    onDeletePosition: vi.fn(),
     onStartRun: vi.fn(),
     onViewGraph: vi.fn(),
     positions: [],

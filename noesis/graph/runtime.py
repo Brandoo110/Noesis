@@ -67,6 +67,9 @@ class PositionsRuntime:
     ) -> list[PositionRow]:
         return self.repo.list_by_user(user_id, conn=conn or self.conn)
 
+    def delete_for_user(self, id: str, user_id: str, *, conn: Connection | None = None) -> int:
+        return self.repo.delete_for_user(id, user_id, conn=conn or self.conn)
+
 
 @dataclass
 class EntitiesRuntime:
@@ -110,6 +113,9 @@ class RunsRuntime:
         self, position_ids: list[str], *, conn: Connection | None = None
     ) -> list[RunRow]:
         return self.repo.latest_seed_for_positions(position_ids, conn=conn or self.conn)
+
+    def list_ids_by_position(self, position_id: str, *, conn: Connection | None = None) -> list[str]:
+        return self.repo.list_ids_by_position(position_id, conn=conn or self.conn)
 
     def set_entity(
         self, id: str, entity_id: str, *, conn: Connection | None = None

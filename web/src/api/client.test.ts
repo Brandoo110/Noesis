@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  deletePosition,
   getMetricsSummary,
   getRunTrace,
   listPositions,
@@ -55,6 +56,17 @@ describe("api client", () => {
     );
 
     await expect(listPositions()).rejects.toThrow("GET /positions failed: 404");
+  });
+
+  it("deletes a position with an empty response", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(deletePosition("position-1")).resolves.toBeUndefined();
+    expect(fetchMock).toHaveBeenCalledWith("/positions/position-1", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" }
+    });
   });
 
   it("includes structured backend error reason when available", async () => {

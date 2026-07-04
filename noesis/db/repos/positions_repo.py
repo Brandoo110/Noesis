@@ -62,3 +62,12 @@ class PositionsRepo:
             (user_id,),
         ).fetchall()
         return rows_to_models(rows, PositionRow)
+
+    def delete_for_user(
+        self, id: str, user_id: str, *, conn: sqlite3.Connection
+    ) -> int:
+        cursor = conn.execute(
+            "DELETE FROM positions WHERE id = ? AND user_id = ?",
+            (id, user_id),
+        )
+        return cursor.rowcount

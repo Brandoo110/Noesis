@@ -91,6 +91,19 @@ class RunRegistryRepo:
         ).fetchall()
         return rows_to_models(rows, RunRow)
 
+    def list_ids_by_position(
+        self, position_id: str, *, conn: sqlite3.Connection
+    ) -> list[str]:
+        rows = conn.execute(
+            """
+            SELECT id FROM run_registry
+            WHERE position_id = ?
+            ORDER BY started_at DESC, created_at DESC, id DESC
+            """,
+            (position_id,),
+        ).fetchall()
+        return [str(row["id"]) for row in rows]
+
     def set_entity(
         self, id: str, entity_id: str, *, conn: sqlite3.Connection
     ) -> None:

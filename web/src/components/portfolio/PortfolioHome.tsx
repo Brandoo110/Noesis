@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { listPositions } from "../../api/client";
+import { deletePosition, listPositions } from "../../api/client";
 import { usePortfolioRunSeeds } from "../../hooks/use-portfolio-run-seeds";
 import { usePositionEntry } from "../../hooks/use-position-entry";
 import { useRun } from "../../hooks/use-run";
@@ -104,6 +104,27 @@ export function PortfolioHome({ onGraphSeedSelected }: PortfolioHomeProps): JSX.
     }
   }
 
+  async function handleDeletePosition(positionId: string): Promise<void> {
+    const confirmed = window.confirm("删除这条持仓？相关研究记录会一起清理，实体会保留用于其他持仓。");
+    if (!confirmed) {
+      return;
+    }
+    setError(null);
+    try {
+      await deletePosition(positionId);
+      if (activePositionId === positionId) {
+        setActivePositionId(null);
+      }
+      if (graphSeed?.positionId === positionId) {
+        setGraphSeed(null);
+      }
+      await refreshPositions();
+      refreshOverlaps();
+    } catch (caught) {
+      setError(toErrorMessage(caught));
+    }
+  }
+
   async function handleThesisConfirmed(): Promise<void> {
     setError(null);
     try {
@@ -181,6 +202,7 @@ export function PortfolioHome({ onGraphSeedSelected }: PortfolioHomeProps): JSX.
             ) : (
               <PositionList
                 activePositionId={activePositionId}
+                onDeletePosition={(positionId) => void handleDeletePosition(positionId)}
                 onViewGraph={(positionId, runId, seedEntity) => {
                   const nextSeed = { positionId, runId, seedEntity };
                   if (shouldRenderInlineGraph) {
@@ -209,7 +231,6 @@ export function PortfolioHome({ onGraphSeedSelected }: PortfolioHomeProps): JSX.
             </section>
           ) : null}
         </div>
-
         {shouldRenderInlineGraph ? (
           <PortfolioGraphWorkspace graphSeed={graphSeed} onRetryResearch={handleStartRun} onThesisConfirmed={handleThesisConfirmed} workspaceRef={workspaceRef} />
         ) : null}

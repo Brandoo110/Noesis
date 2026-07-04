@@ -1,6 +1,7 @@
+import sqlite3
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 
 from noesis.api.deps import get_graph_deps
 from noesis.api.dto import CreatePositionRequest, EntityNodeResponse, PositionResponse
@@ -20,6 +21,7 @@ from noesis.graph.schemas import PositionInput, ResolvedEntity
 from noesis.graph.state import GraphDeps
 
 router = APIRouter(prefix="/positions", tags=["positions"])
+LOCAL_USER_ID = "local-user"
 
 
 @router.post(
@@ -37,7 +39,7 @@ def create_position(
     name = _normalize_name(request.name)
     label = symbol or name or ""
     existing = deps.repos.positions.list_by_identity(
-        "local-user",
+        LOCAL_USER_ID,
         label,
         market,
         request.kind,
@@ -49,7 +51,7 @@ def create_position(
     now = deps.now()
     row = PositionRow(
         id=f"position-{uuid4().hex}",
-        user_id="local-user",
+        user_id=LOCAL_USER_ID,
         symbol=symbol,
         market=market,
         name=name,
@@ -90,7 +92,7 @@ def resolve_position(
     symbol = resolved.identifiers.get("symbol")
     resolved_market = (resolved.market or market).strip().upper()
     existing = deps.repos.positions.list_by_identity(
-        "local-user",
+        LOCAL_USER_ID,
         symbol or resolved.name,
         resolved_market,
         request.kind,
@@ -111,8 +113,30 @@ def resolve_position(
 def list_positions(
     deps: GraphDeps = Depends(get_graph_deps),
 ) -> list[PositionResponse]:
-    rows = deps.repos.positions.list_by_user("local-user")
+    rows = deps.repos.positions.list_by_user(LOCAL_USER_ID)
     return [_position_response(row, deps) for row in dedupe_positions(rows, deps)]
+
+
+@router.delete("/{position_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_position(
+    position_id: str,
+    deps: GraphDeps = Depends(get_graph_deps),
+) -> Response:
+    row = deps.repos.positions.get(position_id)
+    if row is None or row.user_id != LOCAL_USER_ID:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="position not found")
+
+    run_ids = deps.repos.runs.list_ids_by_position(position_id)
+    now = deps.now()
+    with with_tx(deps.repos.conn):
+        _delete_position_artifacts(position_id, run_ids, now, deps.repos.conn)
+        deleted = deps.repos.positions.delete_for_user(position_id, LOCAL_USER_ID)
+        if deleted == 0:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="position not found",
+            )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 def _position_response(row: PositionRow, deps: GraphDeps) -> PositionResponse:
@@ -189,3 +213,116 @@ def _entity_from_run_snapshot(
     if not isinstance(resolved, ResolvedEntity):
         return None
     return deps.repos.entities.get(resolved.entity_id)
+
+
+def _delete_position_artifacts(
+    position_id: str,
+    run_ids: list[str],
+    now: str,
+    conn: sqlite3.Connection,
+) -> None:
+    conn.execute("DELETE FROM holding_relevances WHERE position_id = ?", (position_id,))
+    if not run_ids:
+        return
+
+    _delete_assumptions_for_position_runs(position_id, run_ids, conn)
+    for table in (
+        "approvals",
+        "node_traces",
+        "tool_invocations",
+        "source_documents",
+        "intel_items",
+        "graph_edges",
+        "evidences",
+    ):
+        _delete_by_run_ids(table, run_ids, conn)
+    _delete_theses_for_position_runs(position_id, run_ids, conn)
+    _reset_cached_expansions(run_ids, now, conn)
+    _delete_runs(run_ids, conn)
+    _rebuild_evidences_fts(conn)
+
+
+def _delete_assumptions_for_position_runs(
+    position_id: str,
+    run_ids: list[str],
+    conn: sqlite3.Connection,
+) -> None:
+    placeholders = _placeholders(run_ids)
+    conn.execute(
+        f"""
+        DELETE FROM thesis_assumptions
+        WHERE thesis_id IN (
+          SELECT id FROM theses
+          WHERE position_id = ? OR run_id IN ({placeholders})
+        )
+        """,
+        (position_id, *run_ids),
+    )
+
+
+def _delete_theses_for_position_runs(
+    position_id: str,
+    run_ids: list[str],
+    conn: sqlite3.Connection,
+) -> None:
+    placeholders = _placeholders(run_ids)
+    conn.execute(
+        f"""
+        DELETE FROM theses
+        WHERE position_id = ? OR run_id IN ({placeholders})
+        """,
+        (position_id, *run_ids),
+    )
+
+
+def _delete_by_run_ids(
+    table: str,
+    run_ids: list[str],
+    conn: sqlite3.Connection,
+) -> None:
+    placeholders = _placeholders(run_ids)
+    conn.execute(
+        f"DELETE FROM {table} WHERE run_id IN ({placeholders})",
+        tuple(run_ids),
+    )
+
+
+def _delete_runs(run_ids: list[str], conn: sqlite3.Connection) -> None:
+    placeholders = _placeholders(run_ids)
+    conn.execute(
+        f"DELETE FROM run_registry WHERE id IN ({placeholders})",
+        tuple(run_ids),
+    )
+
+
+def _reset_cached_expansions(
+    run_ids: list[str],
+    now: str,
+    conn: sqlite3.Connection,
+) -> None:
+    placeholders = _placeholders(run_ids)
+    conn.execute(
+        f"""
+        UPDATE node_expansions
+        SET researched = 0,
+            researched_at = NULL,
+            cached_run_id = NULL,
+            updated_at = ?
+        WHERE cached_run_id IN ({placeholders})
+        """,
+        (now, *run_ids),
+    )
+
+
+def _rebuild_evidences_fts(conn: sqlite3.Connection) -> None:
+    conn.execute("INSERT INTO evidences_fts(evidences_fts) VALUES('delete-all')")
+    conn.execute(
+        """
+        INSERT INTO evidences_fts(rowid, evidence_id, snippet, title)
+        SELECT rowid, id, snippet, title FROM evidences
+        """
+    )
+
+
+def _placeholders(values: list[str]) -> str:
+    return ", ".join("?" for _ in values)

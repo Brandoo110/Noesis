@@ -3,6 +3,7 @@ import type { EntityNode, Position } from "../../types/api";
 export interface PositionListProps {
   activePositionId: string | null;
   emptyMessage?: string;
+  onDeletePosition: (positionId: string) => void;
   onViewGraph: (positionId: string, runId: string, seedEntity: EntityNode) => void;
   onStartRun: (positionId: string) => Promise<void>;
   positions: Position[];
@@ -15,6 +16,7 @@ export interface PositionListProps {
 export function PositionList({
   activePositionId,
   emptyMessage = "暂无持仓",
+  onDeletePosition,
   onViewGraph,
   onStartRun,
   positions,
@@ -97,6 +99,17 @@ export function PositionList({
                 {inactiveLatestGraph ? (
                   <GraphActionButton graph={inactiveLatestGraph} label={label} onViewGraph={onViewGraph} positionId={position.id} text="查看图谱" />
                 ) : null}
+                <button
+                  aria-label={`删除持仓 ${label}`}
+                  className="danger-button small"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onDeletePosition(position.id);
+                  }}
+                  type="button"
+                >
+                  删除
+                </button>
               </div>
             </li>
           );

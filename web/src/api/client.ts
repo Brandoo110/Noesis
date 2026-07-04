@@ -57,6 +57,12 @@ export function listPositions(): Promise<Position[]> {
   return request<Position[]>("/positions");
 }
 
+export function deletePosition(positionId: string): Promise<void> {
+  return request<void>(`/positions/${encodeURIComponent(positionId)}`, {
+    method: "DELETE"
+  });
+}
+
 export function startRun(positionId: string): Promise<RunSummary> {
   return request<RunSummary>("/runs", {
     method: "POST",
@@ -166,6 +172,9 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     throw new Error(
       `${method} ${path} failed: ${response.status}${await errorDetail(response)}`
     );
+  }
+  if (response.status === 204) {
+    return undefined as T;
   }
   return (await response.json()) as T;
 }
