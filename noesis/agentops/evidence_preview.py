@@ -17,6 +17,11 @@ BOILERPLATE_MARKERS = (
     "log in",
     "privacy policy",
     "cookie",
+    "purchase licensing rights",
+    "read next",
+    "businesscategory",
+    "technologycategory",
+    "legalcategory",
 )
 
 

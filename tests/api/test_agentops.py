@@ -203,6 +203,8 @@ def test_get_run_trace_cleans_evidence_preview_snippets(
             "Skip to Content\n"
             "Got a tip for us?Let us know\n"
             "a. Send us an email\n"
+            "Purchase Licensing Rights ## Read Next Businesscategory Google limits "
+            "Meta's use of Gemini.\n"
             "> Bloomberg corroborates The FT report today, adding that Apple is "
             "lobbying Washington and in negotiations with two Chinese companies. "
             "> Apple Inc. is in negotiations to purchase chips from two Chinese "
@@ -216,6 +218,8 @@ def test_get_run_trace_cleans_evidence_preview_snippets(
     assert response.status_code == 200
     assert "Skip to Content" not in snippet
     assert "Got a tip" not in snippet
+    assert "Purchase Licensing Rights" not in snippet
+    assert "Read Next" not in snippet
     assert ">" not in snippet
     assert snippet == (
         "Bloomberg corroborates The FT report today, adding that Apple is "
