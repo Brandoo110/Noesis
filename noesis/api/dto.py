@@ -47,6 +47,12 @@ class RunResponse(BaseModel):
 
 class RunSummaryResponse(BaseModel):
     run_id: str
+    position_id: str | None
+    entity_id: str | None
+    node_kind: str
+    target_name: str | None
+    target_symbol: str | None
+    target_market: str | None
     status: str
     started_at: str
     ended_at: str | None

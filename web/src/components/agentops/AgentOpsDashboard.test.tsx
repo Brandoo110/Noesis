@@ -45,6 +45,12 @@ describe("AgentOpsDashboard", () => {
     expect(within(dashboard).getByLabelText("AgentOps run list")).toHaveTextContent(
       "run-agentops"
     );
+    expect(within(dashboard).getByLabelText("AgentOps run list")).toHaveTextContent(
+      "Apple Inc."
+    );
+    expect(within(dashboard).getByLabelText("AgentOps run list")).toHaveTextContent(
+      "AAPL · US · seed"
+    );
     expect(await screen.findByText("当前 run 未发现明显问题")).toBeInTheDocument();
     expect(await screen.findByText("search.tavily")).toBeInTheDocument();
     expect(within(dashboard).getByLabelText("Run trace timeline")).toHaveTextContent(
@@ -217,6 +223,12 @@ function makeRunList(): AgentOpsRunList {
     runs: [
       {
         run_id: "run-agentops",
+        position_id: "position-aapl",
+        entity_id: "entity-aapl",
+        node_kind: "seed",
+        target_name: "Apple Inc.",
+        target_symbol: "AAPL",
+        target_market: "US",
         status: "completed",
         started_at: "2026-06-26T00:00:00Z",
         ended_at: "2026-06-26T00:00:03Z",

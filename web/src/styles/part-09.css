@@ -132,6 +132,20 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.run-card .run-target-title {
+  font-family: inherit;
+  font-size: 15px;
+  letter-spacing: 0;
+}
+.run-target-meta {
+  font-weight: 700;
+}
+.run-id {
+  overflow: hidden;
+  font-family: "IBM Plex Mono", monospace;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .run-card span,
 .trace-header span {
   justify-self: start;

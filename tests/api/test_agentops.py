@@ -31,6 +31,12 @@ def test_get_runs_lists_agentops_summary(api_context: ApiTestContext) -> None:
     assert payload["runs"] == [
         {
             "run_id": "run-agentops",
+            "position_id": "position-agentops",
+            "entity_id": "entity-aapl",
+            "node_kind": "seed",
+            "target_name": "Apple Inc.",
+            "target_symbol": "AAPL",
+            "target_market": "US",
             "status": "completed",
             "started_at": NOW,
             "ended_at": END,
@@ -79,6 +85,54 @@ def test_get_runs_returns_diagnostic_tags(api_context: ApiTestContext) -> None:
     assert summary["diagnostic_tags"] == ["waiting_confirmation", "no_tools"]
     assert summary["has_pending_confirmation"] is True
     assert summary["last_step_name"] == "ingest"
+    assert summary["target_name"] == "Apple Inc."
+    assert summary["target_symbol"] == "AAPL"
+
+
+def test_get_runs_does_not_inherit_seed_symbol_for_expand_target(
+    api_context: ApiTestContext,
+) -> None:
+    _seed_agentops_run(api_context.db_path)
+    with connect(api_context.db_path) as conn:
+        with with_tx(conn):
+            conn.execute(
+                """
+                INSERT INTO entities(
+                  id, node_type, name, aliases_json, identifiers_json,
+                  market, created_at, updated_at
+                )
+                VALUES (
+                  'entity-gemini', 'company', 'Gemini Trust Company, LLC', '[]',
+                  '{}', NULL, ?, ?
+                )
+                """,
+                (NOW, NOW),
+            )
+            RunRegistryRepo().insert(
+                RunRow(
+                    id="run-expand-agentops",
+                    position_id="position-agentops",
+                    entity_id="entity-gemini",
+                    node_kind="expand",
+                    status="completed",
+                    started_at="2026-06-26T00:00:04Z",
+                    ended_at="2026-06-26T00:00:05Z",
+                    created_at="2026-06-26T00:00:04Z",
+                ),
+                conn=conn,
+            )
+
+    response = api_context.client.get("/runs")
+    payload = response.json()
+
+    assert response.status_code == 200
+    summary = next(
+        item for item in payload["runs"] if item["run_id"] == "run-expand-agentops"
+    )
+    assert summary["target_name"] == "Gemini Trust Company, LLC"
+    assert summary["target_symbol"] is None
+    assert summary["target_market"] is None
+    assert summary["node_kind"] == "expand"
 
 
 def test_delete_runs_clears_run_history_but_keeps_positions_and_entities(

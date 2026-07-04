@@ -62,13 +62,28 @@ def list_runs(deps: GraphDeps = Depends(get_graph_deps)) -> RunListResponse:
           GROUP BY run_id
         )
         SELECT
-          r.id, r.status, r.started_at, r.ended_at,
+          r.id, r.position_id, r.entity_id, r.node_kind,
+          COALESCE(en.name, NULLIF(p.name, ''), NULLIF(p.symbol, '')) AS target_name,
+          CASE
+            WHEN r.node_kind = 'seed' THEN COALESCE(
+              NULLIF(json_extract(en.identifiers_json, '$.symbol'), ''),
+              NULLIF(p.symbol, '')
+            )
+            ELSE NULLIF(json_extract(en.identifiers_json, '$.symbol'), '')
+          END AS target_symbol,
+          CASE
+            WHEN r.node_kind = 'seed' THEN COALESCE(NULLIF(en.market, ''), NULLIF(p.market, ''))
+            ELSE NULLIF(en.market, '')
+          END AS target_market,
+          r.status, r.started_at, r.ended_at,
           COALESCE(e.evidence_count, 0) AS evidence_count,
           COALESCE(t.tool_count, 0) AS tool_count,
           COALESCE(t.cache_hits, 0) AS cache_hits
         FROM run_registry r
         LEFT JOIN evidence_counts e ON e.run_id = r.id
         LEFT JOIN tool_counts t ON t.run_id = r.id
+        LEFT JOIN positions p ON p.id = r.position_id
+        LEFT JOIN entities en ON en.id = r.entity_id
         ORDER BY r.started_at DESC, r.created_at DESC, r.id DESC
         """
     ).fetchall()
@@ -219,6 +234,12 @@ def _run_summary_response(row, steps: list[DiagnosticStep]) -> RunSummaryRespons
     )
     return RunSummaryResponse(
         run_id=str(row["id"]),
+        position_id=row["position_id"],
+        entity_id=row["entity_id"],
+        node_kind=str(row["node_kind"]),
+        target_name=row["target_name"],
+        target_symbol=row["target_symbol"],
+        target_market=row["target_market"],
         status=status,
         started_at=str(row["started_at"]),
         ended_at=row["ended_at"],

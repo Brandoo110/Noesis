@@ -202,10 +202,12 @@ export function AgentOpsDashboard(): JSX.Element {
                     onClick={() => setSelectedRunId(run.run_id)}
                     type="button"
                   >
-                    <strong>{run.run_id}</strong>
+                    <strong className="run-target-title">{runTargetTitle(run)}</strong>
+                    <small className="run-target-meta">{runTargetMeta(run)}</small>
                     <span>{run.status}</span>
                     <small>{formatMs(run.latency_ms)} · {run.tool_count} tools</small>
                     <small>cache {formatPercent(run.cache_hit_rate)}</small>
+                    <small className="run-id">{shortRunId(run.run_id)}</small>
                     {(run.diagnostic_tags ?? []).length > 0 ? (
                       <span className="run-tags">
                         {(run.diagnostic_tags ?? []).slice(0, 3).map((tag) => (
@@ -652,6 +654,21 @@ function runTagLabel(tag: string): string {
     no_tools: "无工具"
   };
   return labels[tag] ?? tag;
+}
+
+function runTargetTitle(run: AgentOpsRunSummary): string {
+  return run.target_name ?? run.target_symbol ?? run.entity_id ?? "未识别标的";
+}
+
+function runTargetMeta(run: AgentOpsRunSummary): string {
+  const parts = [run.target_symbol, run.target_market, run.node_kind].filter(
+    (item): item is string => Boolean(item)
+  );
+  return parts.length > 0 ? parts.join(" · ") : "缺少标的信息";
+}
+
+function shortRunId(runId: string): string {
+  return runId.length > 18 ? `${runId.slice(0, 18)}...` : runId;
 }
 
 function fallbackDiagnostic() {

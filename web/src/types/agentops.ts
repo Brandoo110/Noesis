@@ -1,5 +1,11 @@
 export interface AgentOpsRunSummary {
   run_id: string;
+  position_id: string | null;
+  entity_id: string | null;
+  node_kind: string;
+  target_name: string | null;
+  target_symbol: string | null;
+  target_market: string | null;
   status: string;
   started_at: string;
   ended_at: string | null;
