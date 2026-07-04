@@ -128,7 +128,7 @@ export function AgentOpsDashboard(): JSX.Element {
 
   function selectRun(runId: string): void {
     setSelectedRunId(runId);
-    runPanelsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    scrollToRunPanels(runPanelsRef.current);
   }
 
   async function handleClearRuns(): Promise<void> {
@@ -341,6 +341,16 @@ function RunDiagnosticPanel({ trace }: { trace: RunTrace }): JSX.Element {
       </div>
     </section>
   );
+}
+
+function scrollToRunPanels(element: HTMLElement | null): void {
+  if (!element) {
+    return;
+  }
+  const topbar = document.querySelector<HTMLElement>(".topbar");
+  const topbarHeight = topbar?.getBoundingClientRect().height ?? 0;
+  const targetTop = window.scrollY + element.getBoundingClientRect().top - topbarHeight - 16;
+  window.scrollTo({ behavior: "smooth", top: Math.max(0, targetTop) });
 }
 
 function MetricsStrip({ metrics }: { metrics: MetricsSummary }): JSX.Element {

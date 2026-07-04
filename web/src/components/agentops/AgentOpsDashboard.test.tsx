@@ -20,6 +20,11 @@ const listRunsMock = vi.mocked(client.listRuns);
 describe("AgentOpsDashboard", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    Object.defineProperty(window, "scrollTo", {
+      configurable: true,
+      value: vi.fn(),
+      writable: true
+    });
   });
 
   it("renders metrics runs and the selected run timeline", async () => {
@@ -125,10 +130,26 @@ describe("AgentOpsDashboard", () => {
     expect(getRunTraceMock).toHaveBeenLastCalledWith("run-second");
   });
 
-  it("scrolls to run panels when a run card is selected", async () => {
-    const originalScrollIntoView = Element.prototype.scrollIntoView;
-    const scrollIntoViewMock = vi.fn();
-    Element.prototype.scrollIntoView = scrollIntoViewMock;
+  it("scrolls to run panels below the sticky topbar when a run card is selected", async () => {
+    const scrollToMock = vi.fn();
+    const originalScrollTo = window.scrollTo;
+    const originalScrollY = window.scrollY;
+    const topbar = document.createElement("header");
+    topbar.className = "topbar";
+    vi.spyOn(topbar, "getBoundingClientRect").mockReturnValue({
+      bottom: 58,
+      height: 58,
+      left: 0,
+      right: 0,
+      top: 0,
+      width: 1200,
+      x: 0,
+      y: 0,
+      toJSON: () => ({})
+    });
+    document.body.appendChild(topbar);
+    window.scrollTo = scrollToMock;
+    Object.defineProperty(window, "scrollY", { configurable: true, value: 100 });
     listRunsMock.mockResolvedValue({
       runs: [
         ...makeRunList().runs,
@@ -142,17 +163,34 @@ describe("AgentOpsDashboard", () => {
       render(<AgentOpsDashboard />);
 
       await screen.findByText("search.tavily");
-      expect(scrollIntoViewMock).not.toHaveBeenCalled();
+      const panels = screen.getByLabelText("AgentOps run panels");
+      vi.spyOn(panels, "getBoundingClientRect").mockReturnValue({
+        bottom: 820,
+        height: 400,
+        left: 0,
+        right: 1200,
+        top: 420,
+        width: 1200,
+        x: 0,
+        y: 420,
+        toJSON: () => ({})
+      });
+      expect(scrollToMock).not.toHaveBeenCalled();
 
       fireEvent.click(screen.getByRole("button", { name: /run-second/ }));
 
-      expect(scrollIntoViewMock).toHaveBeenCalledWith({
+      expect(scrollToMock).toHaveBeenCalledWith({
         behavior: "smooth",
-        block: "start"
+        top: 446
       });
       await waitFor(() => expect(getRunTraceMock).toHaveBeenLastCalledWith("run-second"));
     } finally {
-      Element.prototype.scrollIntoView = originalScrollIntoView;
+      window.scrollTo = originalScrollTo;
+      Object.defineProperty(window, "scrollY", {
+        configurable: true,
+        value: originalScrollY
+      });
+      document.body.removeChild(topbar);
     }
   });
 
