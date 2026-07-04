@@ -55,11 +55,11 @@ export function PortfolioBrief({
   }
 
   return (
-    <section aria-label="组合 Brief" className="card portfolio-brief" id="portfolio-brief">
+    <section aria-label="组合简报" className="card portfolio-brief" id="portfolio-brief">
       <header className="card-header compact">
         <div>
           <p className="eyebrow">Portfolio brief</p>
-          <h2>Portfolio Brief</h2>
+          <h2>组合简报</h2>
         </div>
         <button
           className="secondary-button small"
@@ -76,7 +76,7 @@ export function PortfolioBrief({
       </p>
       {exportedFilename ? (
         <p className="toast" role="status">
-          已生成 {exportedFilename}，内容沿用当前 Brief 与红线措辞。
+          已生成 {exportedFilename}，内容沿用当前简报与红线措辞。
         </p>
       ) : null}
       {isLoading ? <p className="empty-note">加载中...</p> : null}
@@ -84,14 +84,14 @@ export function PortfolioBrief({
         <div className="compact-alert" role="alert">
           <span>{error}</span>
           <button disabled={isLoading} onClick={() => void loadBrief()} type="button">
-            重新加载 Brief
+            重新加载组合简报
           </button>
         </div>
       ) : null}
       {!isLoading && !error && brief ? (
         <>
           <div
-            aria-label="Brief 指标"
+            aria-label="组合简报指标"
             className={
               issueCount(brief) > 0
                 ? "brief-stats brief-stats-alert"
@@ -104,7 +104,7 @@ export function PortfolioBrief({
             </span>
             <span>
               <strong>{confirmedCount(brief)}</strong>
-              <small>thesis</small>
+              <small>研究假设</small>
             </span>
             <span>
               <strong>{brief.overlaps.length}</strong>
@@ -140,5 +140,5 @@ function issueCount(brief: PortfolioBriefData): number {
 }
 
 function toErrorMessage(caught: unknown): string {
-  return caught instanceof Error ? caught.message : "组合 Brief 加载失败";
+  return caught instanceof Error ? caught.message : "组合简报加载失败";
 }

@@ -47,7 +47,7 @@ export function PortfolioTopbar({
         </svg>
         <input
           aria-label="全局搜索"
-          placeholder="搜索标的、主题、证据或 thesis..."
+          placeholder="搜索标的、主题、证据或研究假设..."
           onChange={(event) => setSearchQuery(event.target.value)}
           type="search"
           value={searchQuery}

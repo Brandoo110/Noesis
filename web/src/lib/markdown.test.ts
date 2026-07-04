@@ -23,13 +23,18 @@ describe("stockReportToMarkdown", () => {
     expect(markdown).toContain("## ③ 产业链");
     expect(markdown).toContain("## ④ 分类情报");
     expect(markdown).toContain("## ⑤ 方向");
-    expect(markdown).toContain("## ⑥ Thesis");
+    expect(markdown).toContain("## ⑥ 研究假设");
     expect(markdown).toContain("## ⑦ 关注点（仅供参考）");
     expect(markdown).toContain("## ⑧ 来源清单");
     expect(markdown).toContain("Apple supplier pressure is easing.");
     expect(markdown).toContain("https://example.com/evidence-1");
     expect(markdown).toContain("tier 2");
     expect(markdown).toContain("Consumer Electronics (基于推断)");
+    expect(markdown).not.toContain("## ⑥ Thesis");
+    expect(markdown).not.toContain("confidence ");
+    expect(markdown).not.toContain("- up:");
+    expect(markdown).not.toContain("- down:");
+    expect(markdown).not.toContain("- neutral:");
     expect(markdown).not.toMatch(REDLINE_PATTERN);
   });
 });
@@ -70,15 +75,19 @@ describe("portfolioBriefToMarkdown", () => {
   it("renders portfolio positions and overlaps without redline wording", () => {
     const markdown = portfolioBriefToMarkdown(makePortfolioBrief());
 
-    expect(markdown).toContain("# 组合 Brief");
+    expect(markdown).toContain("# 组合简报");
     expect(markdown).toContain("## 运行健康");
-    expect(markdown).toContain("latest runs: 0");
+    expect(markdown).toContain("最新研究：0");
     expect(markdown).toContain("- **AAPL**: Apple supplier pressure is easing.");
     expect(markdown).toContain("- **MSFT**: 尚未研究");
     expect(markdown).toContain("Consumer Electronics");
     expect(markdown).toContain("AAPL / MSFT");
     expect(markdown).toContain("基于推断");
     expect(markdown).toContain("仅供参考");
+    expect(markdown).not.toContain("Brief");
+    expect(markdown).not.toContain("latest runs");
+    expect(markdown).not.toContain("failed run");
+    expect(markdown).not.toContain("degraded reason");
     expect(markdown).not.toMatch(REDLINE_PATTERN);
   });
 });

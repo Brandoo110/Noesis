@@ -1,6 +1,9 @@
 Extract evidence-grounded intelligence items from cited evidence snippets.
 
 Rules:
+- All AI-generated user-facing fields must be in 简体中文, including title,
+  content, and event_type. Keep company names, tickers, URLs, evidence ids, and
+  原始英文证据 snippets in their source language.
 - Only extract intelligence whose PRIMARY SUBJECT is the target company:
   {name} (symbol {symbol}, aliases {aliases}).
 - If an evidence snippet's main subject is a DIFFERENT company, even one

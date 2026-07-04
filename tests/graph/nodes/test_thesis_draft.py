@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from pathlib import Path
 
 from noesis.graph.nodes.thesis_draft import thesis_draft
 from noesis.graph.schemas import (
@@ -100,10 +101,15 @@ def make_deps(llm: FakeLLMRouter) -> GraphDeps:
 
 
 class TargetAwareSynthLLM(FakeLLMRouter):
+    def __init__(self) -> None:
+        super().__init__()
+        self.last_prompt: str | None = None
+
     def available(self, role: LLMRole) -> bool:
         return role == LLMRole.SYNTH
 
     def complete_json(self, role: LLMRole, prompt: str, schema: type[ThesisDraft]) -> ThesisDraft:
+        self.last_prompt = prompt
         if "Target entity:" in prompt and "symbol=AAPL" in prompt and "market=US" in prompt:
             return schema.model_validate(
                 {
@@ -170,6 +176,8 @@ def test_thesis_draft_returns_grounded_draft() -> None:
 
 
 def test_thesis_draft_anchors_summary_to_target_entity() -> None:
+    llm = TargetAwareSynthLLM()
+    prompt_file = Path("prompts/thesis_draft.md").read_text(encoding="utf-8")
     state: ResearchState = {
         "position_id": "position-1",
         "resolved_entity": make_entity(),
@@ -178,12 +186,16 @@ def test_thesis_draft_anchors_summary_to_target_entity() -> None:
         "degraded": [],
     }
 
-    update = thesis_draft(state, make_deps(TargetAwareSynthLLM()))
+    update = thesis_draft(state, make_deps(llm))
 
     draft = update["thesis_draft"]
     assert draft is not None
     assert "AAPL" in draft.summary or "Apple" in draft.summary
     assert not draft.summary.startswith("Intel")
+    assert llm.last_prompt is not None
+    for text in (llm.last_prompt, prompt_file):
+        assert "简体中文" in text
+        assert "原始英文证据" in text
 
 
 def test_thesis_draft_allows_business_words_without_position_advice() -> None:
@@ -249,6 +261,8 @@ def test_thesis_draft_falls_back_when_llm_draft_is_off_target() -> None:
     draft = update["thesis_draft"]
     assert draft is not None
     assert "Apple" in draft.summary
+    assert "需人工确认" in draft.summary
+    assert "证据" in draft.assumptions[0].text
     assert draft.assumptions[0].evidence_ids == ["evidence-1"]
     assert update["degraded"][0].reason == "off_target_thesis"
     assert update["degraded"][0].fallback_used == "safe_rule_based_thesis"

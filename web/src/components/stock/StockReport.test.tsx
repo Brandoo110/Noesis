@@ -23,7 +23,7 @@ describe("StockReport", () => {
     expect(screen.getByRole("heading", { name: "③ 产业链" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "④ 分类情报" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "⑤ 方向" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "⑥ Thesis" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "⑥ 研究假设" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "⑦ 关注点（仅供参考）" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "⑧ 来源清单" })).toBeInTheDocument();
     expect(screen.getAllByText("Apple supplier pressure is easing.")).toHaveLength(2);

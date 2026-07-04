@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from pathlib import Path
 
 from noesis.db.models import EntityRow
 from noesis.graph.nodes.intel_synth import REQUIRED_STATE_KEYS, intel_synth
@@ -117,6 +118,7 @@ def make_entity_row() -> EntityRow:
 
 def test_intel_synth_prompt_anchors_to_resolved_entity() -> None:
     llm = CapturingLightLLM()
+    prompt_file = Path("prompts/intel_synth.md").read_text(encoding="utf-8")
     state: ResearchState = {
         "entity_id": "entity-aapl",
         "resolved_entity": make_entity(),
@@ -132,6 +134,9 @@ def test_intel_synth_prompt_anchors_to_resolved_entity() -> None:
     assert "AAPL" in llm.last_prompt
     assert "PRIMARY SUBJECT" in llm.last_prompt
     assert "DISCARD" in llm.last_prompt
+    for text in (llm.last_prompt, prompt_file):
+        assert "简体中文" in text
+        assert "原始英文证据" in text
 
 
 def test_intel_synth_uses_entity_repo_as_target_fallback() -> None:

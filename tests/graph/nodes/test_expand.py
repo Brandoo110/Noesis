@@ -128,6 +128,8 @@ def test_expand_prompt_defines_target_centric_relation_direction() -> None:
         assert "Gemini" in text
         assert "Samsung" in text
         assert "Consumer Electronics" in text
+        assert "简体中文" in text
+        assert "原始英文证据" in text
 
 
 def test_expand_degrades_when_synth_unavailable() -> None:

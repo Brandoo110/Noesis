@@ -68,6 +68,8 @@ def _prompt(
     return (
         "Draft a research thesis for confirmation. Do not recommend buying, "
         "selling, trading, price targets, or stock-price predictions. "
+        "所有 AI 生成的用户可见报告内容必须使用简体中文，包括 summary 和 assumptions；"
+        "公司名、股票代码、URL、evidence id 以及原始英文证据片段保持原文即可。 "
         "The target entity is locked; summary and every assumption must use "
         "the target company itself as the subject. If evidence mainly discusses "
         "another company, cite it only as an impact on the target company. "
@@ -116,14 +118,12 @@ def _fallback_draft(
             continue
         return ThesisDraft(
             summary=(
-                f"{label} has evidence-backed developments that require "
-                "confirmation before forming a research view."
+                f"{label} 出现有证据支撑的发展变化，需人工确认后再形成研究判断。"
             ),
             assumptions=[
                 {
                     "text": (
-                        f"{label} remains linked to the cited development; "
-                        "the implication should be reviewed against the evidence."
+                        f"{label} 与引用证据中的变化仍有关联，后续影响需要继续对照证据复核。"
                     ),
                     "kind": "assumption",
                     "evidence_ids": evidence_ids,

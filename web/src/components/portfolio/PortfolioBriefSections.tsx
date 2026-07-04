@@ -20,7 +20,7 @@ export function RunHealthSummary({
   const failedShare = healthShare(health.failed, health.total_latest_runs);
   return (
     <section
-      aria-label="Brief 运行健康"
+      aria-label="组合简报运行健康"
       className={issueCount > 0 ? "run-health run-health-alert" : "run-health"}
     >
       <div className="run-health-top">
@@ -54,7 +54,7 @@ export function PositionSummaries({
   return (
     <section aria-label="持仓一句话" className="brief-lines">
       <h3>持仓一句话</h3>
-      {brief.positions.length === 0 ? <p className="empty-note">暂无持仓 Brief</p> : null}
+      {brief.positions.length === 0 ? <p className="empty-note">暂无持仓简报</p> : null}
       {brief.positions.length > 0 && researchedPositions.length === 0 ? (
         <p className="empty-note">暂无已研究持仓一句话</p>
       ) : null}
@@ -109,7 +109,7 @@ function RunHealthIssues({ health }: { health: PortfolioRunHealth }): JSX.Elemen
         </li>
       ))}
       {health.completed_without_thesis > 0 ? (
-        <li><strong>{health.completed_without_thesis}</strong><span>完成但无 thesis</span></li>
+        <li><strong>{health.completed_without_thesis}</strong><span>完成但无研究假设</span></li>
       ) : null}
       {health.degraded_reasons.map((item) => (
         <li key={item.reason}><strong>{item.count}</strong><span>{item.reason}</span></li>
@@ -125,14 +125,14 @@ function positionSummaryLabel(position: BriefPosition, activeRun?: ActiveRun): s
     return position.thesis_summary;
   }
   if (position.thesis_status === "draft") {
-    return "待确认 thesis";
+    return "待确认研究假设";
   }
   if (activeRun?.positionId === position.position_id) {
     if (activeRun.status === "running") {
       return "研究中";
     }
     if (activeRun.status === "awaiting_confirmation" || activeRun.status === "completed") {
-      return "待确认 thesis";
+      return "待确认研究假设";
     }
   }
   return "尚未研究";

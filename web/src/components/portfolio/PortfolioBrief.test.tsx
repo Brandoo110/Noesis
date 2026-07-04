@@ -25,7 +25,7 @@ describe("PortfolioBrief", () => {
 
     render(<PortfolioBrief onSelectPosition={onSelectPosition} />);
 
-    const brief = await screen.findByLabelText("组合 Brief");
+    const brief = await screen.findByLabelText("组合简报");
 
     expect(within(brief).getByText("仅供参考")).toBeInTheDocument();
     fireEvent.click(within(brief).getByText("AAPL"));
@@ -66,20 +66,20 @@ describe("PortfolioBrief", () => {
 
     render(<PortfolioBrief />);
 
-    const health = await screen.findByLabelText("Brief 运行健康");
+    const health = await screen.findByLabelText("组合简报运行健康");
 
     expect(health).toHaveTextContent("异常 3");
     expect(health).toHaveClass("run-health-alert");
     expect(health).toHaveTextContent("MSFT");
     expect(health).toHaveTextContent("failed: graph_wiring_failed");
-    expect(health).toHaveTextContent("完成但无 thesis");
+    expect(health).toHaveTextContent("完成但无研究假设");
     expect(health).toHaveTextContent("no_intel_for_thesis");
   });
 
   it("exports the portfolio brief as markdown", async () => {
     const portfolioBriefToMarkdown = vi
       .spyOn(markdown, "portfolioBriefToMarkdown")
-      .mockReturnValue("# 组合 Brief");
+      .mockReturnValue("# 组合简报");
     const downloadMarkdown = vi
       .spyOn(markdown, "downloadMarkdown")
       .mockImplementation(() => undefined);
@@ -93,7 +93,7 @@ describe("PortfolioBrief", () => {
     expect(portfolioBriefToMarkdown).toHaveBeenCalledWith(makeBrief());
     expect(downloadMarkdown).toHaveBeenCalledWith(
       "portfolio-brief.md",
-      "# 组合 Brief"
+      "# 组合简报"
     );
     expect(screen.getByRole("status")).toHaveTextContent("portfolio-brief.md");
   });
@@ -132,7 +132,7 @@ describe("PortfolioBrief", () => {
     expect(
       await screen.findByText("GET /portfolio/brief failed: 503")
     ).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "重新加载 Brief" }));
+    fireEvent.click(screen.getByRole("button", { name: "重新加载组合简报" }));
 
     expect(await screen.findByText("AAPL")).toBeInTheDocument();
     expect(getPortfolioBriefMock).toHaveBeenCalledTimes(2);
@@ -147,7 +147,7 @@ describe("PortfolioBrief", () => {
 
     const { rerender } = render(<PortfolioBrief refreshKey={0} />);
 
-    expect(await screen.findByText("暂无持仓 Brief")).toBeInTheDocument();
+    expect(await screen.findByText("暂无持仓简报")).toBeInTheDocument();
     rerender(<PortfolioBrief refreshKey={1} />);
 
     expect(await screen.findByText("AAPL")).toBeInTheDocument();

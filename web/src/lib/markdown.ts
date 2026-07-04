@@ -21,6 +21,22 @@ const KIND_LABELS: Record<ThesisAssumption["kind"], string> = {
   risk: "风险"
 };
 
+const SENTIMENT_LABELS: Record<IntelItem["sentiment"]["dir"], string> = {
+  up: "正向",
+  down: "负向",
+  neutral: "中性"
+};
+
+const EVENT_TYPE_LABELS: Record<string, string> = {
+  supply_chain: "供应链",
+  demand: "需求",
+  product: "产品",
+  partnership: "合作",
+  financial: "财务",
+  legal: "监管",
+  risk: "风险"
+};
+
 export function stockReportToMarkdown(detail: StockDetailData): string {
   const symbol = detail.entity?.symbol ?? detail.entityId;
   return [
@@ -30,7 +46,7 @@ export function stockReportToMarkdown(detail: StockDetailData): string {
     section("③ 产业链", chainLines(detail.neighbors)),
     section("④ 分类情报", intelLines(detail.intelItems)),
     section("⑤ 方向", sentimentLines(detail.intelItems)),
-    section("⑥ Thesis", thesisLines(detail.thesis)),
+    section("⑥ 研究假设", thesisLines(detail.thesis)),
     section("⑦ 关注点（仅供参考）", attentionLines(detail.thesis)),
     section("⑧ 来源清单", evidenceLines(detail))
   ].join("\n\n");
@@ -38,7 +54,7 @@ export function stockReportToMarkdown(detail: StockDetailData): string {
 
 export function portfolioBriefToMarkdown(brief: PortfolioBrief): string {
   return [
-    "# 组合 Brief",
+    "# 组合简报",
     "仅供参考：以下内容用于研究跟踪，保留来源与推断标记。",
     section("运行健康", briefRunHealthLines(brief)),
     section("持仓一句话", briefPositionLines(brief)),
@@ -60,7 +76,7 @@ export function downloadMarkdown(filename: string, content: string): void {
 
 function briefPositionLines(brief: PortfolioBrief): string[] {
   if (brief.positions.length === 0) {
-    return ["- 暂无持仓 Brief。"];
+    return ["- 暂无持仓简报。"];
   }
   return brief.positions.map(
     (position) =>
@@ -82,16 +98,16 @@ function briefOverlapLines(overlaps: OverlapGroup[]): string[] {
 function briefRunHealthLines(brief: PortfolioBrief): string[] {
   const health = brief.run_health;
   return [
-    `- latest runs: ${health.total_latest_runs}`,
-    `- failed: ${health.failed}`,
-    `- degraded: ${health.degraded_runs}`,
-    `- completed without thesis: ${health.completed_without_thesis}`,
+    `- 最新研究：${health.total_latest_runs}`,
+    `- 失败：${health.failed}`,
+    `- 降级：${health.degraded_runs}`,
+    `- 完成但无研究假设：${health.completed_without_thesis}`,
     ...health.failed_runs.map(
       (run) =>
-        `- failed run ${run.symbol || run.position_id}: ${run.reason ?? run.status}`
+        `- 失败研究 ${run.symbol || run.position_id}：${run.reason ?? run.status}`
     ),
     ...health.degraded_reasons.map(
-      (item) => `- degraded reason ${item.reason}: ${item.count}`
+      (item) => `- 降级原因 ${item.reason}：${item.count}`
     )
   ];
 }
@@ -102,7 +118,7 @@ function section(title: string, lines: string[]): string {
 
 function summaryLines(detail: StockDetailData): string[] {
   const name = detail.entity?.name ?? detail.entityId;
-  return [detail.thesis?.summary ?? `${name} 暂无综合 thesis。`];
+  return [detail.thesis?.summary ?? `${name} 暂无综合研究假设。`];
 }
 
 function intelChangeLines(items: IntelItem[]): string[] {
@@ -120,7 +136,7 @@ function chainLines(edges: Edge[]): string[] {
     const inferred = edge.basis === "inferred" ? " (基于推断)" : "";
     return [
       `- ${RELATION_LABELS[edge.relation]}: ${edge.to_name}${inferred}`,
-      `confidence ${Math.round(edge.confidence * 100)}%`
+      `置信度 ${Math.round(edge.confidence * 100)}%`
     ].join("；");
   });
 }
@@ -131,7 +147,7 @@ function intelLines(items: IntelItem[]): string[] {
   }
   return items.map(
     (item) =>
-      `- ${item.title}（${item.event_type} / ${item.sentiment.dir} / tier ${item.source_tier}）：${item.content}`
+      `- ${item.title}（${eventTypeLabel(item.event_type)} / ${SENTIMENT_LABELS[item.sentiment.dir]} / tier ${item.source_tier}）：${item.content}`
   );
 }
 
@@ -147,15 +163,15 @@ function sentimentLines(items: IntelItem[]): string[] {
     { up: 0, down: 0, neutral: 0 }
   );
   return [
-    `- up: ${counts.up}`,
-    `- down: ${counts.down}`,
-    `- neutral: ${counts.neutral}`
+    `- 正向：${counts.up}`,
+    `- 负向：${counts.down}`,
+    `- 中性：${counts.neutral}`
   ];
 }
 
 function thesisLines(thesis: Thesis | null): string[] {
   if (!thesis) {
-    return ["- 暂无 thesis。"];
+    return ["- 暂无研究假设。"];
   }
   return [
     `- 摘要：${thesis.summary}`,
@@ -185,4 +201,8 @@ function evidenceLines(detail: StockDetailData): string[] {
     const url = evidence.url ?? "无链接";
     return `- ${title} - ${url} - tier ${evidence.source_tier}`;
   });
+}
+
+function eventTypeLabel(eventType: string): string {
+  return EVENT_TYPE_LABELS[eventType] ?? eventType;
 }

@@ -5,6 +5,22 @@ interface IntelStreamProps {
   onEvidenceClick?: (evidenceIds: string[]) => void;
 }
 
+const SENTIMENT_LABELS: Record<IntelItem["sentiment"]["dir"], string> = {
+  up: "正向",
+  down: "负向",
+  neutral: "中性"
+};
+
+const EVENT_TYPE_LABELS: Record<string, string> = {
+  supply_chain: "供应链",
+  demand: "需求",
+  product: "产品",
+  partnership: "合作",
+  financial: "财务",
+  legal: "监管",
+  risk: "风险"
+};
+
 export function IntelStream({
   items,
   onEvidenceClick
@@ -18,10 +34,10 @@ export function IntelStream({
           <li aria-label={`情报 ${item.title}`} key={item.title}>
             <div>
               <strong>{item.title}</strong>
-              <span>{item.event_type}</span>
+              <span>{eventTypeLabel(item.event_type)}</span>
             </div>
             <div>
-              <span>{item.sentiment.dir}</span>
+              <span>{SENTIMENT_LABELS[item.sentiment.dir]}</span>
               <span>{`tier ${item.source_tier}`}</span>
             </div>
             <p>{item.content}</p>
@@ -36,4 +52,8 @@ export function IntelStream({
       </ul>
     </section>
   );
+}
+
+function eventTypeLabel(eventType: string): string {
+  return EVENT_TYPE_LABELS[eventType] ?? eventType;
 }

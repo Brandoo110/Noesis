@@ -82,6 +82,8 @@ def _prompt(evidences: list[EvidenceRecord], target: ResolvedEntity | None) -> s
     target_clause = _target_clause(target)
     return (
         "Extract evidence-grounded investment intelligence items. "
+        "所有 AI 生成的用户可见字段必须使用简体中文，包括 title、content 和 event_type；"
+        "公司名、股票代码、URL、evidence id 以及原始英文证据片段保持原文即可。 "
         f"{target_clause}"
         "Sentiment direction means expected price-impact direction, not wording tone.\n"
         f"Evidence:\n{snippets}"

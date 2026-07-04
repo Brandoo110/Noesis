@@ -52,6 +52,8 @@ def _prompt(entity: ResolvedEntity, evidences: list[EvidenceRecord]) -> str:
     symbol = entity.identifiers.get("symbol") or ""
     return (
         "Extract supply-chain graph edges for the target entity only. "
+        "所有 AI 生成的用户可见字段必须使用简体中文，包括 rationale，以及 segment/theme "
+        "类 to_name；公司法定名称、股票代码、URL、evidence id 和原始英文证据保持原文即可。 "
         "Allowed relations are supplier, customer, competitor, and belongs_to. "
         "Direction is target-centric: relation describes the role of to_entity "
         "relative to target. "

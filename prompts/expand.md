@@ -1,6 +1,9 @@
 Extract one-hop supply-chain graph edges for the target entity.
 
 Rules:
+- All AI-generated user-facing graph fields must be in 简体中文, including
+  rationale and generated segment/theme names. Keep company legal names,
+  tickers, URLs, evidence ids, and 原始英文证据 snippets in their source language.
 - Allowed relations: supplier, customer, competitor, belongs_to.
 - Direction is target-centric: relation describes the role of to_entity relative to target.
 - supplier = to_entity supplies goods or services to target (upstream).

@@ -589,7 +589,7 @@ function AgentOpsGuide(): JSX.Element {
     },
     {
       term: "Status",
-      body: "看这条 run 停在哪。completed 表示已跑完；running 表示还在处理中；如果是 awaiting_confirmation，说明研究已经生成待确认内容，需要去确认或编辑 thesis；failed 表示中途失败，要看 trace 里的失败 step。"
+      body: "看这条 run 停在哪。completed 表示已跑完；running 表示还在处理中；如果是 awaiting_confirmation，说明研究已经生成待确认内容，需要去确认或编辑研究假设；failed 表示中途失败，要看 trace 里的失败 step。"
     },
     {
       term: "Latency",
@@ -613,7 +613,7 @@ function AgentOpsGuide(): JSX.Element {
     },
     {
       term: "Node / Tool",
-      body: "Node 是 Agent 自己的业务步骤，比如解析输入、构建证据、生成 thesis、风险检查。Tool 是 node 调用的外部能力，比如 search、reader、llm。Tool 失败通常是网络、供应商或 key；Node 降级通常是业务兜底生效。"
+      body: "Node 是 Agent 自己的业务步骤，比如解析输入、构建证据、生成研究假设、风险检查。Tool 是 node 调用的外部能力，比如 search、reader、llm。Tool 失败通常是网络、供应商或 key；Node 降级通常是业务兜底生效。"
     },
     {
       term: "Input / Output",

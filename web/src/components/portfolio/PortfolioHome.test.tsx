@@ -144,7 +144,7 @@ describe("PortfolioHome", () => {
     expect(centralInsights).toContainElement(crossPanel);
     expect(within(overlapPanel).getByText("Consumer Electronics")).toBeInTheDocument();
     expect(within(overlapPanel).getByText("AAPL / MSFT")).toBeInTheDocument();
-    expect(await screen.findByLabelText("组合 Brief")).not.toHaveTextContent("Consumer Electronics");
+    expect(await screen.findByLabelText("组合简报")).not.toHaveTextContent("Consumer Electronics");
     expect(screen.getByText("Apple supplier pressure is easing.")).toBeInTheDocument();
   });
 

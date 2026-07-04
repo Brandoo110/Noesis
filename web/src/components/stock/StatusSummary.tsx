@@ -7,7 +7,7 @@ interface StatusSummaryProps {
 
 export function StatusSummary({ detail, errors }: StatusSummaryProps): JSX.Element {
   const name = detail.entity?.name ?? detail.entityId;
-  const summary = detail.thesis?.summary ?? `${name} 暂无综合 thesis。`;
+  const summary = detail.thesis?.summary ?? `${name} 暂无综合研究假设。`;
   return (
     <section aria-label="现状" className="summary-card">
       <h2>现状一句话</h2>

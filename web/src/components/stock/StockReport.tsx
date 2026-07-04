@@ -22,6 +22,22 @@ const KIND_LABELS: Record<ThesisAssumption["kind"], string> = {
   risk: "风险"
 };
 
+const SENTIMENT_LABELS: Record<IntelItem["sentiment"]["dir"], string> = {
+  up: "正向",
+  down: "负向",
+  neutral: "中性"
+};
+
+const EVENT_TYPE_LABELS: Record<string, string> = {
+  supply_chain: "供应链",
+  demand: "需求",
+  product: "产品",
+  partnership: "合作",
+  financial: "财务",
+  legal: "监管",
+  risk: "风险"
+};
+
 export function StockReport({
   detail,
   onEvidenceClick
@@ -70,7 +86,7 @@ function ReportSummary({ detail }: { detail: StockDetailData }): JSX.Element {
   return (
     <section>
       <h3>① 摘要</h3>
-      <p>{detail.thesis?.summary ?? `${name} 暂无综合 thesis。`}</p>
+      <p>{detail.thesis?.summary ?? `${name} 暂无综合研究假设。`}</p>
     </section>
   );
 }
@@ -122,8 +138,8 @@ function ReportIntel({
         {items.map((item) => (
           <li aria-label={`报告情报 ${item.title}`} key={item.title}>
             <strong>{item.title}</strong>
-            <span>{item.event_type}</span>
-            <span>{item.sentiment.dir}</span>
+            <span>{eventTypeLabel(item.event_type)}</span>
+            <span>{SENTIMENT_LABELS[item.sentiment.dir]}</span>
             <span>{`tier ${item.source_tier}`}</span>
             <p>{item.content}</p>
             <button
@@ -146,9 +162,9 @@ function ReportSentiment({ items }: { items: IntelItem[] }): JSX.Element {
       <h3>⑤ 方向</h3>
       {items.length === 0 ? <p className="empty-note">暂无方向信号。</p> : null}
       <ul>
-        <li>{`up: ${counts.up}`}</li>
-        <li>{`down: ${counts.down}`}</li>
-        <li>{`neutral: ${counts.neutral}`}</li>
+        <li>{`正向：${counts.up}`}</li>
+        <li>{`负向：${counts.down}`}</li>
+        <li>{`中性：${counts.neutral}`}</li>
       </ul>
     </section>
   );
@@ -163,8 +179,8 @@ function ReportThesis({
 }): JSX.Element {
   return (
     <section>
-      <h3>⑥ Thesis</h3>
-      {thesis ? <p>{thesis.summary}</p> : <p className="empty-note">暂无 thesis。</p>}
+      <h3>⑥ 研究假设</h3>
+      {thesis ? <p>{thesis.summary}</p> : <p className="empty-note">暂无研究假设。</p>}
       {thesis ? (
         <ul>
           {thesis.assumptions.map((item) => (
@@ -242,4 +258,8 @@ function sentimentCounts(items: IntelItem[]): { up: number; down: number; neutra
     }),
     { up: 0, down: 0, neutral: 0 }
   );
+}
+
+function eventTypeLabel(eventType: string): string {
+  return EVENT_TYPE_LABELS[eventType] ?? eventType;
 }

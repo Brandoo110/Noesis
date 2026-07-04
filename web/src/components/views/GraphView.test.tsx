@@ -117,7 +117,7 @@ describe("GraphView", () => {
     expect(expandEntityMock).toHaveBeenCalledTimes(1);
 
     fireEvent.click(screen.getByRole("button", { name: "个股详情" }));
-    expect(screen.getByRole("heading", { name: "Thesis" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "研究假设" })).toBeInTheDocument();
     fireEvent.click(
       within(screen.getByLabelText("情报 Supplier update")).getByRole("button", {
         name: "查看证据"

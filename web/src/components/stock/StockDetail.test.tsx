@@ -55,11 +55,11 @@ describe("StockDetail", () => {
     expect(
       screen.getByRole("heading", { name: "和其他持仓的关系" })
     ).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Thesis" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "研究假设" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "关注点" })).toBeInTheDocument();
 
     const intel = screen.getByLabelText("情报 Supplier update");
-    expect(within(intel).getByText("neutral")).toBeInTheDocument();
+    expect(within(intel).getByText("中性")).toBeInTheDocument();
     expect(within(intel).getByText("tier 2")).toBeInTheDocument();
     fireEvent.click(within(intel).getByRole("button", { name: "查看证据" }));
     const drawer = await screen.findByRole("dialog", { name: "证据抽屉" });
@@ -101,7 +101,7 @@ describe("StockDetail", () => {
 
     const dialog = screen.getByRole("dialog", { name: "个股详情" });
     expect(dialog).toHaveClass("detail-panel");
-    expect(within(dialog).getByText("STOCK DETAIL / THESIS")).toBeInTheDocument();
+    expect(within(dialog).getByText("个股详情 / 研究假设")).toBeInTheDocument();
 
     fireEvent.keyDown(dialog, { key: "Escape" });
     expect(onClose).toHaveBeenCalledTimes(1);
@@ -164,7 +164,7 @@ describe("StockDetail", () => {
       </EvidenceDrawerProvider>
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "确认 thesis 假设" }));
+    fireEvent.click(screen.getByRole("button", { name: "确认研究假设" }));
 
     expect(confirmThesisMock).toHaveBeenCalledWith("thesis-1", {
       status: "confirmed"
@@ -205,7 +205,7 @@ describe("StockDetail", () => {
     );
 
     expect(
-      screen.getByText("本次研究已完成，但没有生成 thesis")
+      screen.getByText("本次研究已完成，但没有生成研究假设")
     ).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "重新研究" }));
 

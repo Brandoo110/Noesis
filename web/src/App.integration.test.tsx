@@ -148,7 +148,7 @@ describe("App portfolio integration path", () => {
     );
     expect(getEvidenceMock).not.toHaveBeenCalled();
 
-    fireEvent.click(screen.getByRole("button", { name: "确认 thesis 假设" }));
+    fireEvent.click(screen.getByRole("button", { name: "确认研究假设" }));
     await waitFor(() => expect(confirmThesisMock).toHaveBeenCalled());
     expect(document.body.textContent).not.toMatch(REDLINE_PATTERN);
   });

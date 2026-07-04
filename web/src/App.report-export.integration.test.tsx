@@ -114,13 +114,13 @@ describe("App report export integration", () => {
     );
     const briefCapture = installDownloadCapture();
     fireEvent.click(
-      within(await screen.findByLabelText("组合 Brief")).getByRole("button", {
+      within(await screen.findByLabelText("组合简报")).getByRole("button", {
         name: "导出 Markdown"
       })
     );
     const briefMarkdown = await readBlobText(briefCapture.blobs[0]);
     expect(briefCapture.anchor.download).toBe("portfolio-brief.md");
-    expect(briefMarkdown).toContain("# 组合 Brief");
+    expect(briefMarkdown).toContain("# 组合简报");
     expect(briefMarkdown).toContain("- **AAPL**: Apple supplier pressure is easing.");
     expect(briefMarkdown).toContain("仅供参考");
     expect(briefMarkdown).not.toMatch(REDLINE_PATTERN);

@@ -84,16 +84,16 @@ export function StockDetail({
     >
       <header className="drawer-header detail-drawer-header">
         <div>
-          <p className="eyebrow">STOCK DETAIL / THESIS</p>
+          <p className="eyebrow">个股详情 / 研究假设</p>
           <h2>
             <span>{stock.detail.entity?.symbol ?? stock.detail.entityId}</span>
             {stock.detail.entity?.name ? ` ${stock.detail.entity.name}` : ""}
           </h2>
           <div className="detail-chips">
-            <span>{stock.detail.entity?.market ?? "market unknown"}</span>
+            <span>{stock.detail.entity?.market ?? "市场未知"}</span>
             <span>{runId}</span>
-            <span>{stock.detail.run?.status ?? "status unknown"}</span>
-            <span>{`evidence ${stock.detail.evidences.length}`}</span>
+            <span>{stock.detail.run?.status ?? "状态未知"}</span>
+            <span>{`证据 ${stock.detail.evidences.length}`}</span>
           </div>
         </div>
         <div className="drawer-header-actions">
@@ -115,9 +115,9 @@ export function StockDetail({
         {hasMissingCompletedThesis ? (
           <section className="degraded-banner" role="status">
             <div>
-              <strong>本次研究已完成，但没有生成 thesis</strong>
+              <strong>本次研究已完成，但没有生成研究假设</strong>
               <p>
-                证据和分类情报仍可查看；上线使用时可重新研究，直到生成可确认的 thesis。
+                证据和分类情报仍可查看；上线使用时可重新研究，直到生成可确认的研究假设。
               </p>
             </div>
             {onRetryResearch ? (

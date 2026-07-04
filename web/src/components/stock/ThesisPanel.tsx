@@ -18,9 +18,9 @@ export function ThesisPanel({
   onEvidenceClick
 }: ThesisPanelProps): JSX.Element {
   return (
-    <section aria-label="thesis" className="thesis-groups">
-      <h2>Thesis</h2>
-      {thesis ? <p>{thesis.summary}</p> : <p className="empty-note">暂无 thesis。</p>}
+    <section aria-label="研究假设" className="thesis-groups">
+      <h2>研究假设</h2>
+      {thesis ? <p>{thesis.summary}</p> : <p className="empty-note">暂无研究假设。</p>}
       {thesis ? (
         <>
           {(["reason", "assumption", "risk"] as const).map((kind) => (
@@ -33,13 +33,13 @@ export function ThesisPanel({
           ))}
           <div className="confirm-row">
             <button className="primary-button" onClick={() => onConfirm("confirmed")} type="button">
-              确认 thesis 假设
+              确认研究假设
             </button>
             <button onClick={() => onConfirm("edited")} type="button">
               标记需修改
             </button>
             <button onClick={() => onConfirm("rejected")} type="button">
-              拒绝 thesis
+              拒绝研究假设
             </button>
           </div>
         </>
