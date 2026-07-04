@@ -1,3 +1,5 @@
+from datetime import UTC, datetime
+
 from noesis.config.settings import Settings, get_settings
 
 
@@ -17,6 +19,8 @@ LLM_ENV_KEYS = (
     "DEEPSEEK_OUTPUT_COST_PER_MILLION",
     "RISK_INPUT_COST_PER_MILLION",
     "RISK_OUTPUT_COST_PER_MILLION",
+    "LLM_COST_CURRENCY",
+    "DEEPSEEK_PEAK_PRICING_ENABLED",
 )
 
 
@@ -37,6 +41,14 @@ def test_settings_default_db_path_and_disabled_deepseek(monkeypatch) -> None:
         "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
     )
     assert settings.risk_model == "gemini-3.1-flash-lite"
+    assert settings.llm_cost_currency == "CNY"
+    assert settings.deepseek_input_cost_per_million == 3.0
+    assert settings.deepseek_output_cost_per_million == 6.0
+    assert settings.light_input_cost_per_million == 0.0
+    assert settings.light_output_cost_per_million == 0.0
+    assert settings.risk_input_cost_per_million == 1.695
+    assert settings.risk_output_cost_per_million == 10.17
+    assert settings.deepseek_peak_pricing_enabled is True
 
 
 def test_settings_enable_deepseek_when_key_is_present(monkeypatch) -> None:
@@ -74,6 +86,7 @@ def test_settings_llm_cost_env_overrides(monkeypatch) -> None:
     monkeypatch.setenv("DEEPSEEK_OUTPUT_COST_PER_MILLION", "0.4")
     monkeypatch.setenv("RISK_INPUT_COST_PER_MILLION", "0.5")
     monkeypatch.setenv("RISK_OUTPUT_COST_PER_MILLION", "0.6")
+    monkeypatch.setenv("LLM_COST_CURRENCY", "usd")
 
     settings = Settings(_env_file=None)
 
@@ -83,6 +96,21 @@ def test_settings_llm_cost_env_overrides(monkeypatch) -> None:
     assert settings.deepseek_output_cost_per_million == 0.4
     assert settings.risk_input_cost_per_million == 0.5
     assert settings.risk_output_cost_per_million == 0.6
+    assert settings.llm_cost_currency == "USD"
+
+
+def test_settings_deepseek_peak_pricing_uses_beijing_windows(monkeypatch) -> None:
+    for key in LLM_ENV_KEYS:
+        monkeypatch.delenv(key, raising=False)
+    settings = Settings(_env_file=None)
+
+    peak = datetime(2026, 7, 4, 1, 30, tzinfo=UTC)  # 09:30 Beijing time.
+    off_peak = datetime(2026, 7, 4, 5, 0, tzinfo=UTC)  # 13:00 Beijing time.
+
+    assert settings.deepseek_cost_multiplier_at(peak) == 2.0
+    assert settings.deepseek_input_cost_per_million_at(peak) == 6.0
+    assert settings.deepseek_output_cost_per_million_at(peak) == 12.0
+    assert settings.deepseek_cost_multiplier_at(off_peak) == 1.0
 
 
 def test_get_settings_returns_cached_instance(monkeypatch) -> None:

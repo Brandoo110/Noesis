@@ -48,7 +48,7 @@ describe("AgentOpsDashboard", () => {
     expect(within(dashboard).getByText("tool failure")).toBeInTheDocument();
     expect(within(dashboard).getByText("cache hit")).toBeInTheDocument();
     expect(within(dashboard).getByText("tokens/run")).toBeInTheDocument();
-    expect(within(dashboard).getByText("$0.001200")).toBeInTheDocument();
+    expect(within(dashboard).getByText("¥0.001200")).toBeInTheDocument();
     expect(within(dashboard).getByText("evidence coverage")).toBeInTheDocument();
     expect(within(dashboard).getByText("RAG retrievals")).toBeInTheDocument();
     expect(within(dashboard).getByLabelText("AgentOps run list")).toHaveTextContent(
@@ -310,6 +310,7 @@ describe("AgentOpsDashboard", () => {
     expect(errorDetail).toHaveTextContent("Error");
     expect(errorDetail).toHaveTextContent("ReadTimeout while calling provider");
     expect(errorDetail).toHaveTextContent("Tool / Cache");
+    expect(errorDetail).toHaveTextContent("cost ¥0.002000");
   });
 
   it("clears run history after confirmation", async () => {
@@ -386,6 +387,7 @@ function makeMetrics(): MetricsSummary {
     average_token_usage: 140,
     estimated_cost_per_run: 0.0012,
     cost_tracking_enabled: true,
+    cost_currency: "CNY",
     evidence_coverage: 0.5,
     unsupported_claim_count: 1,
     rag_retrieval_count: 2

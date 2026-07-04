@@ -19,6 +19,8 @@ def get_metrics_summary(
     summary = build_metrics_summary(
         deps.repos.conn,
         cost_tracking_enabled=_cost_tracking_enabled(settings),
+        cost_currency=settings.llm_cost_currency,
+        cost_rates=_cost_rates(settings),
     )
     return MetricsSummaryResponse(**asdict(summary))
 
@@ -35,3 +37,20 @@ def _cost_tracking_enabled(settings: Settings) -> bool:
             settings.risk_output_cost_per_million,
         )
     )
+
+
+def _cost_rates(settings: Settings) -> dict[str, tuple[float, float]]:
+    return {
+        "llm.light": (
+            settings.light_input_cost_per_million,
+            settings.light_output_cost_per_million,
+        ),
+        "llm.synth": (
+            settings.deepseek_input_cost_per_million_at(),
+            settings.deepseek_output_cost_per_million_at(),
+        ),
+        "llm.risk": (
+            settings.risk_input_cost_per_million,
+            settings.risk_output_cost_per_million,
+        ),
+    }

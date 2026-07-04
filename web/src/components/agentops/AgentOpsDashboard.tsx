@@ -294,6 +294,7 @@ export function AgentOpsDashboard(): JSX.Element {
                 <ol>
                   {filteredSteps.map((step, index) => (
                   <TraceStep
+                    costCurrency={metrics?.cost_currency ?? "CNY"}
                     evidencePreviews={trace.evidence_previews ?? []}
                     expanded={expandedStepKey === stepKey(step, index)}
                     hasLine={index < filteredSteps.length - 1}
@@ -371,7 +372,7 @@ function scrollToRunPanels(element: HTMLElement | null): void {
 
 function MetricsStrip({ metrics }: { metrics: MetricsSummary }): JSX.Element {
   const costValue = metrics.cost_tracking_enabled
-    ? formatUsd(metrics.estimated_cost_per_run)
+    ? formatMoney(metrics.estimated_cost_per_run, metrics.cost_currency)
     : "未配置单价";
   const items = [
     ["runs", String(metrics.total_runs)],
@@ -402,6 +403,7 @@ function MetricsStrip({ metrics }: { metrics: MetricsSummary }): JSX.Element {
 }
 
 function TraceStep({
+  costCurrency,
   evidencePreviews,
   expanded,
   hasLine,
@@ -409,6 +411,7 @@ function TraceStep({
   onToggle,
   step
 }: {
+  costCurrency: string;
   evidencePreviews: EvidencePreview[];
   expanded: boolean;
   hasLine: boolean;
@@ -457,7 +460,9 @@ function TraceStep({
             <small>{`${step.evidence_ids.length} evidence`}</small>
           ) : null}
         </p>
-        {expanded ? <TraceStepDetail previews={previews} step={step} /> : null}
+        {expanded ? (
+          <TraceStepDetail costCurrency={costCurrency} previews={previews} step={step} />
+        ) : null}
       </div>
       {step.evidence_ids.length > 0 ? (
         <small>{step.evidence_ids.join(", ")}</small>
@@ -467,9 +472,11 @@ function TraceStep({
 }
 
 function TraceStepDetail({
+  costCurrency,
   previews,
   step
 }: {
+  costCurrency: string;
   previews: EvidencePreview[];
   step: RunTraceStep;
 }): JSX.Element {
@@ -493,7 +500,9 @@ function TraceStepDetail({
           }`}
         />
       ) : null}
-      {step.kind === "tool" ? <ToolDetail step={step} /> : null}
+      {step.kind === "tool" ? (
+        <ToolDetail costCurrency={costCurrency} step={step} />
+      ) : null}
       {step.evidence_ids.length > 0 ? (
         <EvidenceDetail ids={step.evidence_ids} previews={previews} />
       ) : null}
@@ -510,7 +519,13 @@ function DetailBlock({ label, value }: { label: string; value: string }): JSX.El
   );
 }
 
-function ToolDetail({ step }: { step: RunTraceStep }): JSX.Element {
+function ToolDetail({
+  costCurrency,
+  step
+}: {
+  costCurrency: string;
+  step: RunTraceStep;
+}): JSX.Element {
   const details = [
     step.provider ? `provider ${step.provider}` : null,
     step.model_id ? `model ${step.model_id}` : null,
@@ -519,7 +534,9 @@ function ToolDetail({ step }: { step: RunTraceStep }): JSX.Element {
     step.token_input !== null || step.token_output !== null
       ? `tokens ${step.token_input ?? 0}/${step.token_output ?? 0}`
       : null,
-    step.estimated_cost_usd !== null ? `cost ${formatUsd(step.estimated_cost_usd)}` : null
+    step.estimated_cost_usd !== null
+      ? `cost ${formatMoney(step.estimated_cost_usd, costCurrency)}`
+      : null
   ].filter((item): item is string => item !== null);
   return <DetailBlock label="Tool / Cache" value={details.join(" · ") || "未记录"} />;
 }
@@ -740,8 +757,15 @@ function formatMs(value: number | null): string {
   return `${value}ms`;
 }
 
-function formatUsd(value: number): string {
-  return `$${value.toFixed(6)}`;
+function formatMoney(value: number, currency: string): string {
+  const normalized = currency.toUpperCase();
+  if (normalized === "CNY") {
+    return `¥${value.toFixed(6)}`;
+  }
+  if (normalized === "USD") {
+    return `$${value.toFixed(6)}`;
+  }
+  return `${normalized} ${value.toFixed(6)}`;
 }
 
 function toErrorMessage(caught: unknown): string {

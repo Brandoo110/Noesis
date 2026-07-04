@@ -140,6 +140,7 @@ describe("api client", () => {
             average_token_usage: 0,
             estimated_cost_per_run: 0,
             cost_tracking_enabled: true,
+            cost_currency: "CNY",
             evidence_coverage: 1,
             unsupported_claim_count: 0,
             rag_retrieval_count: 0

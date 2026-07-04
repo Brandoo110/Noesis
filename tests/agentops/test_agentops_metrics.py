@@ -60,9 +60,39 @@ def test_average_token_usage_is_per_run_not_per_tool(db: Connection) -> None:
 
 
 def test_metrics_summary_marks_cost_tracking_availability(db: Connection) -> None:
-    summary = build_metrics_summary(db, cost_tracking_enabled=False)
+    summary = build_metrics_summary(
+        db,
+        cost_tracking_enabled=False,
+        cost_currency="CNY",
+    )
 
     assert summary.cost_tracking_enabled is False
+    assert summary.cost_currency == "CNY"
+
+
+def test_metrics_summary_reprices_zero_cost_llm_rows(db: Connection) -> None:
+    with with_tx(db):
+        _insert_run(db, "run-one", "completed", NOW, "2026-06-26T00:00:01Z")
+        ToolInvocationsRepo().insert(
+            _tool_invocation(
+                "tool-llm",
+                "run-one",
+                "success",
+                cache_hit=False,
+                tool_name="llm.synth",
+                token_input=1000,
+                token_output=1000,
+                estimated_cost=0,
+            ),
+            conn=db,
+        )
+
+    summary = build_metrics_summary(
+        db,
+        cost_rates={"llm.synth": (3.0, 6.0)},
+    )
+
+    assert summary.estimated_cost_per_run == 0.009
 
 
 def _insert_run(
@@ -156,12 +186,16 @@ def _tool_invocation(
     status: str,
     *,
     cache_hit: bool,
+    tool_name: str = "search.web",
+    token_input: int = 100,
+    token_output: int = 40,
+    estimated_cost: float = 0.0012,
 ) -> ToolInvocationRow:
     return ToolInvocationRow(
         id=id,
         run_id=run_id,
         trace_id=None,
-        tool_name="search.web",
+        tool_name=tool_name,
         status=status,
         permission_level="network",
         input_summary="query",
@@ -171,9 +205,9 @@ def _tool_invocation(
         cache_hit=cache_hit,
         retry_count=1,
         latency_ms=240,
-        token_input=100,
-        token_output=40,
-        estimated_cost_usd=0.0012,
+        token_input=token_input,
+        token_output=token_output,
+        estimated_cost_usd=estimated_cost,
         started_at=NOW,
         ended_at=NOW,
         created_at=NOW,

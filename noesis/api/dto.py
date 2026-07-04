@@ -143,6 +143,7 @@ class MetricsSummaryResponse(BaseModel):
     average_token_usage: int
     estimated_cost_per_run: float
     cost_tracking_enabled: bool
+    cost_currency: str
     evidence_coverage: float
     unsupported_claim_count: int
     rag_retrieval_count: int

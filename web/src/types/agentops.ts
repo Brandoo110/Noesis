@@ -96,6 +96,7 @@ export interface MetricsSummary {
   average_token_usage: number;
   estimated_cost_per_run: number;
   cost_tracking_enabled: boolean;
+  cost_currency: string;
   evidence_coverage: number;
   unsupported_claim_count: number;
   rag_retrieval_count: number;

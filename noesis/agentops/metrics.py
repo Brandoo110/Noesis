@@ -1,7 +1,10 @@
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
 from math import ceil
 from sqlite3 import Connection, Row
+
+CostRates = Mapping[str, tuple[float, float]]
 
 
 @dataclass(frozen=True)
@@ -17,6 +20,7 @@ class MetricsSummary:
     average_token_usage: int
     estimated_cost_per_run: float
     cost_tracking_enabled: bool
+    cost_currency: str
     evidence_coverage: float
     unsupported_claim_count: int
     rag_retrieval_count: int
@@ -26,6 +30,8 @@ def build_metrics_summary(
     conn: Connection,
     *,
     cost_tracking_enabled: bool = True,
+    cost_currency: str = "CNY",
+    cost_rates: CostRates | None = None,
 ) -> MetricsSummary:
     runs = _run_rows(conn)
     tool_rows = _tool_rows(conn, [str(row["id"]) for row in runs])
@@ -46,8 +52,9 @@ def build_metrics_summary(
             len(tool_rows),
         ),
         average_token_usage=_average_tokens(tool_rows, total_runs),
-        estimated_cost_per_run=_cost_per_run(tool_rows, total_runs),
+        estimated_cost_per_run=_cost_per_run(tool_rows, total_runs, cost_rates or {}),
         cost_tracking_enabled=cost_tracking_enabled,
+        cost_currency=cost_currency,
         evidence_coverage=_ratio(
             sum(1 for row in runs if str(row["id"]) in evidence_run_ids),
             total_runs,
@@ -115,9 +122,23 @@ def _average_tokens(rows: list[Row], total_runs: int) -> int:
     return round(total / total_runs)
 
 
-def _cost_per_run(rows: list[Row], total_runs: int) -> float:
-    total = sum(float(row["estimated_cost_usd"]) for row in rows)
+def _cost_per_run(rows: list[Row], total_runs: int, cost_rates: CostRates) -> float:
+    total = sum(_tool_cost(row, cost_rates) for row in rows)
     return round(total / total_runs, 6) if total_runs else 0.0
+
+
+def _tool_cost(row: Row, cost_rates: CostRates) -> float:
+    stored_cost = float(row["estimated_cost_usd"])
+    if stored_cost > 0:
+        return stored_cost
+    rates = cost_rates.get(str(row["tool_name"]))
+    if rates is None:
+        return 0.0
+    input_rate, output_rate = rates
+    return (
+        (int(row["token_input"]) / 1_000_000) * input_rate
+        + (int(row["token_output"]) / 1_000_000) * output_rate
+    )
 
 
 def _evidence_run_ids(conn: Connection) -> set[str]:

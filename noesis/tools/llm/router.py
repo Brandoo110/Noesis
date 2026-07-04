@@ -45,8 +45,8 @@ class LLMRouter:
                     resolved.deepseek_api_key,
                     resolved.deepseek_model,
                     resolved.deepseek_endpoint,
-                    input_cost_per_million=resolved.deepseek_input_cost_per_million,
-                    output_cost_per_million=resolved.deepseek_output_cost_per_million,
+                    input_cost_per_million=resolved.deepseek_input_cost_per_million_at(),
+                    output_cost_per_million=resolved.deepseek_output_cost_per_million_at(),
                 ),
                 LLMRole.RISK: make_risk_provider(
                     resolved.risk_llm_api_key,

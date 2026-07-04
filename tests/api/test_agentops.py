@@ -235,6 +235,7 @@ def test_get_metrics_summary_returns_agentops_metrics(
     assert payload["avg_latency_ms"] == 3000
     assert payload["tool_success_rate"] == 1.0
     assert payload["cache_hit_rate"] == 0.5
+    assert payload["cost_currency"] == "CNY"
     assert payload["evidence_coverage"] == 1.0
 
 
