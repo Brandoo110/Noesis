@@ -26,6 +26,7 @@
   display: grid;
   grid-template-columns: 340px minmax(0, 1fr);
   gap: 16px;
+  scroll-margin-top: 16px;
 }
 .run-diagnostic {
   display: grid;

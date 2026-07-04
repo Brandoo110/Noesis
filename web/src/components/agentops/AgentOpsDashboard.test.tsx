@@ -125,6 +125,37 @@ describe("AgentOpsDashboard", () => {
     expect(getRunTraceMock).toHaveBeenLastCalledWith("run-second");
   });
 
+  it("scrolls to run panels when a run card is selected", async () => {
+    const originalScrollIntoView = Element.prototype.scrollIntoView;
+    const scrollIntoViewMock = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoViewMock;
+    listRunsMock.mockResolvedValue({
+      runs: [
+        ...makeRunList().runs,
+        { ...makeRunList().runs[0], run_id: "run-second", target_name: "Microsoft" }
+      ]
+    });
+    getMetricsSummaryMock.mockResolvedValue(makeMetrics());
+    getRunTraceMock.mockResolvedValue(makeTrace());
+
+    try {
+      render(<AgentOpsDashboard />);
+
+      await screen.findByText("search.tavily");
+      expect(scrollIntoViewMock).not.toHaveBeenCalled();
+
+      fireEvent.click(screen.getByRole("button", { name: /run-second/ }));
+
+      expect(scrollIntoViewMock).toHaveBeenCalledWith({
+        behavior: "smooth",
+        block: "start"
+      });
+      await waitFor(() => expect(getRunTraceMock).toHaveBeenLastCalledWith("run-second"));
+    } finally {
+      Element.prototype.scrollIntoView = originalScrollIntoView;
+    }
+  });
+
   it("retries after a dashboard load failure", async () => {
     listRunsMock.mockRejectedValueOnce(new Error("GET /runs failed: 503"));
     listRunsMock.mockResolvedValueOnce(makeRunList());

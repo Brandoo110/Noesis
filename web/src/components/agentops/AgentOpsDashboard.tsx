@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { clearRuns, getMetricsSummary, getRunTrace, listRuns } from "../../api/client";
 import type {
@@ -21,6 +21,7 @@ const TRACE_FILTERS: Array<{ id: TraceFilter; label: string }> = [
 ];
 
 export function AgentOpsDashboard(): JSX.Element {
+  const runPanelsRef = useRef<HTMLDivElement | null>(null);
   const [runs, setRuns] = useState<AgentOpsRunSummary[]>([]);
   const [metrics, setMetrics] = useState<MetricsSummary | null>(null);
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
@@ -125,6 +126,11 @@ export function AgentOpsDashboard(): JSX.Element {
     setSelectedRunId(runs[bounded * RUNS_PER_PAGE]?.run_id ?? null);
   }
 
+  function selectRun(runId: string): void {
+    setSelectedRunId(runId);
+    runPanelsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   async function handleClearRuns(): Promise<void> {
     if (!window.confirm("清空所有 run 历史和派生结果？持仓与实体会保留。")) {
       return;
@@ -166,7 +172,7 @@ export function AgentOpsDashboard(): JSX.Element {
       {trace ? <RunDiagnosticPanel trace={trace} /> : null}
 
       {runs.length > 0 ? (
-        <div className="ops-grid">
+        <div aria-label="AgentOps run panels" className="ops-grid" ref={runPanelsRef}>
           <section className="card ops-runs">
             <header className="card-header compact">
               <div>
@@ -199,7 +205,7 @@ export function AgentOpsDashboard(): JSX.Element {
                   <button
                     aria-pressed={run.run_id === selectedRunId}
                     className="run-card"
-                    onClick={() => setSelectedRunId(run.run_id)}
+                    onClick={() => selectRun(run.run_id)}
                     type="button"
                   >
                     <strong className="run-target-title">{runTargetTitle(run)}</strong>
