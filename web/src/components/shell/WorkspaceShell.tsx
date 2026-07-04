@@ -12,13 +12,16 @@ import { TopBar } from "./TopBar";
 export function WorkspaceShell(): JSX.Element {
   const [view, setView] = useState<WorkspaceView>("home");
   const [graphSeed, setGraphSeed] = useState<GraphSeed | null>(null);
+  const graphSeedKey = graphSeed
+    ? `${graphSeed.positionId}:${graphSeed.seedEntity.id}`
+    : "empty";
   const meta = useMemo(
     () => WORKSPACE_VIEWS.find((item) => item.id === view) ?? WORKSPACE_VIEWS[0],
     [view]
   );
 
   function openGraph(seed: GraphSeed): void {
-    setGraphSeed(seed);
+    setGraphSeed((current) => (sameGraphSeed(current, seed) ? current : seed));
     setView("graph");
   }
 
@@ -33,11 +36,20 @@ export function WorkspaceShell(): JSX.Element {
         />
         <main className="page-body">
           {view === "home" ? <PortfolioView onGraphSeedSelected={openGraph} /> : null}
-          {view === "graph" ? <GraphView seed={graphSeed} /> : null}
+          <div hidden={view !== "graph"}>
+            <GraphView key={graphSeedKey} seed={graphSeed} />
+          </div>
           {view === "ops" ? <AgentOpsView /> : null}
         </main>
       </div>
       <MobileNav activeView={view} onViewChange={setView} />
     </div>
+  );
+}
+
+function sameGraphSeed(current: GraphSeed | null, next: GraphSeed): boolean {
+  return (
+    current?.positionId === next.positionId &&
+    current.seedEntity.id === next.seedEntity.id
   );
 }

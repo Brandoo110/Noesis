@@ -14,6 +14,17 @@ const seed = {
     symbol: "AAPL"
   }
 };
+const msftSeed = {
+  positionId: "position-2",
+  runId: "run-2",
+  seedEntity: {
+    id: "entity-msft",
+    market: "US",
+    name: "Microsoft",
+    node_type: "company",
+    symbol: "MSFT"
+  }
+};
 
 vi.mock("../views/PortfolioView", () => ({
   PortfolioView: ({
@@ -26,19 +37,35 @@ vi.mock("../views/PortfolioView", () => ({
       <button onClick={() => onGraphSeedSelected?.(seed)} type="button">
         mock open graph
       </button>
+      <button onClick={() => onGraphSeedSelected?.(msftSeed)} type="button">
+        mock open msft graph
+      </button>
     </section>
   )
 }));
 
-vi.mock("../views/GraphView", () => ({
-  GraphView: ({ seed: activeSeed }: { seed: typeof seed | null }) => (
-    <section aria-label="图谱探索视图">
-      <h2>图谱探索</h2>
-      <span>{activeSeed?.runId ?? "no seed"}</span>
-      <span>{activeSeed?.seedEntity.symbol ?? "no symbol"}</span>
-    </section>
-  )
-}));
+vi.mock("../views/GraphView", async () => {
+  const React = await import("react");
+  return {
+    GraphView: ({ seed: activeSeed }: { seed: typeof seed | null }) => {
+      const [expanded, setExpanded] = React.useState(false);
+      React.useEffect(() => {
+        setExpanded(false);
+      }, [activeSeed?.positionId, activeSeed?.seedEntity.id]);
+      return (
+        <section aria-label="图谱探索视图">
+          <h2>图谱探索</h2>
+          <span>{activeSeed?.runId ?? "no seed"}</span>
+          <span>{activeSeed?.seedEntity.symbol ?? "no symbol"}</span>
+          <span>{expanded ? "expanded graph" : "collapsed graph"}</span>
+          <button onClick={() => setExpanded(true)} type="button">
+            mock expand graph
+          </button>
+        </section>
+      );
+    }
+  };
+});
 
 vi.mock("../views/AgentOpsView", () => ({
   AgentOpsView: () => <section aria-label="AgentOps视图">mock agentops</section>
@@ -78,6 +105,27 @@ describe("WorkspaceShell", () => {
     const graph = screen.getByLabelText("图谱探索视图");
     expect(within(graph).getByText("run-1")).toBeInTheDocument();
     expect(within(graph).getByText("AAPL")).toBeInTheDocument();
+  });
+
+  it("keeps graph expansion when switching workspaces and resets for another stock", () => {
+    render(<WorkspaceShell />);
+    const nav = screen.getByRole("navigation", { name: "主导航" });
+
+    fireEvent.click(screen.getByRole("button", { name: "mock open graph" }));
+    fireEvent.click(screen.getByRole("button", { name: "mock expand graph" }));
+    expect(screen.getByLabelText("图谱探索视图")).toHaveTextContent("expanded graph");
+
+    fireEvent.click(within(nav).getByRole("button", { name: "AgentOps" }));
+    fireEvent.click(within(nav).getByRole("button", { name: "图谱探索" }));
+
+    expect(screen.getByLabelText("图谱探索视图")).toHaveTextContent("expanded graph");
+
+    fireEvent.click(within(nav).getByRole("button", { name: "组合工作台" }));
+    fireEvent.click(screen.getByRole("button", { name: "mock open msft graph" }));
+
+    const graph = screen.getByLabelText("图谱探索视图");
+    expect(graph).toHaveTextContent("MSFT");
+    expect(graph).toHaveTextContent("collapsed graph");
   });
 
   it("opens topbar health popover and closes it from an outside click", () => {
