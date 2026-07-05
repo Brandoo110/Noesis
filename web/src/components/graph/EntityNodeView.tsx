@@ -3,9 +3,19 @@ import { Handle, Position as FlowPosition, type NodeProps } from "reactflow";
 import { nodeClassName, nodeStyle } from "../../lib/visual";
 import type { EntityNode } from "../../types/api";
 
+export type ExpandVisualStatus = "cached" | "empty" | "expanded" | "failed" | "idle" | "loading";
+
+export interface ExpandVisualState {
+  edgeCount: number;
+  message?: string;
+  runId?: string;
+  status: ExpandVisualStatus;
+}
+
 export interface EntityNodeViewData {
   entity: EntityNode;
   expanded: boolean;
+  expandState?: ExpandVisualState;
   isSeed: boolean;
   onExpand?: (entityId: string) => void;
   onViewDetail?: (entityId: string) => void;

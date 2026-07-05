@@ -128,7 +128,7 @@ describe("App portfolio integration path", () => {
     fireEvent.click(screen.getByTestId("graph-node-entity-aapl"));
     expect(await screen.findByRole("heading", { name: "分类情报流" })).toBeInTheDocument();
     expect(expandEntityMock).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: "展开 Apple Inc." }));
+    fireEvent.click(screen.getByRole("button", { name: "调研 Apple Inc." }));
     await waitFor(() =>
       expect(expandEntityMock).toHaveBeenCalledWith("entity-aapl", "position-1")
     );

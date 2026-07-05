@@ -23,6 +23,7 @@
   font-weight: 600;
 }
 .ops-grid {
+  --ops-panel-height: max(620px, calc(100vh - 90px));
   display: grid;
   grid-template-columns: 340px minmax(0, 1fr);
   gap: 16px;
@@ -73,12 +74,18 @@
 .run-trace {
   display: flex;
   flex-direction: column;
-  height: 780px;
+  height: var(--ops-panel-height);
+  overscroll-behavior: contain;
   overflow: hidden;
   padding: 16px 18px;
 }
 .ops-runs {
   gap: 10px;
+}
+.ops-runs ul,
+.run-trace ol {
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 .ops-runs ul {
   display: grid;
@@ -343,6 +350,7 @@
 }
 .trace-step-detail p {
   max-height: 120px;
+  overscroll-behavior: contain;
   overflow: auto;
   color: var(--ink-3);
   font-size: 11.5px;

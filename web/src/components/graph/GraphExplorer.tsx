@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 import { useExpand } from "../../hooks/use-expand";
 import { useEvidenceDrawer } from "../../context/evidence-drawer";
-import type { Basis, EntityNode } from "../../types/api";
+import type { Basis, EntityNode, Relation } from "../../types/api";
 import { GraphStage } from "./GraphStage";
 import { StockDetail } from "../stock/StockDetail";
 
@@ -24,14 +24,13 @@ export function GraphExplorer({
   const evidenceDrawer = useEvidenceDrawer();
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [basisFilter, setBasisFilter] = useState<"all" | Basis>("all");
+  const [relationFilter, setRelationFilter] = useState<"all" | Relation>("all");
+  const [focusedEntityId, setFocusedEntityId] = useState<string | null>(null);
   const graph = useExpand({
     onViewDetail: runId ? () => setIsDetailOpen(true) : undefined,
     positionId,
     seedEntity
   });
-  const visibleEdges = basisFilter === "all"
-    ? graph.edges
-    : graph.edges.filter((edge) => edge.data?.edge.basis === basisFilter);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent): void {
@@ -46,10 +45,13 @@ export function GraphExplorer({
 
   function handleRefresh(): void {
     graph.reset();
+    setBasisFilter("all");
+    setRelationFilter("all");
+    setFocusedEntityId(null);
     setIsDetailOpen(false);
   }
 
-  function handleNodeClick(entityId: string): void {
+  function handleNodeExpand(entityId: string): void {
     void graph.expand(entityId);
   }
 
@@ -60,7 +62,7 @@ export function GraphExplorer({
           <p className="eyebrow">RESEARCH GRAPH · LAZY EXPAND</p>
           <h2>{`Research Graph — ${seedEntity.symbol ?? seedEntity.name}`}</h2>
           <p className="empty-note">
-            {[seedEntity.symbol, seedEntity.name].filter(Boolean).join(" · ")} · 懒加载展开，节点点到才研究
+            {[seedEntity.symbol, seedEntity.name].filter(Boolean).join(" · ")} · 按需调研：点击节点角标研究一跳关键关系
           </p>
         </div>
         <div className="graph-controls">
@@ -90,6 +92,11 @@ export function GraphExplorer({
           </button>
         </div>
       </header>
+      {graph.notice ? (
+        <div className={`graph-status-note ${graph.notice.tone}`}>
+          {graph.notice.message}
+        </div>
+      ) : null}
       <div className="graph-legend" aria-label="图谱图例">
         <span><i className="legend-line source" />source_backed</span>
         <span><i className="legend-line inferred" />inferred</span>
@@ -100,11 +107,16 @@ export function GraphExplorer({
       </div>
       <GraphStage
         basisFilter={basisFilter}
-        edges={visibleEdges}
+        edges={graph.edges}
+        focusedEntityId={focusedEntityId}
         nodes={graph.nodes}
-        onExpandNode={handleNodeClick}
+        onClearFocus={() => setFocusedEntityId(null)}
+        onExpandNode={handleNodeExpand}
+        onFocusNode={setFocusedEntityId}
         onOpenEvidence={evidenceDrawer.open}
+        onRelationFilterChange={setRelationFilter}
         onSeedDetail={runId ? () => setIsDetailOpen(true) : undefined}
+        relationFilter={relationFilter}
         seedEntity={seedEntity}
       />
       {isDetailOpen && runId ? (

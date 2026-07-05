@@ -2,11 +2,30 @@
   stroke: var(--brand-600);
   stroke-linecap: round;
   stroke-width: 1.8;
+  opacity: 0.95;
 }
 .edge-inferred {
   stroke: var(--amber-600);
   stroke-linecap: round;
   stroke-width: 1.8;
+  opacity: 0.58;
+}
+.edge-relation-competitor {
+  --edge-color: #0B6F6A;
+  stroke: var(--edge-color);
+}
+.edge-relation-supplier {
+  --edge-color: #D6A000;
+  stroke: var(--edge-color);
+}
+.edge-relation-customer {
+  --edge-color: #8F4E99;
+  stroke: var(--edge-color);
+}
+.edge-relation-belongs_to {
+  --edge-color: #5F7F45;
+  stroke: var(--edge-color);
+  stroke-dasharray: 8 6;
 }
 .relationship-row > span:last-child {
   overflow: hidden;

@@ -18,6 +18,10 @@
   outline: 2px solid var(--brand-700);
   box-shadow: 0 0 0 4px rgba(10, 92, 87, 0.12);
 }
+.graph-node.is-focused {
+  outline: 2px solid var(--brand-600);
+  box-shadow: 0 0 0 5px rgba(10, 92, 87, 0.1), 0 1px 3px rgba(23, 34, 32, 0.06);
+}
 .graph-expand-badge {
   position: absolute;
   top: -8px;
@@ -35,6 +39,49 @@
   font-weight: 700;
   cursor: pointer;
   box-shadow: 0 2px 6px rgba(10, 92, 87, 0.3);
+}
+.graph-expand-badge:disabled {
+  cursor: wait;
+}
+.graph-expand-badge.is-research,
+.graph-expand-badge.is-loading {
+  min-width: 44px;
+  height: 24px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: #E9EFEC;
+  color: var(--ink-3);
+  font-family: inherit;
+  font-size: 11.5px;
+  letter-spacing: 0;
+  box-shadow: 0 1px 4px rgba(23, 34, 32, 0.12);
+}
+.graph-expand-badge.is-loading {
+  min-width: 54px;
+  opacity: 1;
+}
+.graph-expand-badge.is-expanded,
+.graph-expand-badge.is-cached {
+  min-width: 24px;
+  border-radius: 999px;
+  cursor: default;
+}
+.graph-expand-badge.is-expanded {
+  background: var(--brand-600);
+}
+.graph-expand-badge.is-cached {
+  background: #5F7F45;
+}
+.graph-expand-badge.is-empty {
+  min-width: 24px;
+  border-radius: 999px;
+  background: #E9EFEC;
+  color: var(--ink-3);
+  cursor: default;
+  box-shadow: 0 1px 4px rgba(23, 34, 32, 0.12);
+}
+.graph-expand-badge.is-failed {
+  background: #9B3B35;
 }
 .relationships-card,
 .graph-summary {
