@@ -24,6 +24,14 @@ trade execution.
   thesis.
 - Run offline-friendly evaluation and release smoke checks.
 
+## Product map
+
+Open `web/public/noesis-product-map.html` for a single-page product overview:
+end-to-end workflow, core capabilities, cost model, AgentOps monitoring, and
+maintenance checklist. When served through Vite at
+`http://127.0.0.1:5173/noesis-product-map.html`, the page refreshes local
+`/metrics`, `/runs`, and `/eval` data through the existing dev proxy.
+
 ## Product principles
 
 Noesis is intentionally small and local-first:

@@ -1,0 +1,1145 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Noesis Product Map</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f4f7f4;
+      --paper: #ffffff;
+      --ink: #10231c;
+      --muted: #65746e;
+      --line: #dbe4df;
+      --soft: #eef4f1;
+      --green: #176b4d;
+      --green-2: #0f4e3a;
+      --blue: #245b9b;
+      --amber: #9a5f08;
+      --red: #b33a32;
+      --teal: #17776f;
+      --shadow: 0 18px 50px rgba(16, 35, 28, 0.08);
+      --radius: 8px;
+      font-family:
+        Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.5;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    .page {
+      min-height: 100vh;
+      padding: 28px;
+    }
+
+    .shell {
+      max-width: 1560px;
+      margin: 0 auto;
+    }
+
+    .topline {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 24px;
+      align-items: start;
+      margin-bottom: 18px;
+    }
+
+    .title-block h1 {
+      margin: 0;
+      font-size: clamp(28px, 4vw, 52px);
+      line-height: 1.02;
+      font-weight: 760;
+      letter-spacing: 0;
+    }
+
+    .title-block p {
+      max-width: 880px;
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .status-panel {
+      min-width: 340px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+      box-shadow: var(--shadow);
+    }
+
+    .status-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 12px;
+    }
+
+    .live-state {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--amber);
+      box-shadow: 0 0 0 4px rgba(154, 95, 8, 0.12);
+    }
+
+    .dot.connected {
+      background: var(--green);
+      box-shadow: 0 0 0 4px rgba(23, 107, 77, 0.12);
+    }
+
+    .dot.failed {
+      background: var(--red);
+      box-shadow: 0 0 0 4px rgba(179, 58, 50, 0.12);
+    }
+
+    .refresh-button {
+      border: 1px solid var(--green);
+      background: var(--green);
+      color: #fff;
+      border-radius: 6px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 680;
+    }
+
+    .refresh-button:hover {
+      background: var(--green-2);
+    }
+
+    .status-meta {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .mini-stat {
+      padding: 10px;
+      border-radius: 6px;
+      background: var(--soft);
+    }
+
+    .mini-stat span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .mini-stat strong {
+      display: block;
+      margin-top: 2px;
+      font-size: 18px;
+      line-height: 1.1;
+    }
+
+    .notice {
+      margin: 0 0 18px;
+      padding: 12px 14px;
+      border: 1px solid #cad8d0;
+      border-radius: var(--radius);
+      background: #f9fbfa;
+      color: #40524b;
+      font-size: 13px;
+    }
+
+    .product-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 368px;
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .map-panel,
+    .side-panel,
+    .section {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+      box-shadow: var(--shadow);
+    }
+
+    .map-panel {
+      padding: 18px;
+      min-width: 0;
+    }
+
+    .map-header,
+    .section-header,
+    .side-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: start;
+      margin-bottom: 14px;
+    }
+
+    .map-header h2,
+    .section-header h2,
+    .side-header h2 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: 0;
+    }
+
+    .kicker {
+      margin: 0 0 4px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 760;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 7px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+    }
+
+    .swatch {
+      width: 10px;
+      height: 10px;
+      border-radius: 3px;
+      background: var(--green);
+    }
+
+    .swatch.blue {
+      background: var(--blue);
+    }
+
+    .swatch.amber {
+      background: var(--amber);
+    }
+
+    .swatch.teal {
+      background: var(--teal);
+    }
+
+    .atlas {
+      display: grid;
+      grid-template-columns: 184px minmax(640px, 1fr) 214px;
+      gap: 12px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+
+    .lane {
+      min-width: 0;
+    }
+
+    .lane-title {
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 740;
+    }
+
+    .stack {
+      display: grid;
+      gap: 10px;
+    }
+
+    .node-card {
+      border: 1px solid var(--line);
+      border-left: 4px solid var(--green);
+      border-radius: var(--radius);
+      padding: 10px 11px;
+      background: #fff;
+      min-height: 74px;
+    }
+
+    .node-card.blue {
+      border-left-color: var(--blue);
+    }
+
+    .node-card.amber {
+      border-left-color: var(--amber);
+    }
+
+    .node-card.teal {
+      border-left-color: var(--teal);
+    }
+
+    .node-card.red {
+      border-left-color: var(--red);
+    }
+
+    .node-card strong {
+      display: block;
+      margin-bottom: 3px;
+      font-size: 14px;
+      line-height: 1.25;
+    }
+
+    .node-card span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .workflow {
+      position: relative;
+      min-width: 640px;
+      border: 1px solid #cfddd6;
+      border-radius: var(--radius);
+      background:
+        linear-gradient(90deg, rgba(23, 107, 77, 0.06), transparent 34%),
+        linear-gradient(180deg, #fbfdfc, #f5faf7);
+      padding: 16px;
+    }
+
+    .workflow::before {
+      content: "";
+      position: absolute;
+      left: 34px;
+      right: 34px;
+      top: 50%;
+      height: 2px;
+      background: #bfd2c8;
+      transform: translateY(-50%);
+      z-index: 0;
+    }
+
+    .workflow-grid {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: repeat(5, minmax(104px, 1fr));
+      gap: 10px;
+    }
+
+    .step {
+      border: 1px solid #cddcd4;
+      border-radius: var(--radius);
+      background: #fff;
+      padding: 10px;
+      min-height: 86px;
+    }
+
+    .step strong {
+      display: block;
+      font-size: 13px;
+      line-height: 1.25;
+    }
+
+    .step span {
+      display: block;
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
+    .step.gate {
+      border-color: #d8c59a;
+      background: #fffaf0;
+    }
+
+    .step.risk {
+      border-color: #e2b7b4;
+      background: #fff6f5;
+    }
+
+    .subflow {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .subflow-box {
+      border: 1px dashed #b7c8bf;
+      border-radius: var(--radius);
+      padding: 10px;
+      background: rgba(255, 255, 255, 0.78);
+    }
+
+    .subflow-box strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 13px;
+    }
+
+    .subflow-box span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .side-panel {
+      padding: 16px;
+      min-width: 0;
+    }
+
+    .health-list {
+      display: grid;
+      gap: 9px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .health-item {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fbfdfc;
+    }
+
+    .health-item span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .health-item strong {
+      font-size: 16px;
+    }
+
+    .bar {
+      grid-column: 1 / -1;
+      height: 7px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #e8efeb;
+    }
+
+    .bar > i {
+      display: block;
+      height: 100%;
+      width: 0;
+      border-radius: inherit;
+      background: var(--green);
+      transition: width 180ms ease;
+    }
+
+    .bar > i.amber {
+      background: var(--amber);
+    }
+
+    .bar > i.red {
+      background: var(--red);
+    }
+
+    .cost-block {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+    }
+
+    .cost-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: baseline;
+      padding: 8px 0;
+      border-bottom: 1px solid #edf2ef;
+      font-size: 13px;
+    }
+
+    .cost-row:last-child {
+      border-bottom: 0;
+    }
+
+    .cost-row span {
+      color: var(--muted);
+    }
+
+    .below {
+      display: grid;
+      grid-template-columns: 1.08fr 0.92fr;
+      gap: 18px;
+      margin-top: 18px;
+    }
+
+    .section {
+      padding: 18px;
+      min-width: 0;
+    }
+
+    .capability-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .capability {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 11px;
+      background: #fff;
+    }
+
+    .capability strong {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+
+    .capability span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .status-pill {
+      flex: none;
+      border-radius: 999px;
+      padding: 2px 7px;
+      background: #e8f4ee;
+      color: var(--green-2);
+      font-size: 11px;
+      font-weight: 760;
+    }
+
+    .status-pill.todo {
+      background: #fff4da;
+      color: #7c4b06;
+    }
+
+    .status-pill.watch {
+      background: #eef3fb;
+      color: #244d83;
+    }
+
+    .run-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .run-table th,
+    .run-table td {
+      padding: 9px 8px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .run-table th {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 760;
+    }
+
+    .run-table td:last-child,
+    .run-table th:last-child {
+      text-align: right;
+    }
+
+    .maintenance-list {
+      display: grid;
+      gap: 10px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .maintenance-list li {
+      display: grid;
+      grid-template-columns: 22px 1fr;
+      gap: 8px;
+      align-items: start;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .check {
+      display: inline-grid;
+      place-items: center;
+      width: 20px;
+      height: 20px;
+      border-radius: 5px;
+      background: #e8f4ee;
+      color: var(--green);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .source-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .source-link {
+      display: block;
+      padding: 8px 9px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fbfdfc;
+      color: var(--green-2);
+      text-decoration: none;
+      font-size: 12px;
+      overflow-wrap: anywhere;
+    }
+
+    .source-link:hover {
+      border-color: var(--green);
+    }
+
+    .footer-note {
+      margin: 18px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    @media (max-width: 1180px) {
+      .topline,
+      .product-grid,
+      .below {
+        grid-template-columns: 1fr;
+      }
+
+      .status-panel {
+        min-width: 0;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .page {
+        padding: 14px;
+      }
+
+      .atlas {
+        grid-template-columns: 180px 640px 210px;
+      }
+
+      .capability-grid,
+      .source-grid,
+      .status-meta {
+        grid-template-columns: 1fr;
+      }
+
+      .map-header,
+      .section-header,
+      .side-header {
+        display: block;
+      }
+
+      .legend {
+        justify-content: flex-start;
+        margin-top: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="shell">
+      <header class="topline">
+        <div class="title-block">
+          <h1>Noesis 全局产品图</h1>
+          <p>
+            一张图维护 Noesis 的完整链路、核心功能、成本入口、AgentOps 监控和后续路线。
+            结构来自当前代码与项目文档，运行指标在本地 API 可用时自动刷新。
+          </p>
+        </div>
+        <aside class="status-panel" aria-label="实时状态">
+          <div class="status-row">
+            <span class="live-state">
+              <i id="liveDot" class="dot" aria-hidden="true"></i>
+              <span id="liveLabel">静态蓝图</span>
+            </span>
+            <button id="refreshButton" class="refresh-button" type="button">刷新</button>
+          </div>
+          <div class="status-meta">
+            <div class="mini-stat">
+              <span>Runs</span>
+              <strong id="totalRuns">--</strong>
+            </div>
+            <div class="mini-stat">
+              <span>完成率</span>
+              <strong id="completionRate">--</strong>
+            </div>
+            <div class="mini-stat">
+              <span>平均耗时</span>
+              <strong id="avgLatency">--</strong>
+            </div>
+            <div class="mini-stat">
+              <span>每 run 成本</span>
+              <strong id="costPerRun">--</strong>
+            </div>
+          </div>
+        </aside>
+      </header>
+
+      <p class="notice">
+        维护规则：新增图节点、API、数据表、成本字段、监控指标或产品视图时，同步改这个 HTML。
+        访问 Vite 托管地址时，实时面板默认读取 <code>/metrics/summary</code>、<code>/runs</code>、<code>/eval/latest</code>。
+      </p>
+
+      <main class="product-grid">
+        <section class="map-panel" aria-label="产品全链路图">
+          <div class="map-header">
+            <div>
+              <p class="kicker">End To End Flow</p>
+              <h2>从持仓输入到证据化研究工作台</h2>
+            </div>
+            <div class="legend" aria-label="图例">
+              <span class="legend-item"><i class="swatch"></i>产品输入/输出</span>
+              <span class="legend-item"><i class="swatch blue"></i>API/UI</span>
+              <span class="legend-item"><i class="swatch amber"></i>Agent 工作流</span>
+              <span class="legend-item"><i class="swatch teal"></i>数据/监控</span>
+            </div>
+          </div>
+
+          <div class="atlas">
+            <div class="lane">
+              <p class="lane-title">用户入口</p>
+              <div class="stack">
+                <div class="node-card">
+                  <strong>Position 输入</strong>
+                  <span>公司名、ticker、市场、持有或关注、数量和成本。</span>
+                </div>
+                <div class="node-card">
+                  <strong>解析确认</strong>
+                  <span>LLM 解析规范实体，用户确认后才落库，失败可降级按原样添加。</span>
+                </div>
+                <div class="node-card blue">
+                  <strong>组合首页</strong>
+                  <span>持仓列表、运行状态、组合洞察、共享供应链、相关性矩阵。</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="lane">
+              <p class="lane-title">LangGraph 研究闭环</p>
+              <div class="workflow" role="img" aria-label="seed run 节点顺序">
+                <div class="workflow-grid">
+                  <div class="step"><strong>1 intake_resolve</strong><span>解析持仓为图谱 seed entity。</span></div>
+                  <div class="step"><strong>2 ingest</strong><span>搜索和来源抓取，Tavily 或降级数据。</span></div>
+                  <div class="step"><strong>3 filter</strong><span>过滤与目标无关的候选证据。</span></div>
+                  <div class="step"><strong>4 evidence_build</strong><span>写 source documents、evidences、FTS 和 Chroma。</span></div>
+                  <div class="step"><strong>5 expand</strong><span>产生产业链边，标 basis、confidence、evidence。</span></div>
+                  <div class="step"><strong>6 intel_synth</strong><span>生成中文情报条目，保留证据 ID。</span></div>
+                  <div class="step"><strong>7 thesis_draft</strong><span>生成 thesis summary 和 assumption。</span></div>
+                  <div class="step risk"><strong>8 risk_review</strong><span>拦无证据 claim、荐股、目标价和预测。</span></div>
+                  <div class="step gate"><strong>9 human_confirm</strong><span>等待用户确认或编辑 thesis。</span></div>
+                  <div class="step"><strong>10 finalize</strong><span>落库并结束 run，前端继续轮询状态。</span></div>
+                </div>
+                <div class="subflow">
+                  <div class="subflow-box">
+                    <strong>Expand Run</strong>
+                    <span>节点一跳懒加载，复用 intake、ingest、filter、evidence、expand、intel、finalize，跳过 thesis 和确认。</span>
+                  </div>
+                  <div class="subflow-box">
+                    <strong>Grounding Contract</strong>
+                    <span>用户可见结论必须带 evidence_ids，source_backed 不能为空证据，inferred 必须显示 confidence。</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="lane">
+              <p class="lane-title">交付物</p>
+              <div class="stack">
+                <div class="node-card blue">
+                  <strong>Research Graph</strong>
+                  <span>左到右分层图谱、关系筛选、节点聚焦、一跳调研状态。</span>
+                </div>
+                <div class="node-card blue">
+                  <strong>Stock Detail</strong>
+                  <span>个股详情、情报流、关系清单、thesis 和证据抽屉。</span>
+                </div>
+                <div class="node-card">
+                  <strong>Reports</strong>
+                  <span>个股 Markdown 报告、组合 Brief、eval report。</span>
+                </div>
+                <div class="node-card teal">
+                  <strong>AgentOps</strong>
+                  <span>run 列表、trace、metrics、cache、成本、排障诊断。</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <aside class="side-panel" aria-label="监控与成本">
+          <div class="side-header">
+            <div>
+              <p class="kicker">Live AgentOps</p>
+              <h2>监控与成本</h2>
+            </div>
+          </div>
+          <ul class="health-list">
+            <li class="health-item">
+              <span>工具成功率</span>
+              <strong id="toolSuccess">--</strong>
+              <div class="bar"><i id="toolSuccessBar"></i></div>
+            </li>
+            <li class="health-item">
+              <span>缓存命中率</span>
+              <strong id="cacheHit">--</strong>
+              <div class="bar"><i id="cacheHitBar"></i></div>
+            </li>
+            <li class="health-item">
+              <span>证据覆盖率</span>
+              <strong id="evidenceCoverage">--</strong>
+              <div class="bar"><i id="evidenceCoverageBar"></i></div>
+            </li>
+            <li class="health-item">
+              <span>Unsupported claims</span>
+              <strong id="unsupportedClaims">--</strong>
+              <div class="bar"><i id="unsupportedClaimsBar" class="red"></i></div>
+            </li>
+            <li class="health-item">
+              <span>P95 耗时</span>
+              <strong id="p95Latency">--</strong>
+              <div class="bar"><i id="p95LatencyBar" class="amber"></i></div>
+            </li>
+          </ul>
+
+          <div class="cost-block">
+            <p class="kicker">Model Cost Defaults</p>
+            <div class="cost-row">
+              <span>Light extraction, GLM 4.7 Flash</span>
+              <strong>CNY 0 / M tokens</strong>
+            </div>
+            <div class="cost-row">
+              <span>Synthesis, DeepSeek V4 Pro</span>
+              <strong>CNY 3 in / 6 out</strong>
+            </div>
+            <div class="cost-row">
+              <span>DeepSeek peak multiplier</span>
+              <strong>x2</strong>
+            </div>
+            <div class="cost-row">
+              <span>Risk review, Gemini Flash Lite</span>
+              <strong>CNY 1.695 in / 10.17 out</strong>
+            </div>
+            <div class="cost-row">
+              <span>当前 token / run</span>
+              <strong id="avgTokens">--</strong>
+            </div>
+          </div>
+        </aside>
+      </main>
+
+      <div class="below">
+        <section class="section" aria-label="核心能力">
+          <div class="section-header">
+            <div>
+              <p class="kicker">Capabilities</p>
+              <h2>核心功能覆盖</h2>
+            </div>
+          </div>
+          <div class="capability-grid">
+            <article class="capability">
+              <strong>持仓录入与解析 <span class="status-pill">已交付</span></strong>
+              <span>公司名-only 输入、解析确认、重复提示、删除能力、eval-user 隔离。</span>
+            </article>
+            <article class="capability">
+              <strong>证据化研究链路 <span class="status-pill">已交付</span></strong>
+              <span>seed run 全链路、中文生成内容、grounding、risk review、人工确认。</span>
+            </article>
+            <article class="capability">
+              <strong>产业链图谱 <span class="status-pill">已交付</span></strong>
+              <span>懒加载、一跳缓存、source_backed/inferred、关系清单、缩放和状态化调研。</span>
+            </article>
+            <article class="capability">
+              <strong>组合洞察 <span class="status-pill">已交付</span></strong>
+              <span>portfolio overlap、共享供应商、供应链相关性矩阵、组合 Brief。</span>
+            </article>
+            <article class="capability">
+              <strong>AgentOps 工作台 <span class="status-pill">已交付</span></strong>
+              <span>trace、metrics、cache、run 清空、诊断标签、evidence preview、成本回算。</span>
+            </article>
+            <article class="capability">
+              <strong>质量与发布证据 <span class="status-pill watch">持续维护</span></strong>
+              <span>pytest、Vitest、build、smoke、visual baseline、quality report、eval API/CLI。</span>
+            </article>
+            <article class="capability">
+              <strong>SEC / PDF / Diff <span class="status-pill todo">V1.5 剩余</span></strong>
+              <span>信源加宽、PDF 导出、研究 run 变化 diff、本地模型路由。</span>
+            </article>
+            <article class="capability">
+              <strong>持续监控与 Digest <span class="status-pill todo">V2</span></strong>
+              <span>watchlist、通知、Daily Digest、Weekly Review、长期监控闭环。</span>
+            </article>
+          </div>
+        </section>
+
+        <section class="section" aria-label="最近 Run">
+          <div class="section-header">
+            <div>
+              <p class="kicker">Recent Runs</p>
+              <h2>最近运行快照</h2>
+            </div>
+          </div>
+          <table class="run-table">
+            <thead>
+              <tr>
+                <th>对象</th>
+                <th>状态</th>
+                <th>工具</th>
+                <th>耗时</th>
+              </tr>
+            </thead>
+            <tbody id="recentRuns">
+              <tr>
+                <td colspan="4">启动本地 API 后自动加载。</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+      </div>
+
+      <div class="below">
+        <section class="section" aria-label="维护清单">
+          <div class="section-header">
+            <div>
+              <p class="kicker">Maintenance</p>
+              <h2>后续维护检查点</h2>
+            </div>
+          </div>
+          <ul class="maintenance-list">
+            <li><span class="check">1</span><span>新增 LangGraph 节点时，同步更新中间工作流、trace 监控字段和验收说明。</span></li>
+            <li><span class="check">2</span><span>新增 API 路由或 UI 入口时，同步更新左侧用户入口、右侧交付物和核心功能覆盖。</span></li>
+            <li><span class="check">3</span><span>新增数据库表时，确认它属于业务事实、AgentOps、cache 还是 eval，并补到数据契约说明。</span></li>
+            <li><span class="check">4</span><span>调整模型或价格时，同步更新成本默认值，并确认 <code>/metrics/summary</code> 仍可回算旧 run。</span></li>
+            <li><span class="check">5</span><span>做阶段收口时，先更新项目 devlog 和 index，再更新 Brain 高层日志。</span></li>
+          </ul>
+        </section>
+
+        <section class="section" aria-label="来源文件">
+          <div class="section-header">
+            <div>
+              <p class="kicker">Source Anchors</p>
+              <h2>维护时优先检查</h2>
+            </div>
+          </div>
+          <div class="source-grid">
+            <span class="source-link">README.md</span>
+            <span class="source-link">noesis/graph/build_graph.py</span>
+            <span class="source-link">noesis/db/schema.sql</span>
+            <span class="source-link">noesis/agentops/metrics.py</span>
+            <span class="source-link">noesis/config/settings.py</span>
+            <span class="source-link">web/src/components/shell/WorkspaceShell.tsx</span>
+          </div>
+          <p class="footer-note">
+            更新日期：2026-07-05。HTML 是产品总览图，不替代 README、测试设计或 Obsidian phase 文档。
+          </p>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const state = {
+      refreshMs: 10000,
+      lastConnected: false,
+      endpoints: {
+        metrics: "/metrics/summary",
+        runs: "/runs",
+        eval: "/eval/latest"
+      }
+    };
+
+    function apiUrl(path) {
+      if (window.location.protocol === "file:") {
+        return "http://127.0.0.1:8000" + path;
+      }
+      return path;
+    }
+
+    function byId(id) {
+      return document.getElementById(id);
+    }
+
+    function percent(value) {
+      if (typeof value !== "number" || Number.isNaN(value)) return "--";
+      return Math.round(value * 100) + "%";
+    }
+
+    function ms(value) {
+      if (typeof value !== "number" || Number.isNaN(value)) return "--";
+      if (value < 1000) return Math.round(value) + "ms";
+      if (value < 60000) return (value / 1000).toFixed(1) + "s";
+      return (value / 60000).toFixed(1) + "m";
+    }
+
+    function money(value, currency) {
+      if (typeof value !== "number" || Number.isNaN(value)) return "--";
+      const unit = currency || "CNY";
+      return unit + " " + value.toFixed(value < 1 ? 4 : 2);
+    }
+
+    function setText(id, value) {
+      const element = byId(id);
+      if (element) element.textContent = value;
+    }
+
+    function setBar(id, ratio, tone) {
+      const element = byId(id);
+      if (!element) return;
+      const bounded = Math.max(0, Math.min(1, ratio || 0));
+      element.style.width = Math.round(bounded * 100) + "%";
+      if (tone) element.className = tone;
+    }
+
+    async function loadJson(path) {
+      const response = await fetch(apiUrl(path), {
+        headers: { "Accept": "application/json" },
+        cache: "no-store"
+      });
+      if (!response.ok) {
+        throw new Error(path + " returned " + response.status);
+      }
+      return response.json();
+    }
+
+    async function refresh() {
+      const button = byId("refreshButton");
+      if (button) button.disabled = true;
+      try {
+        const [metrics, runs, evalReport] = await Promise.all([
+          loadJson(state.endpoints.metrics),
+          loadJson(state.endpoints.runs),
+          loadJson(state.endpoints.eval).catch(() => null)
+        ]);
+        renderMetrics(metrics);
+        renderRuns(runs.runs || []);
+        renderEval(evalReport);
+        setConnection("connected", "已连接本地 API");
+      } catch (error) {
+        setConnection("failed", "静态蓝图，API 未连接");
+        renderFallback();
+      } finally {
+        if (button) button.disabled = false;
+      }
+    }
+
+    function renderMetrics(metrics) {
+      setText("totalRuns", String(metrics.total_runs ?? 0));
+      setText("completionRate", percent(metrics.task_completion_rate));
+      setText("avgLatency", ms(metrics.avg_latency_ms));
+      setText("costPerRun", money(metrics.estimated_cost_per_run, metrics.cost_currency));
+      setText("toolSuccess", percent(metrics.tool_success_rate));
+      setText("cacheHit", percent(metrics.cache_hit_rate));
+      setText("evidenceCoverage", percent(metrics.evidence_coverage));
+      setText("unsupportedClaims", String(metrics.unsupported_claim_count ?? 0));
+      setText("p95Latency", ms(metrics.p95_latency_ms));
+      setText("avgTokens", String(metrics.average_token_usage ?? "--"));
+      setBar("toolSuccessBar", metrics.tool_success_rate || 0);
+      setBar("cacheHitBar", metrics.cache_hit_rate || 0);
+      setBar("evidenceCoverageBar", metrics.evidence_coverage || 0);
+      setBar("unsupportedClaimsBar", Math.min((metrics.unsupported_claim_count || 0) / 5, 1), "red");
+      setBar("p95LatencyBar", Math.min((metrics.p95_latency_ms || 0) / 120000, 1), "amber");
+    }
+
+    function renderRuns(runs) {
+      const body = byId("recentRuns");
+      if (!body) return;
+      if (!runs.length) {
+        body.innerHTML = "<tr><td colspan=\"4\">暂无 run 历史。</td></tr>";
+        return;
+      }
+      body.innerHTML = runs.slice(0, 6).map((run) => {
+        const title = run.target_name || run.target_symbol || run.run_id;
+        const meta = [run.target_symbol, run.target_market, run.node_kind].filter(Boolean).join(" · ");
+        return [
+          "<tr>",
+          "<td><strong>", escapeHtml(title), "</strong><br><span>", escapeHtml(meta || run.run_id), "</span></td>",
+          "<td>", escapeHtml(run.status || "--"), "</td>",
+          "<td>", String(run.tool_count ?? 0), "</td>",
+          "<td>", ms(run.latency_ms), "</td>",
+          "</tr>"
+        ].join("");
+      }).join("");
+    }
+
+    function renderEval(report) {
+      if (!report || !report.averages) return;
+      const grounding = Math.round((report.averages.grounding_rate || 0) * 100);
+      document.title = "Noesis Product Map, eval grounding " + grounding + "%";
+    }
+
+    function renderFallback() {
+      setText("totalRuns", "--");
+      setText("completionRate", "静态");
+      setText("avgLatency", "--");
+      setText("costPerRun", "待 API");
+      setText("toolSuccess", "--");
+      setText("cacheHit", "--");
+      setText("evidenceCoverage", "--");
+      setText("unsupportedClaims", "--");
+      setText("p95Latency", "--");
+      setText("avgTokens", "--");
+      setBar("toolSuccessBar", 0);
+      setBar("cacheHitBar", 0);
+      setBar("evidenceCoverageBar", 0);
+      setBar("unsupportedClaimsBar", 0, "red");
+      setBar("p95LatencyBar", 0, "amber");
+    }
+
+    function setConnection(status, label) {
+      const dot = byId("liveDot");
+      const text = byId("liveLabel");
+      if (dot) {
+        dot.className = status === "connected" ? "dot connected" : "dot failed";
+      }
+      if (text) {
+        const now = new Date();
+        text.textContent = label + " · " + now.toLocaleTimeString("zh-CN", { hour12: false });
+      }
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll("\"", "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    byId("refreshButton").addEventListener("click", refresh);
+    refresh();
+    window.setInterval(refresh, state.refreshMs);
+  </script>
+</body>
+</html>
